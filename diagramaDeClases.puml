@@ -1,0 +1,296 @@
+@startuml
+' =========================================
+' Diagrama de clases - DISEÑO (group_0 + group_1)
+' =========================================
+skinparam classAttributeIconSize 0
+
+' -------------------------
+' ENUMS
+' -------------------------
+enum TipoOrganizacion {
+  GUBERNAMENTAL
+  ONG
+  EMPRESA
+  INSTITUCION
+}
+
+enum EstadoRegistro {
+  PRIMER_ACCESO
+  ACTIVO
+}
+
+enum TipoMedioContacto {
+  TELEFONO
+  WHATSAPP
+}
+
+enum TipoDocumento {
+  DNI
+  CUIT
+}
+
+enum UnidadMedida {
+  UNIDAD
+  KILOGRAMO
+  LITRO
+  PAQUETE
+}
+
+enum EstadoDonacion {
+  DEPOSITO
+  ASIGNACION_REALIZADA
+  LISTA_PARA_ENTREGAR
+  EN_TRASLADO
+  ENTREGADA
+  ENTREGA_FALLIDA
+  VENCIDA
+}
+
+enum Genero {
+  MASCULINO
+  FEMENINO
+  OTRO
+}
+
+enum TipoContactoPredeterminado {
+  TELEFONO
+  WHATSAPP
+  MAIL
+}
+
+enum Periodicidad {
+  SEMANAL
+  ANUAL
+  MENSUAL
+}
+
+' group_1 enums
+
+enum EstadoNotificacion {
+  PENDIENTE
+  COMPLETADA
+  FALLIDA
+}
+
+enum MedioNotificacion {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+' -------------------------
+' CLASES (group_0)
+' -------------------------
+class "Registro Donacion" as RegistroDonacion {
+  +String id
+  +String descripcionGeneral
+  +Donante donante
+  +Date fechaDeRegistro
+  +List<Bien> listaBienes
+  +agregarBien(Bien)
+  +segmentar() : List<Donacion>
+}
+
+class Bien {
+  +String id
+  +String descripcion
+  +String fotoURL
+  +Int cantidad
+  +UnidadMedida unidadMedida
+  +Subcategoria subcategoria
+}
+
+class BienPerecedero {
+  -Date fechaVencimiento
+}
+
+class BienEstandar {
+}
+
+class BienConEstado {
+  -Estado estado
+}
+
+class Representantes {
+  +String nombre
+  +String apellido
+  +String email
+}
+
+class MedioContacto {
+  +TipoMedioContacto tipo
+  +String numero
+}
+
+class "Persona Juridica" as PersonaJuridica {
+  +String razonSocial
+  +TipoOrganizacion tipo
+  +String rubro
+  +List<Representantes> Representante
+}
+
+class ImportacionDonantesCSV {
+  +importar()
+  +crearDonante()
+  +actualizarDonante()
+}
+
+class Categoria {
+  +String id
+  +String nombre
+}
+
+class Subcategoria {
+  +String id
+  +String nombre
+}
+
+class Donante {
+  +String id
+  +String mail
+  +EstadoRegistro estadoRegistro
+  +List<MedioContacto> mediosDeContacto
+  +TipoContactoPredeterminado tipoContactoPredeterminado
+  +String numeroDocumento
+  +TipoDocumento tipoDeDocumento
+  +registrarDonante()
+  +actualizarDatos()
+}
+
+class Donacion {
+  +String id
+  +String descripcionGeneral
+  +int Cantidad
+  +UnidadMedida unidadMedida
+  +Subcategoria subcategoria
+  +Date fechaVencimiento
+  +CondicionBien condicionBien
+  +EstadoDonacion estadoActual
+  +List<RegistroCambioEstado> historialEstados
+  +registrarJustificativo()
+  +cambiarEstado()
+}
+
+class RegistroCambioEstado {
+  +EstadoDonacion estadoAnterior
+  +EstadoDonacion estadoActual
+  +Date fechayhora
+  +String justificativo
+}
+
+class "Necesidad" as Necesidad {
+  +String id
+  +String descripcion
+  +Int cantidadObjetivo
+  +Int cantidadCubierta
+  +Subcategoria subcategoria
+  +registrarDonacion()
+  +estaSatisfecha()
+}
+
+class "Necesidad Recurrente" as NecesidadRecurrente {
+  +Date fechaInicioPeriodo
+  +Periodicidad periodicidad
+}
+
+class "Necesidad Extraordinaria" as NecesidadExtraordinaria {
+  +String motivo
+}
+
+class Administrador {
+  +String id
+  +String nombre
+  +String mail
+  +registrarDonante()
+  +marcarDonacionComoVencida()
+}
+
+class "EntidadBeneficiaria" as EntidadBeneficiaria {
+  +String id
+  +String razonSocial
+  +String direccion
+  +String telefono
+  +List<Representante> representantes
+  +registrarNecesidades()
+}
+
+class "Persona Humana" as PersonaHumana {
+  +String nombre
+  +String apellido
+  +Int edad
+  +Genero genero
+  +String direccion
+}
+
+class Notificacion {
+  +String id
+  +String nombre
+  +String mail
+  +enviar()
+}
+
+' -------------------------
+' CLASES (group_1)
+' -------------------------
+class Notificador {
+  +enviar()
+}
+
+class "Notificacion (group_1)" as NotificacionG1 {
+  +String id
+  +String destinatario
+  +String mensaje
+  +MedioNotificacion medio
+  +EstadoNotificacion estado
+  +Date fechaEnvio
+  +marcarComoCompletada()
+  +marcarComoFallida()
+}
+
+' -------------------------
+' RELACIONES (group_0)
+' -------------------------
+Subcategoria --> Categoria
+Donacion --> UnidadMedida
+Donante --> MedioContacto
+Donante --> TipoDocumento
+BienPerecedero --|> Bien
+Administrador <|.. RegistroDonacion
+PersonaHumana --> Genero
+NecesidadRecurrente --> Necesidad
+Bien --> Subcategoria
+Bien --> UnidadMedida
+NecesidadRecurrente --> Periodicidad
+NecesidadExtraordinaria --> Necesidad
+BienEstandar --|> Bien
+PersonaHumana --> Donante
+Representantes -- PersonaJuridica
+Representantes --> EntidadBeneficiaria
+RegistroDonacion --> Donacion
+BienConEstado --|> Bien
+PersonaJuridica --> Donante
+Administrador <|.. Donacion
+Donacion --> EstadoDonacion
+RegistroCambioEstado --> EstadoDonacion
+ImportacionDonantesCSV <|.. Donante
+Necesidad --> Subcategoria
+RegistroDonacion --> Donante
+MedioContacto --> TipoMedioContacto
+Donacion --> RegistroCambioEstado
+Donante --> EstadoRegistro
+Administrador <|.. Notificacion
+EntidadBeneficiaria --> Necesidad
+Administrador <|.. Donante
+Donacion --> Subcategoria
+PersonaJuridica --> TipoOrganizacion
+RegistroDonacion --> Bien
+Donante --> TipoContactoPredeterminado
+
+' -------------------------
+' RELACIONES (group_1)
+' -------------------------
+EstadoNotificacion --> NotificacionG1
+Notificador --> NotificacionG1
+MedioNotificacion --> NotificacionG1
+
+@enduml
