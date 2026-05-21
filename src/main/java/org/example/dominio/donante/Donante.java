@@ -23,9 +23,7 @@ public abstract class Donante {
     this.mediosDeContacto = new ArrayList<>();
   }
 
-  public void registrarDonante() {
-    this.estadoRegistro = EstadoRegistro.PRIMER_ACCESO;
-  }
+  public void registrarDonante() {this.estadoRegistro = EstadoRegistro.PRIMER_ACCESO;}
 
   public void activar() {
     this.estadoRegistro = EstadoRegistro.ACTIVO;
