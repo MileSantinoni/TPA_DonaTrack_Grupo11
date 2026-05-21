@@ -1,4 +1,23 @@
 package org.example.dominio.beneficiario;
+import java.time.LocalDate;
+import org.example.dominio.catalogo.Subcategoria;
 
-public class NecesidadRecurrente {
+public class NecesidadRecurrente extends Necesidad {
+  private LocalDate fechaInicioPeriodo;
+  private Periodicidad periodicidad;
+
+  public NecesidadRecurrente(String descripcion, int cantidadObjetivo, Subcategoria subcategoria,
+                             LocalDate fechaInicioPeriodo, Periodicidad periodicidad) {
+    super(descripcion, cantidadObjetivo, subcategoria);
+    this.fechaInicioPeriodo = fechaInicioPeriodo;
+    this.periodicidad = periodicidad;
+  }
+
+  @Override
+  public boolean estaSatisfecha() {
+    // La lógica para la recurrente implica verificar si se cubrió el objetivo dentro del período en curso
+    return this.cantidadCubierta >= this.cantidadObjetivo;
+    // Nota: en futuras iteraciones, aquí se podría agregar lógica para reiniciar
+    // la "cantidadCubierta" cuando cambie el periodo (ej. pasa de semana).
+  }
 }
