@@ -1,5 +1,6 @@
 package org.example.dominio.donacion;
 
+import org.example.dominio.catalogo.Bien;
 import org.example.dominio.donante.Donante;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class RegistroDonacion {
     for (Bien bien : listaBienes) {
       Donacion donacion = new Donacion(
           bien.getDescripcion(),
-          bien.getCantidad(),
+          (int) bien.getCantidad(),
           bien.getUnidadMedida()
       );
       /*    bien.getSubcategoria(),
