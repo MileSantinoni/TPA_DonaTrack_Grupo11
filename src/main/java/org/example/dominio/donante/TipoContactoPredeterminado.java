@@ -1,6 +1,7 @@
 package org.example.dominio.donante;
 
-public enum TipoMedioContacto {
+public enum TipoContactoPredeterminado {
+  MAIL,
   TELEFONO,
   WHATSAPP
 }
