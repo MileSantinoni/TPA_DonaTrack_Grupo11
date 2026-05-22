@@ -4,6 +4,7 @@ import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.donante.Donante;
 
+import java.util.ArrayList;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,7 +28,9 @@ public class Donacion {
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
     this.estadoActual = EstadoDonacion.EN_DEPOSITO;
+    this.historialEstados = new ArrayList<>();
   }
+
   public void cambiarEstado(EstadoDonacion nuevoEstado, String justificativo) {
     RegistroCambioEstado registro = new RegistroCambioEstado(this.estadoActual, nuevoEstado, justificativo);
     this.historialEstados.add(registro);
@@ -45,22 +48,22 @@ public class Donacion {
   public String getDescripcionGeneral() {
     return descripcionGeneral;
   }
-  
+
   public int getCantidad(){
     return cantidad;
   }
-  
+
   public Subcategoria getSubcategoria() {
     return subcategoria;
   }
-  
+
   public LocalDate getFechaVencimiento(){
     return fechaVencimiento;
   }
-  
+
   public Estado getEstadoBien(){
     return estadoBien;
   }
-  
-  
+
+
 }

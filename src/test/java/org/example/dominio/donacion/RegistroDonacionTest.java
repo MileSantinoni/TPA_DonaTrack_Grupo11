@@ -1,4 +1,4 @@
-package org.example.dominio.Donacion;
+package org.example.dominio.donacion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -8,9 +8,6 @@ import org.example.dominio.catalogo.BienEstandar;
 import org.example.dominio.catalogo.BienPerecedero;
 import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
-import org.example.dominio.donacion.Donacion;
-import org.example.dominio.donacion.EstadoDonacion;
-import org.example.dominio.donacion.RegistroDonacion;
 import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.PersonaHumana;
