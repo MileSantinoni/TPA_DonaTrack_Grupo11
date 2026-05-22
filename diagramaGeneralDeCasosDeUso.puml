@@ -1,0 +1,28 @@
+@startuml
+actor Beneficiario
+actor Donante
+actor Administrador
+usecase "Registrar\nNecesidad" as UC1
+usecase "Registrar\nEntidad\nBeneficiaria" as UC2
+
+
+usecase "Registrar\nDonante" as UC5
+usecase "Registrar Persona Jurídica\ncomo donante" as UC6
+usecase "Registrar\nDonación" as UC7
+usecase "Verificar\nUsuario" as UC8
+usecase "Consultar estado\nde donación" as UC9
+usecase "Marcar Donación\ncomo vencida" as UC10
+usecase "Importar Personas\nDonantes por CSV" as UC11
+Beneficiario -- UC1
+Beneficiario -- UC2
+
+Donante -- UC5
+Administrador -- UC7
+Administrador -- UC9
+Administrador -- UC10
+Administrador -- UC11
+
+UC6 ..> UC5 : <<extend>>
+UC5 ..> UC8 : <<extend>>
+UC7 ..> UC8 : <<include>>
+@enduml
