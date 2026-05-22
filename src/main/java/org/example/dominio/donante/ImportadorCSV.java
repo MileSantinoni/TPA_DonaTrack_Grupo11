@@ -10,9 +10,15 @@ import java.util.List;
 public class ImportadorCSV {
 
   private List<Donante> donantes;
+  //solo para fines de testear
+  private int donantesCreados;
+  private int donantesActualizados;
 
   public ImportadorCSV(List<Donante> donantes) {
     this.donantes = donantes;
+    //solo para fines de testear
+    this.donantesCreados = 0;
+    this.donantesActualizados = 0;
   }
 
   public void importar(String rutaArchivo) throws IOException {
@@ -43,6 +49,7 @@ public class ImportadorCSV {
       if (existente != null) {
         existente.actualizarDatos(email, documento, tipoDocumento);
         existente.agregarMedioContacto(new MedioContacto(TipoMedioContacto.TELEFONO, telefono));
+        donantesActualizados++; //solo para fines de testear
       } else {
         Donante nuevoDonante;
         if (tipoPersona.equals("HUMANA")) {
@@ -52,6 +59,7 @@ public class ImportadorCSV {
         }
         nuevoDonante.agregarMedioContacto(new MedioContacto(TipoMedioContacto.TELEFONO, telefono));
         donantes.add(nuevoDonante);
+        donantesCreados++; //solo para fines de testear
       }
     }
     reader.close();
@@ -63,5 +71,13 @@ public class ImportadorCSV {
         .filter(d -> d.getMail().equals(email))
         .findFirst()
         .orElse(null);
+  }
+
+  public int getDonantesCreados() {
+    return donantesCreados;
+  }
+
+  public int getDonantesActualizados() {
+    return donantesActualizados;
   }
 }
