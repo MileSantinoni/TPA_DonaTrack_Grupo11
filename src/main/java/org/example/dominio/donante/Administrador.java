@@ -1,6 +1,8 @@
 package org.example.dominio.donante;
 
 import java.util.UUID;
+import org.example.dominio.notificacion.MedioNotificacion;
+import org.example.dominio.notificacion.Notificador;
 
 public class Administrador {
 
@@ -14,9 +16,19 @@ public class Administrador {
     this.mail = mail;
   }
 
-  public void activarDonante(Donante donante) {
-    donante.activar();
+
+  public void activarDonante(Donante donante, Notificador notificador) {
+    if (donante.getEstadoRegistro() == EstadoRegistro.PRIMER_ACCESO) {
+      notificador.enviar(
+          donante.getMail(),
+          "Bienvenido/a a DonaTrack. Ya podés acceder por primera vez.",
+          MedioNotificacion.EMAIL
+      );
+
+      donante.activar();
+    }
   }
+
 
   public String getId() {
     return id;

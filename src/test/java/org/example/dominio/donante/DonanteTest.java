@@ -2,6 +2,7 @@ package org.example.dominio.donante;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.example.dominio.notificacion.Notificador;
 
 public class DonanteTest {
 
@@ -171,7 +172,9 @@ public class DonanteTest {
         "Av. Nazca 1200"
     );
 
-    administrador.activarDonante(donante);
+    Notificador notificador = new Notificador();
+
+    administrador.activarDonante(donante,notificador);
 
     assertEquals(EstadoRegistro.ACTIVO, donante.getEstadoRegistro());
   }

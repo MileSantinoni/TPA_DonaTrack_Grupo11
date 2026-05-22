@@ -64,18 +64,16 @@ enum Periodicidad {
   MENSUAL
 }
 
-' group_1 enums
+enum MedioNotificacion {
+  EMAIL
+  SMS
+  WHATSAPP
+}
 
 enum EstadoNotificacion {
   PENDIENTE
   COMPLETADA
   FALLIDA
-}
-
-enum MedioNotificacion {
-  EMAIL
-  SMS
-  WHATSAPP
 }
 
 ' -------------------------
@@ -203,6 +201,10 @@ class Administrador {
   +marcarDonacionComoVencida()
 }
 
+class Notificador {
+  +enviar():
+}
+
 class "EntidadBeneficiaria" as EntidadBeneficiaria {
   +String id
   +String razonSocial
@@ -222,25 +224,12 @@ class "Persona Humana" as PersonaHumana {
 
 class Notificacion {
   +String id
-  +String nombre
-  +String mail
-  +enviar()
-}
-
-' -------------------------
-' CLASES (group_1)
-' -------------------------
-class Notificador {
-  +enviar()
-}
-
-class "Notificacion (group_1)" as NotificacionG1 {
-  +String id
   +String destinatario
   +String mensaje
   +MedioNotificacion medio
   +EstadoNotificacion estado
   +Date fechaEnvio
+
   +marcarComoCompletada()
   +marcarComoFallida()
 }
@@ -276,7 +265,10 @@ RegistroDonacion --> Donante
 MedioContacto --> TipoMedioContacto
 Donacion --> RegistroCambioEstado
 Donante --> EstadoRegistro
-Administrador <|.. Notificacion
+Administrador ..> Notificador
+Notificador ..> Notificacion
+Notificacion --> MedioNotificacion
+Notificacion --> EstadoNotificacion
 EntidadBeneficiaria --> Necesidad
 Administrador <|.. Donante
 Donacion --> Subcategoria
@@ -284,11 +276,6 @@ PersonaJuridica --> TipoOrganizacion
 RegistroDonacion --> Bien
 Donante --> TipoContactoPredeterminado
 
-' -------------------------
-' RELACIONES (group_1)
-' -------------------------
-EstadoNotificacion --> NotificacionG1
-Notificador --> NotificacionG1
-MedioNotificacion --> NotificacionG1
+
 
 @enduml
