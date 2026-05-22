@@ -31,13 +31,12 @@ public class RegistroDonacion {
     for (Bien bien : listaBienes) {
       Donacion donacion = new Donacion(
           bien.getDescripcion(),
-          (int) bien.getCantidad(),
-          bien.getUnidadMedida()
-      );
-         /* bien.getSubcategoria(),
+          bien.getCantidad(),
+          bien.getUnidadMedida(),
+          bien.getSubcategoria(),
           bien.getFechaVencimiento(),
-          bien.getCondicion()*/
-
+          bien.getEstado()
+      );
 
       donaciones.add(donacion);
     }

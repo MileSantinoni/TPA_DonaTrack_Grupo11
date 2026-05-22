@@ -8,7 +8,7 @@ public class BienConEstado extends Bien {
     super(descripcion, cantidad, unidadMedida, subcategoria);
     this.estado = estado;
   }
-
+@Override
   public Estado getEstado() { return estado; }
   public void setEstado(Estado estado) { this.estado = estado; }
 }
