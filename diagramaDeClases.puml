@@ -131,8 +131,6 @@ class "Persona Juridica" as PersonaJuridica {
 
 class ImportacionDonantesCSV {
   +importar()
-  +crearDonante()
-  +actualizarDonante()
 }
 
 class Categoria {

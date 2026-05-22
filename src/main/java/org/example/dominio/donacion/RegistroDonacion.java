@@ -34,7 +34,7 @@ public class RegistroDonacion {
           (int) bien.getCantidad(),
           bien.getUnidadMedida()
       );
-      /*    bien.getSubcategoria(),
+         /* bien.getSubcategoria(),
           bien.getFechaVencimiento(),
           bien.getCondicion()*/
 
