@@ -41,4 +41,26 @@ public class Donacion {
   public List<RegistroCambioEstado> getHistorialEstados() {
     return historialEstados;
   }
+
+  public String getDescripcionGeneral() {
+    return descripcionGeneral;
+  }
+  
+  public int getCantidad(){
+    return cantidad;
+  }
+  
+  public Subcategoria getSubcategoria() {
+    return subcategoria;
+  }
+  
+  public LocalDate getFechaVencimiento(){
+    return fechaVencimiento;
+  }
+  
+  public Estado getEstadoBien(){
+    return estadoBien;
+  }
+  
+  
 }
