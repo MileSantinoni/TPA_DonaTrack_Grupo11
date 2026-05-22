@@ -1,5 +1,7 @@
 package org.example.dominio.catalogo;
 
+import java.time.LocalDate;
+
 public abstract class Bien {
     private String descripcion;
     private String foto; // Ruta, URL
@@ -22,9 +24,19 @@ public abstract class Bien {
     public String getFoto() { return foto; }
     public void setFoto(String foto) { this.foto = foto; } //para agregar foto
 
-    public double getCantidad() { return cantidad; }
+    public int getCantidad() { return cantidad; }
+    public void setCantidad(int cantidad) { this.cantidad = cantidad;}
+
     public String getUnidadMedida() { return unidadMedida; }
+    public void setUnidadMedida(String unidadMedida) {this.unidadMedida = unidadMedida;
+    }
     public Subcategoria getSubcategoria() { return subcategoria; }
+    public void setSubcategoria(Subcategoria subcategoria) { this.subcategoria = subcategoria;}
+    
+    public LocalDate getFechaVencimiento() { return null;}
+
+    public Estado getEstado() { return null;}
+
 }
    
 
