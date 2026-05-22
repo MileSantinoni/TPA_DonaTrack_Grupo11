@@ -18,7 +18,8 @@ public class ImportadorCSVTest {
 
     importador.importar("src/test/resources/donantes_import_20000_UTF8_BOM.csv");
 
-    assertTrue(donantes.size() <= 20000);
+    assertEquals(donantes.size(), importador.getDonantesCreados());
+    assertEquals(14, importador.getDonantesActualizados());
   }
 
   @Test
