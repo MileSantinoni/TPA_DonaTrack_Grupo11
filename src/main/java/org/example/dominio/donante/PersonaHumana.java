@@ -9,7 +9,6 @@ public class PersonaHumana extends Donante {
   private String direccion;
 
   public PersonaHumana(
-      String id,
       String mail,
       String numeroDocumento,
       TipoDocumento tipoDeDocumento,
@@ -19,7 +18,7 @@ public class PersonaHumana extends Donante {
       Genero genero,
       String direccion
   ) {
-    super(id, mail, numeroDocumento, tipoDeDocumento);
+    super(mail, numeroDocumento, tipoDeDocumento);
 
     this.nombre = nombre;
     this.apellido = apellido;

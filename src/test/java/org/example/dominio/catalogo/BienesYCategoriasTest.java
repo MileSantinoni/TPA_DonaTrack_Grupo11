@@ -1,12 +1,7 @@
-package org.example.dominio.catalogo.test;
+package org.example.dominio.catalogo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.example.dominio.catalogo.BienConEstado;
-import org.example.dominio.catalogo.BienPerecedero;
-import org.example.dominio.catalogo.Categoria;
-import org.example.dominio.catalogo.Estado;
-import org.example.dominio.catalogo.Subcategoria;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

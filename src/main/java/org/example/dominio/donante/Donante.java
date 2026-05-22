@@ -2,6 +2,7 @@ package org.example.dominio.donante;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public abstract class Donante {
 
@@ -13,8 +14,14 @@ public abstract class Donante {
   protected String numeroDocumento;
   protected TipoDocumento tipoDeDocumento;
 
-  public Donante(String id, String mail, String numeroDocumento, TipoDocumento tipoDeDocumento) {
-    this.id = id;
+  public Donante(String mail, String numeroDocumento, TipoDocumento tipoDeDocumento) {
+
+    if(mail == null || mail.isBlank()) {
+      throw new IllegalArgumentException(
+          "El mail es obligatorio"
+      );
+    }
+    this.id = UUID.randomUUID().toString();
     this.mail = mail;
     this.numeroDocumento = numeroDocumento;
     this.tipoDeDocumento = tipoDeDocumento;

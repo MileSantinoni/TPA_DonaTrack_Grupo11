@@ -11,7 +11,6 @@ public class PersonaJuridica extends Donante {
   private List<Representante> representantes;
 
   public PersonaJuridica(
-      String id,
       String mail,
       String numeroDocumento,
       TipoDocumento tipoDeDocumento,
@@ -19,7 +18,7 @@ public class PersonaJuridica extends Donante {
       TipoOrganizacion tipo,
       String rubro
   ) {
-    super(id, mail, numeroDocumento, tipoDeDocumento);
+    super(mail, numeroDocumento, tipoDeDocumento);
 
     this.razonSocial = razonSocial;
     this.tipo = tipo;
