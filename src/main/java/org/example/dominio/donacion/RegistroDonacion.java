@@ -45,4 +45,7 @@ public class RegistroDonacion {
   }
 
 
+  public String getId() {
+    return id;
+  }
 }
