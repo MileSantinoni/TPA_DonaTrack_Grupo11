@@ -47,4 +47,9 @@ public class RepositorioRegistroDonacion {
     }
     return null; // O lanzar una excepción si no se encuentra
   }
+
+  // Metodo solo para usar en los tests @BeforeEach
+  public void limpiarRepositorio() {
+    this.registros.clear();
+  }
 }
