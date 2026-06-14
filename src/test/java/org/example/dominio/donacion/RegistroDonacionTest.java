@@ -3,11 +3,9 @@ package org.example.dominio.donacion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.example.dominio.catalogo.Bien;
-import org.example.dominio.catalogo.BienConEstado;
-import org.example.dominio.catalogo.BienEstandar;
-import org.example.dominio.catalogo.BienPerecedero;
 import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
+import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.PersonaHumana;
@@ -37,23 +35,27 @@ public class RegistroDonacionTest {
         donante
     );
 
-    Subcategoria silla = new Subcategoria("Silla");
-    Subcategoria mesa = new Subcategoria("Mesa");
+    Subcategoria silla = new Subcategoria("SUB-1", "Silla", TipoAtributo.CON_ESTADO);
+    Subcategoria mesa = new Subcategoria("SUB-2", "Mesa", TipoAtributo.CON_ESTADO);
 
-    Bien bien1 = new BienConEstado(
+    Bien bien1 = new Bien(
+        "B-001",
         "Sillas usadas",
         6,
         "UNIDAD",
         silla,
-        Estado.USADO
+        null,                  // fechaVencimiento
+        Estado.USADO    // condicionBien
     );
 
-    Bien bien2 = new BienConEstado(
+    Bien bien2 = new Bien(
+        "B-002",
         "Mesa rectangular usada",
         1,
         "UNIDAD",
         mesa,
-        Estado.USADO
+        null,                  // fechaVencimiento
+        Estado.USADO    // condicionBien
     );
 
     registro.agregarBien(bien1);
@@ -93,16 +95,19 @@ public class RegistroDonacionTest {
         donante
     );
 
-    Subcategoria fideos = new Subcategoria( "Fideos");
+    Subcategoria fideos = new Subcategoria("SUB-3", "Fideos", TipoAtributo.NO_PERECEDERO);
 
-    Bien bien = new BienEstandar(
+    Bien bienFideos = new Bien(
+        "B-003",
         "Paquetes de fideos",
         100,
         "PAQUETE",
-        fideos
+        fideos,
+        null,                  // fechaVencimiento
+        null                   // condicionBien
     );
 
-    registro.agregarBien(bien);
+    registro.agregarBien(bienFideos);
 
     List<Donacion> donaciones = registro.segmentar();
 
@@ -129,17 +134,19 @@ public class RegistroDonacionTest {
         donante
     );
 
-    Subcategoria pureTomate = new Subcategoria( "Puré de tomate");
+    Subcategoria pureTomate = new Subcategoria("SUB-4", "Puré de tomate", TipoAtributo.PERECEDERO);
 
-    Bien bien = new BienPerecedero(
+    Bien bienPureTomate = new Bien(
+        "B-004",
         "Puré de tomate",
         50,
         "PAQUETE",
         pureTomate,
-        LocalDate.of(2027, 1, 1)
+        LocalDate.of(2027, 1, 1), // fechaVencimiento
+        null                      // condicionBien
     );
 
-    registro.agregarBien(bien);
+    registro.agregarBien(bienPureTomate);
 
     List<Donacion> donaciones = registro.segmentar();
 
@@ -166,17 +173,19 @@ public class RegistroDonacionTest {
         donante
     );
 
-    Subcategoria silla = new Subcategoria("Silla");
+    Subcategoria silla = new Subcategoria("SUB-1", "Silla", TipoAtributo.CON_ESTADO);
 
-    Bien bien = new BienConEstado(
+    Bien bienSillasOficina = new Bien(
+        "B-005",
         "Sillas de oficina",
         10,
         "UNIDAD",
         silla,
-        Estado.USADO
+        null,                  // fechaVencimiento
+        Estado.USADO    // condicionBien
     );
 
-    registro.agregarBien(bien);
+    registro.agregarBien(bienSillasOficina);
 
     List<Donacion> donaciones = registro.segmentar();
 

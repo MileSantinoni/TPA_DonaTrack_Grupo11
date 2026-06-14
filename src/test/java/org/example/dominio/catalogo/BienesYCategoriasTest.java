@@ -1,6 +1,7 @@
 package org.example.dominio.catalogo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,13 +17,16 @@ public class BienesYCategoriasTest {
 
   @BeforeEach
   public void setUp() {
+    categoriaAlimentos = new Categoria( "Alimentos");
 
-    categoriaAlimentos = new Categoria("Alimentos");
-    subcategoriaFideos = new Subcategoria("fideos secos");
+    // CORRECTO: Le pasamos TipoAtributo.PERECEDERO
+    subcategoriaFideos = new Subcategoria("SUB-1", "fideos secos", TipoAtributo.PERECEDERO);
     categoriaAlimentos.agregarSubcategoria(subcategoriaFideos);
 
     categoriaMobiliario = new Categoria("Mobiliario");
-    subcategoriaSillas = new Subcategoria("sillas");
+
+    // CORRECTO: Le pasamos TipoAtributo.CON_ESTADO
+    subcategoriaSillas = new Subcategoria("SUB-2", "sillas", TipoAtributo.CON_ESTADO);
     categoriaMobiliario.agregarSubcategoria(subcategoriaSillas);
   }
 
@@ -39,41 +43,43 @@ public class BienesYCategoriasTest {
     // 100 paquetes de fideos que vencen el 01/01/2027
     LocalDate fechaVencimiento = LocalDate.of(2027, 1, 1);
 
-    BienPerecedero fideos = new BienPerecedero(
+    Bien fideos = new Bien(
+        "B-001",
         "Paquetes de fideos secos",
         100,
         "unidades",
         subcategoriaFideos,
-        fechaVencimiento
+        fechaVencimiento,
+        null
     );
 
-    // atributos heredados de la clase abstracta Bien
     assertEquals("Paquetes de fideos secos", fideos.getDescripcion());
     assertEquals(100, fideos.getCantidad());
     assertEquals("unidades", fideos.getUnidadMedida());
     assertEquals(subcategoriaFideos, fideos.getSubcategoria());
 
-    // Verificamos fecha de venc
     assertEquals(fechaVencimiento, fideos.getFechaVencimiento());
+    assertNull(fideos.getEstado(), "Un bien perecedero no debería tener CondicionBien");
   }
 
   @Test
   public void testCreacionBienConEstado() {
     // seis sillas usadas
-    BienConEstado sillas = new BienConEstado(
+    Bien sillas = new Bien(
+        "B-002",
         "Sillas de oficina corporativa",
         6,
         "unidades",
         subcategoriaSillas,
+        null,
         Estado.USADO
     );
 
-    // Verificamos los atributos heredados de la clase abstracta Bien
     assertEquals("Sillas de oficina corporativa", sillas.getDescripcion());
     assertEquals(6, sillas.getCantidad());
     assertEquals(subcategoriaSillas, sillas.getSubcategoria());
 
-    // atributo específico del Bien Con Estado
     assertEquals(Estado.USADO, sillas.getEstado());
+    assertNull(sillas.getFechaVencimiento(), "Un bien mobiliario no debería tener fecha de vencimiento");
   }
 }

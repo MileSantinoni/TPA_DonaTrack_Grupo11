@@ -3,13 +3,14 @@ package org.example.dominio.donacion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.example.dominio.catalogo.Subcategoria;
+import org.example.dominio.catalogo.TipoAtributo;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 public class DonacionTest {
   @Test
   void unaDonacionPuedeQuedarEntregada() {
-    Subcategoria fideos = new Subcategoria("Fideos");
+    Subcategoria fideos = new Subcategoria("SUB-1", "Fideos", TipoAtributo.PERECEDERO);
 
     Donacion donacion = new Donacion(
         "Paquetes de fideos",

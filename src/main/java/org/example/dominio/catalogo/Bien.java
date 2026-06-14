@@ -2,19 +2,41 @@ package org.example.dominio.catalogo;
 
 import java.time.LocalDate;
 
-public abstract class Bien {
+public class Bien {
+    private String id;
     private String descripcion;
     private String foto; // Ruta, URL
     private int cantidad;
     private String unidadMedida;
     private Subcategoria subcategoria;
+    private LocalDate fechaVencimiento;
+    private Estado Estado;
 
-    public Bien(String descripcion, int cantidad, String unidadMedida, Subcategoria subcategoria) {
+    public Bien(String id, String descripcion, int cantidad, String unidadMedida,
+                Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estado) {
+
+        this.id = id;
         this.descripcion = descripcion;
         this.cantidad = cantidad;
         this.unidadMedida = unidadMedida;
         this.subcategoria = subcategoria;
-        this.foto = null; //es opcional
+//        this.Estado = estado;
+
+        // ==========================================
+        // LÓGICA DE VALIDACIÓN SEGÚN EL TIPO
+        // ==========================================
+        TipoAtributo tipoExigido = subcategoria.getTipo();
+
+        if (tipoExigido == TipoAtributo.PERECEDERO && fechaVencimiento == null) {
+            throw new IllegalArgumentException("Los bienes perecederos deben tener una fecha de vencimiento.");
+        }
+
+        if (tipoExigido == TipoAtributo.CON_ESTADO && estado == null) {
+            throw new IllegalArgumentException("Se debe indicar el estado (NUEVO/USADO) para esta subcategoría.");
+        }
+
+        this.fechaVencimiento = fechaVencimiento;
+        this.Estado = estado;
     }
 
 
@@ -33,9 +55,9 @@ public abstract class Bien {
     public Subcategoria getSubcategoria() { return subcategoria; }
     public void setSubcategoria(Subcategoria subcategoria) { this.subcategoria = subcategoria;}
     
-    public LocalDate getFechaVencimiento() { return null;}
+    public LocalDate getFechaVencimiento() { return fechaVencimiento;}
 
-    public Estado getEstado() { return null;}
+    public Estado getEstado() { return Estado;}
 
 }
    

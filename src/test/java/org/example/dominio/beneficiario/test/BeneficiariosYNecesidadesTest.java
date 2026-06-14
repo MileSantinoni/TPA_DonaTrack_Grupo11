@@ -6,6 +6,7 @@ import org.example.dominio.beneficiario.NecesidadRecurrente;
 import org.example.dominio.beneficiario.Periodicidad;
 import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.catalogo.Subcategoria;
+import org.example.dominio.catalogo.TipoAtributo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,8 +23,8 @@ public class BeneficiariosYNecesidadesTest {
   @BeforeEach
   public void setUp() {
     // Inicializamos las subcategorías necesarias
-    subcategoriaSillas = new Subcategoria("sillas");
-    subcategoriaFideos = new Subcategoria("fideos secos");
+    subcategoriaSillas = new Subcategoria("SUB-1", "sillas", TipoAtributo.CON_ESTADO);
+    subcategoriaFideos = new Subcategoria("SUB-2", "fideos secos", TipoAtributo.PERECEDERO);
 
     // Inicializamos las entidades beneficiarias
     escuelaRural = new EntidadBeneficiaria("Escuela Rural N°10", "Ruta 4 Km 20", "555-0101");
