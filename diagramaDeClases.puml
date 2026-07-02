@@ -64,12 +64,6 @@ enum Periodicidad {
   MENSUAL
 }
 
-enum MedioNotificacion {
-  EMAIL
-  SMS
-  WHATSAPP
-}
-
 enum EstadoNotificacion {
   PENDIENTE
   COMPLETADA
@@ -202,7 +196,12 @@ class Administrador {
 }
 
 class Notificador {
-  +enviar():
+  -TipoNotificacion tipoNotificacion
+  +enviar()
+}
+
+interface TipoNotificacion{
+  +enviar()
 }
 
 class "EntidadBeneficiaria" as EntidadBeneficiaria {
@@ -226,12 +225,23 @@ class Notificacion {
   +String id
   +String destinatario
   +String mensaje
-  +MedioNotificacion medio
   +EstadoNotificacion estado
   +Date fechaEnvio
 
   +marcarComoCompletada()
   +marcarComoFallida()
+}
+
+class Email{
+  +enviar()
+}
+
+class SMS{
+  +enviar()
+}
+
+class WhatsApp{
+  +enviar()
 }
 
 ' -------------------------
@@ -266,8 +276,6 @@ MedioContacto --> TipoMedioContacto
 Donacion --> RegistroCambioEstado
 Donante --> EstadoRegistro
 Administrador ..> Notificador
-Notificador ..> Notificacion
-Notificacion --> MedioNotificacion
 Notificacion --> EstadoNotificacion
 EntidadBeneficiaria --> Necesidad
 Administrador <|.. Donante
@@ -275,6 +283,14 @@ Donacion --> Subcategoria
 PersonaJuridica --> TipoOrganizacion
 RegistroDonacion --> Bien
 Donante --> TipoContactoPredeterminado
+Notificador --> TipoNotificacion
+
+Email ..|> TipoNotificacion
+SMS ..|> TipoNotificacion
+WhatsApp ..|> TipoNotificacion
+
+TipoNotificacion --> Notificacion
+Notificador ..> Donante
 
 
 

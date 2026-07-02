@@ -19,10 +19,9 @@ public class Administrador {
 
   public void activarDonante(Donante donante, Notificador notificador) {
     if (donante.getEstadoRegistro() == EstadoRegistro.PRIMER_ACCESO) {
-      notificador.enviar(
+      notificador.notificarPorEmail(
           donante.getMail(),
-          "Bienvenido/a a DonaTrack. Ya podés acceder por primera vez.",
-          MedioNotificacion.EMAIL
+          "Bienvenido/a a DonaTrack. Ya podés acceder por primera vez."
       );
 
       donante.activar();

@@ -4,29 +4,30 @@ import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
+
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 public class Notificador {
 
-  // Envío directo dado destinatario, mensaje y medio explícitos
-  public Notificacion enviar(String destinatario, String mensaje, MedioNotificacion medio) {
-    Notificacion notificacion = new Notificacion(destinatario, mensaje, medio);
+  private final Map<TipoContactoPredeterminado, TipoNotificacion> estrategias;
 
-    try {
-      simularEnvio(medio, destinatario, mensaje);
-      notificacion.marcarComoCompletada();
-    } catch (Exception e) {
-      notificacion.marcarComoFallida();
-    }
+  public Notificador() {
+    this.estrategias = new EnumMap<>(TipoContactoPredeterminado.class);
 
-    return notificacion;
+    estrategias.put(TipoContactoPredeterminado.MAIL, new Email());
+    estrategias.put(TipoContactoPredeterminado.TELEFONO, new SMS());
+    estrategias.put(TipoContactoPredeterminado.WHATSAPP, new WhatsApp());
   }
 
-  // Envío resolviendo automáticamente el contacto predeterminado del donante
   public Notificacion notificarDonante(Donante donante, String mensaje) {
     String destinatario = resolverDestinatario(donante);
-    MedioNotificacion medio = resolverMedio(donante.getContactoPredeterminado());
-    return enviar(destinatario, mensaje, medio);
+
+    TipoNotificacion tipoNotificacion =
+        estrategias.get(donante.getContactoPredeterminado());
+
+    return tipoNotificacion.enviar(destinatario, mensaje);
   }
 
   private String resolverDestinatario(Donante donante) {
@@ -37,6 +38,7 @@ public class Notificador {
     }
 
     TipoMedioContacto tipoMedio;
+
     if (tipo == TipoContactoPredeterminado.WHATSAPP) {
       tipoMedio = TipoMedioContacto.WHATSAPP;
     } else {
@@ -44,9 +46,11 @@ public class Notificador {
     }
 
     String numero = buscarNumero(donante.getMediosDeContacto(), tipoMedio);
+
     if (numero != null) {
       return numero;
     }
+
     return donante.getMail();
   }
 
@@ -56,18 +60,12 @@ public class Notificador {
         return medio.getNumero();
       }
     }
+
     return null;
   }
 
-  private MedioNotificacion resolverMedio(TipoContactoPredeterminado tipo) {
-    switch (tipo) {
-      case WHATSAPP: return MedioNotificacion.WHATSAPP;
-      case TELEFONO: return MedioNotificacion.SMS;
-      default:       return MedioNotificacion.EMAIL;
-    }
-  }
-
-  private void simularEnvio(MedioNotificacion medio, String destinatario, String mensaje) {
-    System.out.println("[" + medio + " simulado] Para: " + destinatario + " | Mensaje: " + mensaje);
+  public Notificacion notificarPorEmail(String destinatario, String mensaje) {
+    TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
+    return email.enviar(destinatario, mensaje);
   }
 }
