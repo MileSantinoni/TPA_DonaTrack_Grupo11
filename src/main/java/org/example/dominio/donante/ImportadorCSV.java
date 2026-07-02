@@ -1,72 +1,94 @@
 package org.example.dominio.donante;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ImportadorCSV {
 
   private List<Donante> donantes;
-  //solo para fines de testear
   private int donantesCreados;
   private int donantesActualizados;
 
   public ImportadorCSV(List<Donante> donantes) {
     this.donantes = donantes;
-    //solo para fines de testear
     this.donantesCreados = 0;
     this.donantesActualizados = 0;
   }
 
   public void importar(String rutaArchivo) throws IOException {
 
-    BufferedReader reader = new BufferedReader(
-        new InputStreamReader(
-            new FileInputStream(rutaArchivo),
-            StandardCharsets.UTF_8
-        )
-    );
+    Reader reader = new FileReader(rutaArchivo, StandardCharsets.UTF_8);
 
-    String linea;
-    reader.readLine();
+    CSVParser parser = CSVFormat.DEFAULT
+        .builder()
+        .setHeader("TipoPersona", "TipoDoc", "Documento", "Nombre/Razón Social", "Email", "Teléfono")
+        .setSkipHeaderRecord(true)
+        .setIgnoreHeaderCase(true)
+        .setTrim(true)
+        .build()
+        .parse(reader);
 
-    while ((linea = reader.readLine()) != null) {
+    for (CSVRecord fila : parser) {
 
-      String[] datos = linea.split(",");
-
-      String tipoPersona = datos[0].replace("\uFEFF", "");
-      TipoDocumento tipoDocumento = TipoDocumento.valueOf(datos[1]);
-      String documento = datos[2];
-      String nombre = datos[3];
-      String email = datos[4];
-      String telefono = datos[5];
+      String tipoPersona = fila.get("TipoPersona");
+      TipoDocumento tipoDocumento = TipoDocumento.valueOf(fila.get("TipoDoc"));
+      String documento = fila.get("Documento");
+      String nombre = fila.get("Nombre/Razón Social");
+      String email = fila.get("Email");
+      String telefono = fila.get("Teléfono");
 
       Donante existente = buscarPorMail(email);
 
       if (existente != null) {
         existente.actualizarDatos(email, documento, tipoDocumento);
         existente.agregarMedioContacto(new MedioContacto(TipoMedioContacto.TELEFONO, telefono));
-        donantesActualizados++; //solo para fines de testear
+        donantesActualizados++;
       } else {
         Donante nuevoDonante;
+
         if (tipoPersona.equals("HUMANA")) {
-          nuevoDonante = new PersonaHumana(email, documento, tipoDocumento, nombre, "", 0, Genero.OTRO, "");
+          nuevoDonante = new PersonaHumana(
+              email,
+              documento,
+              tipoDocumento,
+              nombre,
+              "",
+              0,
+              Genero.OTRO,
+              ""
+          );
         } else {
-          nuevoDonante = new PersonaJuridica(email, documento, tipoDocumento, nombre, TipoOrganizacion.EMPRESA, "");
+          nuevoDonante = new PersonaJuridica(
+              email,
+              documento,
+              tipoDocumento,
+              nombre,
+              TipoOrganizacion.EMPRESA,
+              ""
+          );
         }
-        nuevoDonante.agregarMedioContacto(new MedioContacto(TipoMedioContacto.TELEFONO, telefono));
+
+        nuevoDonante.agregarMedioContacto(
+            new MedioContacto(TipoMedioContacto.TELEFONO, telefono)
+        );
+
         donantes.add(nuevoDonante);
-        donantesCreados++; //solo para fines de testear
+        donantesCreados++;
       }
     }
+
+    parser.close();
     reader.close();
   }
 
   private Donante buscarPorMail(String email) {
-
     return donantes.stream()
         .filter(d -> d.getMail().equals(email))
         .findFirst()
