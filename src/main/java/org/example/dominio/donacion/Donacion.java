@@ -1,5 +1,6 @@
 package org.example.dominio.donacion;
 
+import java.util.UUID;
 import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.donante.Donante;
@@ -7,10 +8,12 @@ import org.example.dominio.donante.Donante;
 import java.util.ArrayList;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 
 public class Donacion {
 
+  private String id; //le agregue un id para la exposicion en apissss
   private String descripcionGeneral;
   private int cantidad;
   private String unidadMedida;
@@ -21,6 +24,7 @@ public class Donacion {
   private List<RegistroCambioEstado> historialEstados;
 
   public Donacion(String descripcionGeneral, int cantidad, String unidadMedida,Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estadoBien) {
+    this.id = UUID.randomUUID().toString(); //no se agrega en el constructor sino que es random, no hay que pasarselo
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
@@ -65,5 +69,9 @@ public class Donacion {
     return estadoBien;
   }
 
+
+  public String getId() {
+    return id;
+  }
 
 }
