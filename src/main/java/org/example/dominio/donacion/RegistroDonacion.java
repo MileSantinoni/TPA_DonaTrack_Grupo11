@@ -48,4 +48,11 @@ public class RegistroDonacion {
   public String getId() {
     return id;
   }
+  public Donante getDonante() {
+    return donante;
+  }
+
+  public LocalDate getFechaDeRegistro() {
+    return fechaDeRegistro;
+  }
 }

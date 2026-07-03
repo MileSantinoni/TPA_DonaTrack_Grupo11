@@ -1,7 +1,8 @@
-package org.example.dominio.donacion;
+package org.example.Repositorios;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.example.dominio.donacion.RegistroDonacion;
 
 public class RepositorioRegistroDonacion {
 

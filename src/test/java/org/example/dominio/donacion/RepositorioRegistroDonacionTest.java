@@ -1,12 +1,11 @@
 package org.example.dominio.donacion;
+import org.example.Repositorios.RepositorioRegistroDonacion;
 import org.example.dominio.donante.PersonaHumana;
 import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Date;
 
 public class RepositorioRegistroDonacionTest {
 
