@@ -1,6 +1,5 @@
 package org.example.dominio.beneficiario;
 
-import java.time.LocalDate;
 import java.util.UUID;
 import org.example.dominio.catalogo.Subcategoria;
 
@@ -28,5 +27,25 @@ public abstract class Necesidad {
 
   public String getId() {
     return id;
+  }
+
+  public String getDescripcion() {
+    return descripcion;
+  }
+
+  public int getCantidadObjetivo() {
+    return cantidadObjetivo;
+  }
+
+  public int getCantidadCubierta() {
+    return cantidadCubierta;
+  }
+
+  public int getCantidadPendiente() {
+    return cantidadObjetivo - cantidadCubierta;
+  }
+
+  public Subcategoria getSubcategoria() {
+    return subcategoria;
   }
 }

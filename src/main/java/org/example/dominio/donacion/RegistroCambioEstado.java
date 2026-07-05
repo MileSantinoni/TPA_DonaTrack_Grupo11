@@ -10,7 +10,7 @@ public class RegistroCambioEstado {
   private String justificativo;
 
   public RegistroCambioEstado(EstadoDonacion estadoAnterior, EstadoDonacion estadoNuevo, String justificativo) {
-    this.estadoAnterior = estadoAnterior;
+    this.estadoAnterior = estadoAnterior; //podría ser una lista de estados anteriores
     this.estadoNuevo = estadoNuevo;
     this.justificativo = justificativo;
     this.fechaYHora = LocalDateTime.now();
@@ -23,7 +23,7 @@ public class RegistroCambioEstado {
   public LocalDateTime getFechaYHora() { return fechaYHora;}
 
   public String getJustificativo() { return justificativo;}
-  
-  
+
+
 }
 
