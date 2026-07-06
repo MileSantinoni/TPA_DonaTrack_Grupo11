@@ -34,14 +34,15 @@ public class AlgoritmoCompatibilidadSemanticaTest {
     EntidadBeneficiaria sobraPoco = entidadConNecesidad("Entidad sobra poco", papa, 18);
     EntidadBeneficiaria sobraMucho = entidadConNecesidad("Entidad sobra mucho", papa, 10);
     EntidadBeneficiaria faltaPoco = entidadConNecesidad("Entidad falta poco", papa, 22);
-    EntidadBeneficiaria otraSubcategoria = entidadConNecesidad("Entidad camas", camas, 20);
 
     AlgoritmoCompatibilidadSemantica algoritmo = new AlgoritmoCompatibilidadSemantica();
 
-    List<CandidaturaBeneficiaria> candidaturas = algoritmo.proponer(
-        donacionPapa,
-        List.of(faltaPoco, sobraMucho, otraSubcategoria, exacta, sobraPoco)
-    );
+    List<CandidaturaBeneficiaria> candidaturas = algoritmo.proponer(List.of(
+        candidatura(donacionPapa, faltaPoco),
+        candidatura(donacionPapa, sobraMucho),
+        candidatura(donacionPapa, exacta),
+        candidatura(donacionPapa, sobraPoco)
+    ));
 
     assertEquals(4, candidaturas.size());
     assertEquals("Entidad exacta", candidaturas.get(0).getEntidad().getRazonSocial());
@@ -62,5 +63,9 @@ public class AlgoritmoCompatibilidadSemanticaTest {
 
     entidad.registrarNecesidad(necesidad);
     return entidad;
+  }
+
+  private CandidaturaBeneficiaria candidatura(Donacion donacion, EntidadBeneficiaria entidad) {
+    return new CandidaturaBeneficiaria(donacion, entidad, entidad.getNecesidades().get(0));
   }
 }

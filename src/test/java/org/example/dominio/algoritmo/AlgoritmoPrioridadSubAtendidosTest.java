@@ -30,6 +30,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
     LocalDate hoy = LocalDate.now();
     Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
     RepositorioAsignacionesDonacion repositorio = RepositorioAsignacionesDonacion.getInstance();
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
 
     EntidadBeneficiaria comedor = entidadConNecesidad("Comedor", alimentos);
     EntidadBeneficiaria escuela = entidadConNecesidad("Escuela", alimentos);
@@ -42,9 +43,12 @@ public class AlgoritmoPrioridadSubAtendidosTest {
 
     AlgoritmoPrioridadSubAtendidos algoritmo = new AlgoritmoPrioridadSubAtendidos(repositorio);
 
-    List<EntidadBeneficiaria> propuestas = algoritmo.proponer(List.of(comedor, escuela, hogar));
+    List<CandidaturaBeneficiaria> propuestas = algoritmo.proponer(candidaturasPara(
+        donacionAlimentos,
+        List.of(comedor, escuela, hogar)
+    ));
 
-    assertEquals(List.of(hogar, escuela, comedor), propuestas);
+    assertEquals(List.of(hogar, escuela, comedor), entidadesDe(propuestas));
   }
 
   @Test
@@ -52,6 +56,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
     LocalDate hoy = LocalDate.now();
     Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
     RepositorioAsignacionesDonacion repositorio = RepositorioAsignacionesDonacion.getInstance();
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
 
     EntidadBeneficiaria comedor = entidadConNecesidad("Comedor", alimentos);
     EntidadBeneficiaria escuela = entidadConNecesidad("Escuela", alimentos);
@@ -64,9 +69,12 @@ public class AlgoritmoPrioridadSubAtendidosTest {
 
     AlgoritmoPrioridadSubAtendidos algoritmo = new AlgoritmoPrioridadSubAtendidos(repositorio);
 
-    List<EntidadBeneficiaria> propuestas = algoritmo.proponer(List.of(comedor, escuela, hogar));
+    List<CandidaturaBeneficiaria> propuestas = algoritmo.proponer(candidaturasPara(
+        donacionAlimentos,
+        List.of(comedor, escuela, hogar)
+    ));
 
-    assertEquals(List.of(hogar, escuela, comedor), propuestas);
+    assertEquals(List.of(hogar, escuela, comedor), entidadesDe(propuestas));
   }
 
   @Test
@@ -88,15 +96,17 @@ public class AlgoritmoPrioridadSubAtendidosTest {
 
   @Test
   void proponeComoMaximoDiezEntidades() {
+    Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
     List<EntidadBeneficiaria> entidades = new ArrayList<>();
 
     for (int i = 1; i <= 12; i++) {
-      entidades.add(new EntidadBeneficiaria("Entidad " + i, "Direccion", "Telefono"));
+      entidades.add(entidadConNecesidad("Entidad " + i, alimentos));
     }
 
     AlgoritmoPrioridadSubAtendidos algoritmo = new AlgoritmoPrioridadSubAtendidos();
 
-    List<EntidadBeneficiaria> propuestas = algoritmo.proponer(entidades);
+    List<CandidaturaBeneficiaria> propuestas = algoritmo.proponer(candidaturasPara(donacionAlimentos, entidades));
 
     assertEquals(10, propuestas.size());
   }
@@ -118,5 +128,25 @@ public class AlgoritmoPrioridadSubAtendidosTest {
 
     entidad.registrarNecesidad(necesidad);
     return entidad;
+  }
+
+  private List<EntidadBeneficiaria> entidadesDe(List<CandidaturaBeneficiaria> candidaturas) {
+    List<EntidadBeneficiaria> entidades = new ArrayList<>();
+
+    for (CandidaturaBeneficiaria candidatura : candidaturas) {
+      entidades.add(candidatura.getEntidad());
+    }
+
+    return entidades;
+  }
+
+  private List<CandidaturaBeneficiaria> candidaturasPara(Donacion donacion, List<EntidadBeneficiaria> entidades) {
+    List<CandidaturaBeneficiaria> candidaturas = new ArrayList<>();
+
+    for (EntidadBeneficiaria entidad : entidades) {
+      candidaturas.add(new CandidaturaBeneficiaria(donacion, entidad, entidad.getNecesidades().get(0)));
+    }
+
+    return candidaturas;
   }
 }

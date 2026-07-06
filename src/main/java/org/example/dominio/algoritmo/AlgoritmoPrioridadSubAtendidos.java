@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class AlgoritmoPrioridadSubAtendidos {
-  private static final int LIMITE_ENTIDADES = 10;
+  private static final int LIMITE_CANDIDATURAS = 10;
   private final RepositorioAsignacionesDonacion repositorioAsignaciones;
 
   public AlgoritmoPrioridadSubAtendidos() {
@@ -21,32 +21,32 @@ public class AlgoritmoPrioridadSubAtendidos {
     this.repositorioAsignaciones = repositorioAsignaciones;
   }
 
-  public List<EntidadBeneficiaria> proponer(List<EntidadBeneficiaria> entidades) {
+  public List<CandidaturaBeneficiaria> proponer(List<CandidaturaBeneficiaria> candidaturas) {
     LocalDate fechaReferencia = LocalDate.now();
     LocalDate inicioTrimestre = fechaReferencia.minusMonths(3);
     List<AsignacionDonacion> asignacionesUltimoTrimestre =
         repositorioAsignaciones.buscarEntreFechas(inicioTrimestre, fechaReferencia);
 
-    List<EntidadBeneficiaria> entidadesOrdenadas = new ArrayList<>(entidades);
+    List<CandidaturaBeneficiaria> candidaturasOrdenadas = new ArrayList<>(candidaturas);
 
-    Collections.sort(entidadesOrdenadas, (e1, e2) ->
-        compararPorMenorAtencion(e1, e2, asignacionesUltimoTrimestre)
+    Collections.sort(candidaturasOrdenadas, (c1, c2) ->
+        compararPorMenorAtencion(c1, c2, asignacionesUltimoTrimestre)
     );
 
-    return entidadesOrdenadas.subList(0, Math.min(LIMITE_ENTIDADES, entidadesOrdenadas.size()));
+    return candidaturasOrdenadas.subList(0, Math.min(LIMITE_CANDIDATURAS, candidaturasOrdenadas.size()));
   }
 
-  private int compararPorMenorAtencion(EntidadBeneficiaria e1,
-                                       EntidadBeneficiaria e2,
+  private int compararPorMenorAtencion(CandidaturaBeneficiaria c1,
+                                       CandidaturaBeneficiaria c2,
                                        List<AsignacionDonacion> asignaciones) {
-    int recibidas1 = contarRecepciones(e1, asignaciones);
-    int recibidas2 = contarRecepciones(e2, asignaciones);
+    int recibidas1 = contarRecepciones(c1.getEntidad(), asignaciones);
+    int recibidas2 = contarRecepciones(c2.getEntidad(), asignaciones);
 
     if (recibidas1 != recibidas2) {
       return Integer.compare(recibidas1, recibidas2);
     }
 
-    return e1.getRazonSocial().compareToIgnoreCase(e2.getRazonSocial()); //Si tienen la misma cantidad desempatan por orden alfabetico
+    return c1.getEntidad().getRazonSocial().compareToIgnoreCase(c2.getEntidad().getRazonSocial());
   }
 
   private int contarRecepciones(EntidadBeneficiaria entidad,
