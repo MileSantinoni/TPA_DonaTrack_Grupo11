@@ -1,9 +1,7 @@
 package org.example.dominio.donacion;
 
-import java.util.UUID;
 import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
-import org.example.dominio.donante.Donante;
 
 import java.util.ArrayList;
 import java.time.LocalDate;
@@ -20,7 +18,7 @@ public class Donacion {
   private Subcategoria subcategoria;
   private LocalDate fechaVencimiento;
   private Estado estadoBien;
-  private EstadoDonacion estadoActual;
+  private EstadoDonacionState estadoActual;
   private List<RegistroCambioEstado> historialEstados;
 
   public Donacion(String descripcionGeneral, int cantidad, String unidadMedida,Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estadoBien) {
@@ -31,18 +29,23 @@ public class Donacion {
     this.subcategoria = subcategoria;
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
-    this.estadoActual = EstadoDonacion.EN_DEPOSITO;
+    this.estadoActual = new EstadoDonacionEnDeposito();
     this.historialEstados = new ArrayList<>();
   }
 
+
   public void cambiarEstado(EstadoDonacion nuevoEstado, String justificativo) {
-    RegistroCambioEstado registro = new RegistroCambioEstado(this.estadoActual, nuevoEstado, justificativo);
+    this.estadoActual.cambiarA(this, nuevoEstado, justificativo);
+  }
+
+  void aplicarCambioEstado(EstadoDonacionState nuevoEstado, String justificativo) {
+    RegistroCambioEstado registro = new RegistroCambioEstado(this.estadoActual.getNombre(), nuevoEstado.getNombre(), justificativo);
     this.historialEstados.add(registro);
     this.estadoActual = nuevoEstado;
   }
 
   public EstadoDonacion getEstadoActual() {
-    return estadoActual;
+    return estadoActual.getNombre();
   }
 
   public List<RegistroCambioEstado> getHistorialEstados() {
