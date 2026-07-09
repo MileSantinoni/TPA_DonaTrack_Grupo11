@@ -24,12 +24,43 @@ public class Donacion {
   private List<RegistroCambioEstado> historialEstados;
   private Donante donante;
 
-  public Donacion(String descripcionGeneral, int cantidad, String unidadMedida,Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estadoBien,Donante donante) {
-    this.id = UUID.randomUUID().toString(); //no se agrega en el constructor sino que es random, no hay que pasarselo
+  public Donacion(
+      String descripcionGeneral,
+      int cantidad,
+      String unidadMedida,
+      Subcategoria subcategoria,
+      LocalDate fechaVencimiento,
+      Estado estadoBien,
+      Donante donante
+  ) {
+    this(
+        descripcionGeneral,
+        cantidad,
+        unidadMedida,
+        subcategoria,
+        LocalDate.now(),
+        fechaVencimiento,
+        estadoBien,
+        donante
+    );
+  }
+
+  public Donacion(
+      String descripcionGeneral,
+      int cantidad,
+      String unidadMedida,
+      Subcategoria subcategoria,
+      LocalDate fechaDeRegistro,
+      LocalDate fechaVencimiento,
+      Estado estadoBien,
+      Donante donante
+  ) {
+    this.id = UUID.randomUUID().toString();
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
     this.subcategoria = subcategoria;
+    this.fechaDeRegistro = fechaDeRegistro;
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
     this.estadoActual = new EstadoDonacionEnDeposito();
