@@ -34,6 +34,7 @@ public class RegistroDonacion {
           bien.getCantidad(),
           bien.getUnidadMedida(),
           bien.getSubcategoria(),
+          this.fechaDeRegistro,
           bien.getFechaVencimiento(),
           bien.getEstado(),
           donante

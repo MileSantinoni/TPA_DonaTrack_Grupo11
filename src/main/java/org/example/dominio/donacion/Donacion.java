@@ -17,6 +17,7 @@ public class Donacion {
   private int cantidad;
   private String unidadMedida;
   private Subcategoria subcategoria;
+  private LocalDate fechaDeRegistro;
   private LocalDate fechaVencimiento;
   private Estado estadoBien;
   private EstadoDonacionState estadoActual;
@@ -65,6 +66,10 @@ public class Donacion {
 
   public Subcategoria getSubcategoria() {
     return subcategoria;
+  }
+
+  public LocalDate getFechaDeRegistro() {
+    return fechaDeRegistro;
   }
 
   public LocalDate getFechaVencimiento(){

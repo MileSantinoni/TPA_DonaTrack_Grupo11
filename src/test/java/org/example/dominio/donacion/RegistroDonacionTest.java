@@ -72,6 +72,8 @@ public class RegistroDonacionTest {
     assertEquals("Mesa rectangular usada", donaciones.get(1).getDescripcionGeneral());
     assertEquals(1, donaciones.get(1).getCantidad());
     assertEquals(mesa, donaciones.get(1).getSubcategoria());
+    assertEquals(registro.getFechaDeRegistro(), donaciones.get(0).getFechaDeRegistro());
+    assertEquals(registro.getFechaDeRegistro(), donaciones.get(1).getFechaDeRegistro());
 
 
   }
