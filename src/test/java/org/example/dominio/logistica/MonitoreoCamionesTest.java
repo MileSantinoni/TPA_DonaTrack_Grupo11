@@ -145,6 +145,27 @@ public class MonitoreoCamionesTest {
   }
 
   @Test
+  public void alIniciarRutaConUbicacionDepositoElCamionParteDesdeDeposito() {
+    Camion camionConDeposito = new Camion("CD456EF", 20.0, 2.5, 3500.0);
+    UbicacionCamion ubicacionDeposito = new UbicacionCamion(
+        -34.60,
+        -58.38,
+        0.0,
+        LocalDateTime.now()
+    );
+    Ruta rutaConDeposito = new Ruta(camionConDeposito, ubicacionDeposito);
+
+    monitor.registrarRuta(rutaConDeposito);
+    rutaConDeposito.iniciar();
+
+    UbicacionCamion ubicacionActual = monitor.ubicacionActual("CD456EF");
+
+    assertEquals(-34.60, ubicacionActual.getLatitud());
+    assertEquals(-58.38, ubicacionActual.getLongitud());
+    assertEquals(0.0, ubicacionActual.getVelocidad());
+  }
+
+  @Test
   public void elAvanceReflejaLasEntregasCompletadas() {
     ruta.iniciar();
     ruta.getEntregas().get(0).marcarEntregada(camion);

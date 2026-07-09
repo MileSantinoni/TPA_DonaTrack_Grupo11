@@ -6,6 +6,8 @@ import java.util.List;
 public class RutaRequest {
 
   private String patente;
+  private Double latitudDeposito;
+  private Double longitudDeposito;
   private List<EntregaRequest> entregas;
 
   public String getPatente() {
@@ -14,6 +16,22 @@ public class RutaRequest {
 
   public void setPatente(String patente) {
     this.patente = patente;
+  }
+
+  public Double getLatitudDeposito() {
+    return latitudDeposito;
+  }
+
+  public void setLatitudDeposito(Double latitudDeposito) {
+    this.latitudDeposito = latitudDeposito;
+  }
+
+  public Double getLongitudDeposito() {
+    return longitudDeposito;
+  }
+
+  public void setLongitudDeposito(Double longitudDeposito) {
+    this.longitudDeposito = longitudDeposito;
   }
 
   public List<EntregaRequest> getEntregas() {

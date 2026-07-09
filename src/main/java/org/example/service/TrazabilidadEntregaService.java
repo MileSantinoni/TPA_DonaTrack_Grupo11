@@ -21,6 +21,7 @@ public class TrazabilidadEntregaService {
 
   public void iniciarRuta(Ruta ruta) {
     ruta.iniciar();
+    boolean seInicioAlgunaEntrega = false;
 
     for (Entrega entrega : ruta.getEntregas()) {
       if (entrega.getEstado() == EstadoEntrega.PENDIENTE) {
@@ -31,9 +32,13 @@ public class TrazabilidadEntregaService {
             "El chofer inició la ruta"
         );
 
-        notificacionesService.notificarInicioRuta(ruta);
+        seInicioAlgunaEntrega = true;
 
       }
+    }
+
+    if (seInicioAlgunaEntrega) {
+      notificacionesService.notificarInicioRuta(ruta);
     }
   }
 

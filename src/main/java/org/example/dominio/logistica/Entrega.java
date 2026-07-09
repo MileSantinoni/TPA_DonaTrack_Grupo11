@@ -1,5 +1,6 @@
 package org.example.dominio.logistica;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
 import org.example.dominio.donacion.Donacion;
@@ -19,6 +20,7 @@ public class Entrega {
     this.destino = destino;
     this.orden = orden;
     this.estado = EstadoEntrega.PENDIENTE;
+    this.fotosRecepcion = new ArrayList<>();
   }
 
   public void marcarEnTraslado() {
