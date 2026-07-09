@@ -1,5 +1,7 @@
 package org.example.dominio.notificacion;
 
+import org.example.dominio.beneficiario.EntidadBeneficiaria;
+import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
@@ -32,6 +34,18 @@ public class Notificador {
     return tipoNotificacion.enviar(destinatario, mensaje);
   }
 
+  public Notificacion notificarEntidadBeneficiaria(EntidadBeneficiaria entidad, String mensaje) {
+    String emailRepresentante = buscarEmailRepresentante(entidad);
+
+    if (emailRepresentante != null) {
+      TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
+      return email.enviar(emailRepresentante, mensaje);
+    }
+
+    TipoNotificacion sms = estrategias.get(TipoContactoPredeterminado.TELEFONO);
+    return sms.enviar(entidad.getTelefono(), mensaje);
+  }
+
   public Notificacion notificarPorEmail(String destinatario, String mensaje) {
     TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
     return email.enviar(destinatario, mensaje);
@@ -62,6 +76,16 @@ public class Notificador {
     for (MedioContacto medio : medios) {
       if (medio.getTipo() == tipoMedio) {
         return medio.getNumero();
+      }
+    }
+
+    return null;
+  }
+
+  private String buscarEmailRepresentante(EntidadBeneficiaria entidad) {
+    for (Representante representante : entidad.getRepresentantes()) {
+      if (representante.getEmail() != null && !representante.getEmail().isBlank()) {
+        return representante.getEmail();
       }
     }
 

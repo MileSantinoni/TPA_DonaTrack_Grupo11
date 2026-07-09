@@ -1,5 +1,7 @@
 package org.example.dominio.notificacion;
 
+import org.example.dominio.beneficiario.EntidadBeneficiaria;
+import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.donante.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -185,6 +187,43 @@ public class NotificacionTest {
     );
 
     assertEquals("+5491198765432", resultado.getDestinatario());
+    assertEquals(EstadoNotificacion.COMPLETADA, resultado.getEstado());
+  }
+
+  @Test
+  public void notificarEntidadBeneficiariaUsaElEmailDeSuRepresentante() {
+    EntidadBeneficiaria entidad = new EntidadBeneficiaria(
+        "Comedor Sol",
+        "Av. Siempreviva 742",
+        "1140001111"
+    );
+    entidad.agregarRepresentante(
+        new Representante("Ana", "Gomez", "ana@comedorsol.org")
+    );
+
+    Notificacion resultado = notificador.notificarEntidadBeneficiaria(
+        entidad,
+        "La entrega inicio su recorrido"
+    );
+
+    assertEquals("ana@comedorsol.org", resultado.getDestinatario());
+    assertEquals(EstadoNotificacion.COMPLETADA, resultado.getEstado());
+  }
+
+  @Test
+  public void notificarEntidadBeneficiariaUsaTelefonoSiNoTieneRepresentanteConEmail() {
+    EntidadBeneficiaria entidad = new EntidadBeneficiaria(
+        "Comedor Sol",
+        "Av. Siempreviva 742",
+        "1140001111"
+    );
+
+    Notificacion resultado = notificador.notificarEntidadBeneficiaria(
+        entidad,
+        "La entrega inicio su recorrido"
+    );
+
+    assertEquals("1140001111", resultado.getDestinatario());
     assertEquals(EstadoNotificacion.COMPLETADA, resultado.getEstado());
   }
 }
