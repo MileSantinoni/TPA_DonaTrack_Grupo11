@@ -148,24 +148,26 @@ class Donante {
 }
 
 class Donacion {
-  +String id
-  +String descripcionGeneral
-  +int Cantidad
-  +UnidadMedida unidadMedida
-  +Subcategoria subcategoria
-  +Date fechaVencimiento
-  +CondicionBien condicionBien
-  +EstadoDonacion estadoActual
-  +List<RegistroCambioEstado> historialEstados
-  +registrarJustificativo()
-  +cambiarEstado()
+  -String id
+  -String descripcionGeneral
+  -int cantidad
+  -String unidadMedida
+  -Subcategoria subcategoria
+  -LocalDate fechaVencimiento
+  -Estado estadoBien
+  -EstadoDonacionState estadoActual
+  -List<RegistroCambioEstado> historialEstados
+
+  +cambiarEstado(nuevoEstado: EstadoDonacion, justificativo: String)
+  +getEstadoActual(): EstadoDonacion
+  +getHistorialEstados(): List<RegistroCambioEstado>
 }
 
 class RegistroCambioEstado {
-  +EstadoDonacion estadoAnterior
-  +EstadoDonacion estadoActual
-  +Date fechayhora
-  +String justificativo
+  -EstadoDonacion estadoAnterior
+  -EstadoDonacion estadoActual
+  -LocalDateTime fechaHora
+  -String justificativo
 }
 
 class "Necesidad" as Necesidad {
@@ -243,6 +245,68 @@ class SMS{
 class WhatsApp{
   +enviar()
 }
+
+' -------------------------
+' Logistica trazabilidad
+' -------------------------
+class ServicioTrazabilidadEntrega {
+  +iniciarRuta(ruta: Ruta)
+  +confirmarEntrega(entrega: Entrega)
+  +marcarNoRecibida(entrega: Entrega, motivo: String)
+}
+
+ServicioTrazabilidadEntrega ..> Ruta
+ServicioTrazabilidadEntrega ..> Entrega
+ServicioTrazabilidadEntrega ..> Donacion : actualiza estado
+ServicioTrazabilidadEntrega ..> Notificador : notifica eventos
+
+' -------------------------
+' Logistica Entrega
+' -------------------------
+enum EstadoEntrega {
+  PENDIENTE
+  EN_TRASLADO
+  ENTREGADA
+  NO_RECIBIDA
+}
+
+class Camion {
+  -String id
+  -String patente
+  -double capacidadVolumenM3
+  -double alturaM
+  -double capacidadCargaKg
+}
+
+class Ruta {
+  -Camion camion
+  -List<Entrega> entregas
+  -boolean activa
+
+  +agregarEntrega(entrega: Entrega)
+  +iniciar()
+  +porcentajeAvance(): double
+}
+
+class Entrega {
+  -EntidadBeneficiaria destino
+  -int orden
+  -EstadoEntrega estado
+  -Donacion donacion
+
+  +marcarEnTraslado()
+  +marcarEntregada()
+  +marcarNoRecibida()
+  +fueResuelta(): boolean
+}
+
+Ruta "1" --> "1" Camion
+Ruta "1" *-- "0..*" Entrega
+Entrega --> EstadoEntrega
+Entrega --> EntidadBeneficiaria
+Entrega --> Donacion : donacion entregada
+
+
 
 ' -------------------------
 ' RELACIONES (group_0)

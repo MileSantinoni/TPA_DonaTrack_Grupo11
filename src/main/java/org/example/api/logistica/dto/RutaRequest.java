@@ -26,10 +26,19 @@ public class RutaRequest {
 
   public static class EntregaRequest {
 
+    private String idDonacion;
     private String razonSocial;
     private String direccion;
     private String telefono;
     private int orden;
+
+    public String getIdDonacion() {
+      return idDonacion;
+    }
+
+    public void setIdDonacion(String idDonacion) {
+      this.idDonacion = idDonacion;
+    }
 
     public String getRazonSocial() {
       return razonSocial;

@@ -9,6 +9,10 @@ import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donacion.Donacion;
+import org.example.dominio.donante.Donante;
+import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +24,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AlgoritmoPrioridadSubAtendidosTest {
 
+  private Donante donanteDummy() {
+    return new PersonaHumana(
+        "donante@test.com",
+        "12345678",
+        TipoDocumento.DNI,
+        "Donante",
+        "Test",
+        30,
+        Genero.OTRO,
+        "Direccion test"
+    );
+  }
+
   @BeforeEach
   void limpiarRepositorio() {
     RepositorioAsignacionesDonacion.getInstance().limpiar();
@@ -30,7 +47,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
     LocalDate hoy = LocalDate.now();
     Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
     RepositorioAsignacionesDonacion repositorio = RepositorioAsignacionesDonacion.getInstance();
-    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO,donanteDummy());
 
     EntidadBeneficiaria comedor = entidadConNecesidad("Comedor", alimentos);
     EntidadBeneficiaria escuela = entidadConNecesidad("Escuela", alimentos);
@@ -56,7 +73,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
     LocalDate hoy = LocalDate.now();
     Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
     RepositorioAsignacionesDonacion repositorio = RepositorioAsignacionesDonacion.getInstance();
-    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO,donanteDummy());
 
     EntidadBeneficiaria comedor = entidadConNecesidad("Comedor", alimentos);
     EntidadBeneficiaria escuela = entidadConNecesidad("Escuela", alimentos);
@@ -97,7 +114,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
   @Test
   void proponeComoMaximoDiezEntidades() {
     Subcategoria alimentos = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
-    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO);
+    Donacion donacionAlimentos = new Donacion("Alimentos", 1, "UNIDAD", alimentos, null, Estado.NUEVO,donanteDummy());
     List<EntidadBeneficiaria> entidades = new ArrayList<>();
 
     for (int i = 1; i <= 12; i++) {
@@ -112,7 +129,7 @@ public class AlgoritmoPrioridadSubAtendidosTest {
   }
 
   private AsignacionDonacion asignacionPara(EntidadBeneficiaria entidad, Subcategoria subcategoria, LocalDate fecha) {
-    Donacion donacion = new Donacion("Alimentos", 1, "UNIDAD", subcategoria, null, Estado.NUEVO);
+    Donacion donacion = new Donacion("Alimentos", 1, "UNIDAD", subcategoria, null, Estado.NUEVO,donanteDummy());
     return new AsignacionDonacion(donacion, entidad, entidad.getNecesidades().get(0), fecha);
   }
 

@@ -1,14 +1,21 @@
 package org.example.dominio.logistica;
 
+import java.util.List;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
+import org.example.dominio.donacion.Donacion;
+import org.example.dominio.donacion.EstadoDonacion;
 
 public class Entrega {
 
+  private Donacion donacion;
   private EntidadBeneficiaria destino;
-  private int orden; // posición dentro de la ruta
+  private Camion camionResponsable;
+  private int orden;
   private EstadoEntrega estado;
+  private List<String> fotosRecepcion;
 
-  public Entrega(EntidadBeneficiaria destino, int orden) {
+  public Entrega(Donacion donacion, EntidadBeneficiaria destino, int orden) {
+    this.donacion = donacion;
     this.destino = destino;
     this.orden = orden;
     this.estado = EstadoEntrega.PENDIENTE;
@@ -18,12 +25,21 @@ public class Entrega {
     this.estado = EstadoEntrega.EN_TRASLADO;
   }
 
-  public void marcarEntregada() {
+  public void marcarEntregada(Camion camion) {
     this.estado = EstadoEntrega.ENTREGADA;
+    this.camionResponsable = camion;
   }
 
   public void marcarNoRecibida() {
     this.estado = EstadoEntrega.NO_RECIBIDA;
+  }
+
+  public void volverAPendiente() {
+    this.estado = EstadoEntrega.PENDIENTE;
+  }
+
+  public void agregarFotoRecepcion(String fotoUrl) {
+    this.fotosRecepcion.add(fotoUrl);
   }
 
   public boolean fueResuelta() {
@@ -34,6 +50,10 @@ public class Entrega {
       return true;
     }
     return false;
+  }
+
+  public Donacion getDonacion() {
+    return donacion;
   }
 
   public EntidadBeneficiaria getDestino() {

@@ -1,4 +1,4 @@
-package org.example.api.logistica;
+package org.example.service;
 
 import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.MonitorCamiones;

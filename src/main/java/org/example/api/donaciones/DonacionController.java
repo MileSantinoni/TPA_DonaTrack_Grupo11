@@ -1,11 +1,13 @@
 package org.example.api.donaciones;
 
 import org.example.Repositorios.RepositorioDonaciones;
+import org.example.Repositorios.RepositorioDonantes;
 import org.example.api.donaciones.dto.CambioEstadoRequest;
 import org.example.api.donaciones.dto.DonacionRequest;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
+import org.example.dominio.donante.Donante;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class DonacionController {
 
   private final RepositorioDonaciones repositorio = RepositorioDonaciones.getInstance();
+  private final RepositorioDonantes repositorioDonantes = RepositorioDonantes.getInstance();
 
 
   @GetMapping
@@ -39,6 +42,14 @@ public class DonacionController {
     //simulacionnnnnnnnn
     Subcategoria subcategoriaMock = new Subcategoria(request.getIdSubcategoria(), "Mock", TipoAtributo.NO_PERECEDERO);
 
+    Optional<Donante> donanteOpt = repositorioDonantes.buscarPorId(request.getIdDonante());
+
+    if (donanteOpt.isEmpty()) {
+      return ResponseEntity
+          .status(HttpStatus.NOT_FOUND)
+          .body("No existe el donante: " + request.getIdDonante());
+    }
+
 
     Donacion nuevaDonacion = new Donacion(
         request.getDescripcionGeneral(),
@@ -46,7 +57,8 @@ public class DonacionController {
         request.getUnidadMedida(),
         subcategoriaMock,
         request.getFechaVencimiento(),
-        request.getEstadoBien()
+        request.getEstadoBien(),
+        donanteOpt.get()
     );
 
     repositorio.agregar(nuevaDonacion);

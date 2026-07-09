@@ -35,7 +35,8 @@ public class RegistroDonacion {
           bien.getUnidadMedida(),
           bien.getSubcategoria(),
           bien.getFechaVencimiento(),
-          bien.getEstado()
+          bien.getEstado(),
+          donante
       );
 
       donaciones.add(donacion);
