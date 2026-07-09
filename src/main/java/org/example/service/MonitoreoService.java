@@ -1,38 +1,16 @@
 package org.example.service;
 
-import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.MonitorCamiones;
 import org.example.dominio.logistica.ReporteUbicacion;
 import org.example.dominio.logistica.Ruta;
 import org.example.dominio.logistica.UbicacionCamion;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-
-// Une la capa REST con el dominio: guarda la flota y el monitor en memoria.
+// Une la capa REST con el dominio para monitorear rutas y ubicaciones.
 @Service
 public class MonitoreoService {
 
   private final MonitorCamiones monitor = new MonitorCamiones();
-  private final List<Camion> flota = new ArrayList<>();
-
-  public void registrarCamion(Camion camion) {
-    flota.add(camion);
-  }
-
-  public Camion buscarCamion(String patente) {
-    for (Camion camion : flota) {
-      if (camion.getPatente().equals(patente)) {
-        return camion;
-      }
-    }
-    return null;
-  }
-
-  public List<Camion> getFlota() {
-    return flota;
-  }
 
   public void registrarRuta(Ruta ruta) {
     monitor.registrarRuta(ruta);

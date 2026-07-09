@@ -1,5 +1,6 @@
 package org.example.api.logistica;
 
+import org.example.Repositorios.RepositorioCamiones;
 import org.example.api.logistica.dto.AvanceResponse;
 import org.example.api.logistica.dto.CamionRequest;
 import org.example.api.logistica.dto.ReporteUbicacionRequest;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 public class CamionController {
 
   private final MonitoreoService servicio;
+  private final RepositorioCamiones repositorioCamiones = RepositorioCamiones.getInstance();
 
   public CamionController(MonitoreoService servicio) {
     this.servicio = servicio;
@@ -37,7 +39,7 @@ public class CamionController {
         request.getCapacidadVolumen(),
         request.getAltura(),
         request.getCapacidadCarga());
-    servicio.registrarCamion(camion);
+    repositorioCamiones.agregar(camion);
     return ResponseEntity.status(HttpStatus.CREATED).body("Camion registrado: " + camion.getPatente());
   }
 

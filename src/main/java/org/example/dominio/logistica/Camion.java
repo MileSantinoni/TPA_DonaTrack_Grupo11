@@ -7,6 +7,7 @@ public class Camion {
   private double altura; // m
   private double capacidadCarga; // kg
   private UbicacionCamion ultimaUbicacion;
+  private boolean disponible;
 
   public Camion(String patente, double capacidadVolumen, double altura, double capacidadCarga) {
     this.patente = patente;
@@ -14,10 +15,27 @@ public class Camion {
     this.altura = altura;
     this.capacidadCarga = capacidadCarga;
     this.ultimaUbicacion = null;
+    this.disponible = true;
   }
 
   public void actualizarUbicacion(UbicacionCamion ubicacion) {
     this.ultimaUbicacion = ubicacion;
+  }
+
+  public void establecerUbicacionInicial(UbicacionCamion ubicacionInicial) {
+    this.ultimaUbicacion = ubicacionInicial;
+  }
+
+  public boolean estaDisponible() {
+    return disponible;
+  }
+
+  public void marcarDisponible() {
+    this.disponible = true;
+  }
+
+  public void marcarNoDisponible() {
+    this.disponible = false;
   }
 
   public String getPatente() {

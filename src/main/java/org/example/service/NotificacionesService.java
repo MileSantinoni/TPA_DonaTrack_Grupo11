@@ -27,7 +27,7 @@ public class NotificacionesService {
     this.notificador = notificador;
   }
 
-  //Esta tarea se ejecutará automáticamente todos los días a las 09:00 AM.
+  // Esta tarea se ejecuta automaticamente todos los dias a las 09:00 AM.
   @Scheduled(cron = "0 0 9 * * ?")
   public void verificarAusenciaDonantes() {
     LocalDate hoy = LocalDate.now();
@@ -45,9 +45,9 @@ public class NotificacionesService {
 
         long diasInactivo = ChronoUnit.DAYS.between(ultimaFechaDeInteraccion.get(), hoy);
 
-        // Si pusiéramos "> 20", el sistema le mandaría un mensaje todos los días de su vida a partir del día 21.
+        // Si usaramos "> 20", se mandaria un mensaje todos los dias a partir del dia 21.
         if (diasInactivo == 21) {
-          String mensaje = "¡Hola! Te extrañamos. Notamos que hace más de 20 días no registrás interacción en nuestra plataforma. ¿Te gustaría realizar una nueva donación y seguir ayudando?";
+          String mensaje = "Hola! Te extranamos. Notamos que hace mas de 20 dias no registras interaccion en nuestra plataforma. Te gustaria realizar una nueva donacion y seguir ayudando?";
 
           notificador.notificarDonante(donante, mensaje);
         }
@@ -57,24 +57,36 @@ public class NotificacionesService {
 
   public void notificarInicioRuta(Ruta ruta) {
     for (Entrega entrega : ruta.getEntregas()) {
+      notificador.notificarEntidadBeneficiaria(
+          entrega.getDestino(),
+          "Tu envio ya esta en camino. Podes seguirlo en el mapa interactivo."
+      );
       notificador.notificarDonante(
           entrega.getDonacion().getDonante(),
-          "Tu donación inició su recorrido. Podés seguir la entrega en el mapa interactivo."
+          "Tu donacion ya esta en camino. Podes seguir el envio en el mapa interactivo."
       );
     }
   }
 
   public void notificarEntregaExitosa(Entrega entrega) {
+    notificador.notificarEntidadBeneficiaria(
+        entrega.getDestino(),
+        "El envio fue recibido correctamente. Se genero el comprobante de entrega."
+    );
     notificador.notificarDonante(
         entrega.getDonacion().getDonante(),
-        "Tu donación fue entregada correctamente. Se generó el comprobante de entrega."
+        "Tu donacion fue entregada correctamente. Se genero el comprobante de entrega."
     );
   }
 
   public void notificarEntregaNoRecibida(Entrega entrega, String motivo) {
+    notificador.notificarEntidadBeneficiaria(
+        entrega.getDestino(),
+        "No se pudo concretar la recepcion del envio. Motivo: " + motivo
+    );
     notificador.notificarDonante(
         entrega.getDonacion().getDonante(),
-        "No se pudo concretar la entrega de tu donación. Motivo: " + motivo
+        "No se pudo concretar la entrega de tu donacion. Motivo: " + motivo
     );
   }
 }
