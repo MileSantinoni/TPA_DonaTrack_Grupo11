@@ -4,21 +4,23 @@ import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
+import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class Notificador {
 
   private final Map<TipoContactoPredeterminado, TipoNotificacion> estrategias;
 
-  public Notificador() {
+  public Notificador(Email email, SMS sms, WhatsApp whatsApp) {
     this.estrategias = new EnumMap<>(TipoContactoPredeterminado.class);
 
-    estrategias.put(TipoContactoPredeterminado.MAIL, new Email());
-    estrategias.put(TipoContactoPredeterminado.TELEFONO, new SMS());
-    estrategias.put(TipoContactoPredeterminado.WHATSAPP, new WhatsApp());
+    estrategias.put(TipoContactoPredeterminado.MAIL, email);
+    estrategias.put(TipoContactoPredeterminado.TELEFONO, sms);
+    estrategias.put(TipoContactoPredeterminado.WHATSAPP, whatsApp);
   }
 
   public Notificacion notificarDonante(Donante donante, String mensaje) {
@@ -30,6 +32,11 @@ public class Notificador {
     return tipoNotificacion.enviar(destinatario, mensaje);
   }
 
+  public Notificacion notificarPorEmail(String destinatario, String mensaje) {
+    TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
+    return email.enviar(destinatario, mensaje);
+  }
+
   private String resolverDestinatario(Donante donante) {
     TipoContactoPredeterminado tipo = donante.getContactoPredeterminado();
 
@@ -37,13 +44,10 @@ public class Notificador {
       return donante.getMail();
     }
 
-    TipoMedioContacto tipoMedio;
-
-    if (tipo == TipoContactoPredeterminado.WHATSAPP) {
-      tipoMedio = TipoMedioContacto.WHATSAPP;
-    } else {
-      tipoMedio = TipoMedioContacto.TELEFONO;
-    }
+    TipoMedioContacto tipoMedio =
+        tipo == TipoContactoPredeterminado.WHATSAPP
+            ? TipoMedioContacto.WHATSAPP
+            : TipoMedioContacto.TELEFONO;
 
     String numero = buscarNumero(donante.getMediosDeContacto(), tipoMedio);
 
@@ -62,10 +66,5 @@ public class Notificador {
     }
 
     return null;
-  }
-
-  public Notificacion notificarPorEmail(String destinatario, String mensaje) {
-    TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
-    return email.enviar(destinatario, mensaje);
   }
 }

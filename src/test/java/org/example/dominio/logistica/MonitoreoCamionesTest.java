@@ -10,6 +10,12 @@ import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.PersonaHumana;
 import org.example.dominio.donante.TipoDocumento;
+import org.example.dominio.notificacion.Email;
+import org.example.dominio.notificacion.Notificacion;
+import org.example.dominio.notificacion.Notificador;
+import org.example.dominio.notificacion.SMS;
+import org.example.dominio.notificacion.TipoNotificacion;
+import org.example.dominio.notificacion.WhatsApp;
 import org.example.service.NotificacionesService;
 import org.example.service.TrazabilidadEntregaService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +30,26 @@ public class MonitoreoCamionesTest {
   private MonitorCamiones monitor;
   private Camion camion;
   private Ruta ruta;
+
+  private NotificacionesService notificacionesServiceFake() {
+    Email emailFake = new Email(null) {
+      @Override
+      public Notificacion enviar(String destinatario, String mensaje) {
+        Notificacion notificacion = new Notificacion(destinatario, mensaje);
+        notificacion.marcarComoCompletada();
+        return notificacion;
+      }
+    };
+
+    Notificador notificador = new Notificador(
+        emailFake,
+        new SMS(),
+        new WhatsApp()
+    );
+
+    return new NotificacionesService(notificador);
+  }
+
 
   @BeforeEach
   public void setUp() {
@@ -109,7 +135,7 @@ public class MonitoreoCamionesTest {
   @Test
   public void alIniciarLaRutaLasEntregasPasanAEnTraslado() {
     TrazabilidadEntregaService trazabilidadService =
-        new TrazabilidadEntregaService(new NotificacionesService());
+        new TrazabilidadEntregaService(notificacionesServiceFake());
 
     trazabilidadService.iniciarRuta(ruta);
 

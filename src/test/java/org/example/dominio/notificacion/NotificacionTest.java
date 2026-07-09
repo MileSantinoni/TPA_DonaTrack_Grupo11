@@ -10,6 +10,23 @@ public class NotificacionTest {
 
   private Notificador notificador;
 
+  public Notificador notificadorMock() {
+    Email emailFake = new Email(null) {
+      @Override
+      public Notificacion enviar(String destinatario, String mensaje) {
+        Notificacion notificacion = new Notificacion(destinatario, mensaje);
+        notificacion.marcarComoCompletada();
+        return notificacion;
+      }
+    };
+
+    return new Notificador(
+        emailFake,
+        new SMS(),
+        new WhatsApp()
+    );
+  }
+
   static class DonanteTest extends Donante {
     public DonanteTest(String mail, String nroDoc, TipoDocumento tipo) {
       super(mail, nroDoc, tipo);
@@ -18,7 +35,7 @@ public class NotificacionTest {
 
   @BeforeEach
   public void setUp() {
-    notificador = new Notificador();
+    notificador = notificadorMock();
   }
 
   @Test
@@ -48,7 +65,15 @@ public class NotificacionTest {
 
   @Test
   public void elEmailEnviaYMarcaLaNotificacionComoCompletada() {
-    TipoNotificacion email = new Email();
+
+    TipoNotificacion email = new Email(null) {
+      @Override
+      public Notificacion enviar(String destinatario, String mensaje) {
+        Notificacion notificacion = new Notificacion(destinatario, mensaje);
+        notificacion.marcarComoCompletada();
+        return notificacion;
+      }
+    };
 
     Notificacion resultado = email.enviar(
         "pepito@gmail.com",
