@@ -36,6 +36,11 @@ enum UnidadMedida {
   PAQUETE
 }
 
+enum Estado {
+  NUEVO
+  USADO
+}
+
 enum EstadoDonacion {
   DEPOSITO
   ASIGNACION_REALIZADA
@@ -77,31 +82,27 @@ class "Registro Donacion" as RegistroDonacion {
   +String id
   +String descripcionGeneral
   +Donante donante
-  +Date fechaDeRegistro
+  +LocalDate fechaDeRegistro
   +List<Bien> listaBienes
-  +agregarBien(Bien)
+  +agregarBien(bien: Bien)
   +segmentar() : List<Donacion>
+  +getDonante() : Donante
+  +getFechaDeRegistro() : LocalDate
 }
 
 class Bien {
   +String id
   +String descripcion
-  +String fotoURL
+  +String foto
   +Int cantidad
-  +UnidadMedida unidadMedida
+  +String unidadMedida
   +Subcategoria subcategoria
+  +LocalDate fechaVencimiento
+  +Estado estado
 }
 
-class BienPerecedero {
-  -Date fechaVencimiento
-}
 
-class BienEstandar {
-}
 
-class BienConEstado {
-  -Estado estado
-}
 
 class Representantes {
   +String nombre
@@ -155,12 +156,12 @@ class Donacion {
   -Subcategoria subcategoria
   -LocalDate fechaVencimiento
   -Estado estadoBien
-  -EstadoDonacionState estadoActual
+  -EstadoDonacion estadoActual
   -List<RegistroCambioEstado> historialEstados
-
   +cambiarEstado(nuevoEstado: EstadoDonacion, justificativo: String)
   +getEstadoActual(): EstadoDonacion
   +getHistorialEstados(): List<RegistroCambioEstado>
+
 }
 
 class RegistroCambioEstado {
@@ -189,13 +190,7 @@ class "Necesidad Extraordinaria" as NecesidadExtraordinaria {
   +String motivo
 }
 
-class Administrador {
-  +String id
-  +String nombre
-  +String mail
-  +registrarDonante()
-  +marcarDonacionComoVencida()
-}
+
 
 class Notificador {
   -TipoNotificacion tipoNotificacion
@@ -212,7 +207,11 @@ class "EntidadBeneficiaria" as EntidadBeneficiaria {
   +String direccion
   +String telefono
   +List<Representante> representantes
+  +List<Necesidad> necesidades
   +registrarNecesidades()
+  +setRazonSocial(razonSocial: String)
+  +setDireccion(direccion: String)
+  +setTelefono(telefono: String)
 }
 
 class "Persona Humana" as PersonaHumana {
@@ -293,6 +292,78 @@ Entrega --> EntidadBeneficiaria
 Entrega --> Donacion : donacion entregada
 
 
+' -------------------------
+' REPOSITORIOS Y SERVICIOS
+' -------------------------
+class RepositorioDonantes {
+-{static} RepositorioDonantes instancia
+-List<Donante> donantes
++{static} getInstance(): RepositorioDonantes
++agregar(donante: Donante)
++buscarPorId(id: String): Donante
+}
+
+class RepositorioEntidadesBeneficiarias {
+-{static} RepositorioEntidadesBeneficiarias instancia
+-List<EntidadBeneficiaria> entidades
++{static} getInstance(): RepositorioEntidadesBeneficiarias
+}
+
+class RepositorioDonaciones {
+-{static} RepositorioDonaciones instancia
+-List<Donacion> donaciones
++{static} getInstance(): RepositorioDonaciones
+}
+
+class RepositorioRegistroDonacion {
+-{static} RepositorioRegistroDonacion instancia
+-List<RegistroDonacion> registros
++{static} getInstance(): RepositorioRegistroDonacion
+}
+
+class NotificadorAusenciaService {
+-RepositorioDonantes repoDonantes
+-RepositorioRegistroDonacion repoRegistros
+-Notificador notificador
++verificarAusenciaDonantes()
+}
+
+
+
+
+package "Capa REST / API" {
+  class DonanteController {
+    +obtenerTodos()
+    +obtenerPorId(id: String)
+    +crearPersonaHumana(request: PersonaHumanaRequest)
+    +crearPersonaJuridica(request: PersonaJuridicaRequest)
+    +actualizarPersonaHumana(id: String, request: PersonaHumanaRequest)
+    +eliminarDonante(id: String)
+  }
+
+  class EntidadBeneficiariaController {
+    +obtenerTodas()
+    +obtenerPorId(id: String)
+    +crearEntidad(request: EntidadBeneficiariaRequest)
+    +actualizarEntidad(id: String, request: EntidadBeneficiariaRequest)
+  }
+
+  class NecesidadController {
+    +obtenerNecesidades(idEntidad: String)
+    +registrarRecurrente(idEntidad: String, request: NecesidadRecurrenteRequest)
+    +registrarExtraordinaria(idEntidad: String, request: NecesidadExtraordinariaRequest)
+    +eliminarNecesidad(idEntidad: String, idNecesidad: String)
+  }
+
+  class DonacionController {
+    +obtenerTodas()
+    +obtenerPorId(id: String)
+    +crearDonacion(request: DonacionRequest)
+    +cambiarEstadoDonacion(id: String, request: CambioEstadoRequest)
+  }
+}
+
+
 
 ' -------------------------
 ' RELACIONES (group_0)
@@ -301,22 +372,23 @@ Subcategoria --> Categoria
 Donacion --> UnidadMedida
 Donante --> MedioContacto
 Donante --> TipoDocumento
-BienPerecedero --|> Bien
+
 Administrador <|.. RegistroDonacion
 PersonaHumana --> Genero
 NecesidadRecurrente --> Necesidad
 Bien --> Subcategoria
 Bien --> UnidadMedida
+Bien --> Estado
 NecesidadRecurrente --> Periodicidad
 NecesidadExtraordinaria --> Necesidad
-BienEstandar --|> Bien
+
 PersonaHumana --> Donante
 Representantes -- PersonaJuridica
 Representantes --> EntidadBeneficiaria
 RegistroDonacion --> Donacion
-BienConEstado --|> Bien
+
 PersonaJuridica --> Donante
-Administrador <|.. Donacion
+
 Donacion --> EstadoDonacion
 RegistroCambioEstado --> EstadoDonacion
 ImportacionDonantesCSV <|.. Donante
@@ -325,10 +397,10 @@ RegistroDonacion --> Donante
 MedioContacto --> TipoMedioContacto
 Donacion --> RegistroCambioEstado
 Donante --> EstadoRegistro
-Administrador ..> Notificador
+
 Notificacion --> EstadoNotificacion
 EntidadBeneficiaria --> Necesidad
-Administrador <|.. Donante
+
 Donacion --> Subcategoria
 PersonaJuridica --> TipoOrganizacion
 RegistroDonacion --> Bien
@@ -342,6 +414,21 @@ WhatsApp ..|> TipoNotificacion
 TipoNotificacion --> Notificacion
 Notificador ..> Donante
 
+
+RepositorioDonantes --> Donante
+RepositorioEntidadesBeneficiarias --> EntidadBeneficiaria
+RepositorioDonaciones --> Donacion
+RepositorioRegistroDonacion --> RegistroDonacion
+
+
+NotificadorAusenciaService --> RepositorioDonantes
+NotificadorAusenciaService --> RepositorioRegistroDonacion
+NotificadorAusenciaService --> Notificador
+
+DonanteController --> RepositorioDonantes
+EntidadBeneficiariaController --> RepositorioEntidadesBeneficiarias
+NecesidadController --> RepositorioEntidadesBeneficiarias
+DonacionController --> RepositorioDonaciones
 
 
 @enduml

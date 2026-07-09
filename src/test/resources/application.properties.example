@@ -6,3 +6,7 @@ spring.mail.username=TU_MAIL@gmail.com
 spring.mail.password=TU_APP_PASSWORD
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+twilio.accountSid=TU_ACCOUNT_SID
+twilio.authToken=TU_AUTH_TOKEN
+twilio.smsFrom=+1234567890
+twilio.whatsappFrom=whatsapp:+14155238886

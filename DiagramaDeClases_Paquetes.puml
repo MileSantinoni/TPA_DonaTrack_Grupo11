@@ -1,0 +1,573 @@
+@startuml
+
+' =========================================
+' Diagrama de clases - DonaTrack
+' =========================================
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+' -----------------------------------------
+' 1. GESTIÓN DE DONANTES
+' -----------------------------------------
+package "Gestión de Donantes" {
+    enum TipoOrganizacion {
+        GUBERNAMENTAL
+        ONG
+        EMPRESA
+        INSTITUCION
+    }
+
+    enum EstadoRegistro {
+        PRIMER_ACCESO
+        ACTIVO
+    }
+
+    enum TipoMedioContacto {
+        TELEFONO
+        WHATSAPP
+    }
+
+    enum TipoDocumento {
+        DNI
+        CUIT
+    }
+
+    enum Genero {
+        MASCULINO
+        FEMENINO
+        OTRO
+    }
+
+    enum TipoContactoPredeterminado {
+        TELEFONO
+        WHATSAPP
+        MAIL
+    }
+
+    class MedioContacto {
+        +TipoMedioContacto tipo
+        +String numero
+    }
+
+    abstract class Donante {
+        +String id
+        +String mail
+        +EstadoRegistro estadoRegistro
+        +List<MedioContacto> mediosDeContacto
+        +TipoContactoPredeterminado tipoContactoPredeterminado
+        +String numeroDocumento
+        +TipoDocumento tipoDeDocumento
+        +registrarDonante()
+        +actualizarDatos()
+    }
+
+    class "Persona Humana" as PersonaHumana {
+        +String nombre
+        +String apellido
+        +Int edad
+        +Genero genero
+        +String direccion
+    }
+
+    class "Persona Juridica" as PersonaJuridica {
+        +String razonSocial
+        +TipoOrganizacion tipo
+        +String rubro
+        +List<Representante> representantes
+    }
+
+    class Representantes {
+        +String nombre
+        +String apellido
+        +String email
+    }
+
+    class ImportacionDonantesCSV {
+        +importar()
+    }
+}
+
+' -----------------------------------------
+' 2. CATÁLOGO Y BIENES
+' -----------------------------------------
+package "Catálogo y Bienes" {
+    enum UnidadMedida {
+        UNIDAD
+        KILOGRAMO
+        LITRO
+        PAQUETE
+    }
+
+    enum Estado {
+        NUEVO
+        USADO
+    }
+
+    class Categoria {
+        +String id
+        +String nombre
+    }
+
+    class Subcategoria {
+        +String id
+        +String nombre
+    }
+
+    class Bien {
+        +String id
+        +String descripcion
+        +String foto
+        +Int cantidad
+        +String unidadMedida
+        +Subcategoria subcategoria
+        +LocalDate fechaVencimiento
+        +Estado estado
+    }
+}
+
+' -----------------------------------------
+' 3. GESTIÓN DE DONACIONES
+' -----------------------------------------
+package "Gestión de Donaciones" {
+    enum EstadoDonacion {
+        DEPOSITO
+        ASIGNACION_REALIZADA
+        LISTA_PARA_ENTREGAR
+        EN_TRASLADO
+        ENTREGADA
+        ENTREGA_FALLIDA
+        VENCIDA
+    }
+
+    class "Registro Donacion" as RegistroDonacion {
+        +String id
+        +String descripcionGeneral
+        +Donante donante
+        +LocalDate fechaDeRegistro
+        +List<Bien> listaBienes
+        +agregarBien(bien: Bien)
+        +segmentar() : List<Donacion>
+        +getDonante() : Donante
+        +getFechaDeRegistro() : LocalDate
+    }
+
+    class Donacion {
+        -String id
+        -String descripcionGeneral
+        -int cantidad
+        -String unidadMedida
+        -Subcategoria subcategoria
+        -LocalDate fechaVencimiento
+        -Estado estadoBien
+        -EstadoDonacion estadoActual
+        -List<RegistroCambioEstado> historialEstados
+        +cambiarEstado(nuevoEstado: EstadoDonacion, justificativo: String)
+        +getEstadoActual(): EstadoDonacion
+        +getHistorialEstados(): List<RegistroCambioEstado>
+    }
+
+    class RegistroCambioEstado {
+        -EstadoDonacion estadoAnterior
+        -EstadoDonacion estadoActual
+        -LocalDateTime fechaHora
+        -String justificativo
+    }
+}
+
+' -----------------------------------------
+' 4. ENTIDADES Y NECESIDADES
+' -----------------------------------------
+package "Entidades y Necesidades" {
+    enum Periodicidad {
+        SEMANAL
+        ANUAL
+        MENSUAL
+    }
+
+    class "EntidadBeneficiaria" as EntidadBeneficiaria {
+        +String id
+        +String razonSocial
+        +String direccion
+        +String telefono
+        +List<Representante> representantes
+        +List<Necesidad> necesidades
+        +registrarNecesidades()
+        +setRazonSocial(razonSocial: String)
+        +setDireccion(direccion: String)
+        +setTelefono(telefono: String)
+    }
+
+    abstract class "Necesidad" as Necesidad {
+        +String id
+        +String descripcion
+        +Int cantidadObjetivo
+        +Int cantidadCubierta
+        +Subcategoria subcategoria
+        +registrarDonacion()
+        +estaSatisfecha()
+    }
+
+    class "Necesidad Recurrente" as NecesidadRecurrente {
+        +Date fechaInicioPeriodo
+        +Periodicidad periodicidad
+    }
+
+    class "Necesidad Extraordinaria" as NecesidadExtraordinaria {
+        +String motivo
+    }
+}
+
+' -----------------------------------------
+' 5. NOTIFICACIONES
+' -----------------------------------------
+package "Notificaciones" {
+    enum EstadoNotificacion {
+        PENDIENTE
+        COMPLETADA
+        FALLIDA
+    }
+
+    class Notificacion {
+        +String id
+        +String destinatario
+        +String mensaje
+        +EstadoNotificacion estado
+        +Date fechaEnvio
+        +marcarComoCompletada()
+        +marcarComoFallida()
+    }
+
+    class Notificador {
+        -TipoNotificacion tipoNotificacion
+        +enviar()
+    }
+
+    interface TipoNotificacion {
+        +enviar()
+    }
+
+    class Email {
+        +enviar()
+    }
+
+    class SMS {
+        +enviar()
+    }
+
+    class WhatsApp {
+        +enviar()
+    }
+}
+
+' -----------------------------------------
+' 6. LOGÍSTICA Y ENTREGAS
+' -----------------------------------------
+package "Logística y Entregas" {
+    enum EstadoEntrega {
+        PENDIENTE
+        EN_TRASLADO
+        ENTREGADA
+        NO_RECIBIDA
+    }
+
+    class Camion {
+        -String id
+        -String patente
+        -double capacidadVolumenM3
+        -double alturaM
+        -double capacidadCargaKg
+    }
+
+    class Ruta {
+        -Camion camion
+        -List<Entrega> entregas
+        -boolean activa
+        +agregarEntrega(entrega: Entrega)
+        +iniciar()
+        +porcentajeAvance(): double
+    }
+
+    class Entrega {
+        -EntidadBeneficiaria destino
+        -int orden
+        -EstadoEntrega estado
+        -Donacion donacion
+        +marcarEnTraslado()
+        +marcarEntregada()
+        +marcarNoRecibida()
+        +fueResuelta(): boolean
+    }
+}
+
+
+' -----------------------------------------
+' 9. ALGORITMOS DE ASIGNACIÓN
+' -----------------------------------------
+
+
+package "Algoritmos de Asignación" {
+
+    class AlgoritmoMadre {
+        -algoritmoCompatibilidadSemantica: AlgoritmoCompatibilidadSemantica
+        -algoritmoPrioridadSubAtendidos: AlgoritmoPrioridadSubAtendidos
+        +proponer(donacion: Donacion, entidades: List<EntidadBeneficiaria>): List<EntidadBeneficiaria>
+    }
+
+    class AlgoritmoCompatibilidadSemantica {
+        +proponer(candidaturas: List<CandidaturaBeneficiaria>): List<CandidaturaBeneficiaria>
+    }
+
+    class AlgoritmoPrioridadSubAtendidos {
+        -repositorioAsignaciones: RepositorioAsignacionesDonacion
+        +proponer(candidaturas: List<CandidaturaBeneficiaria>): List<CandidaturaBeneficiaria>
+    }
+
+    class CandidaturaBeneficiaria {
+        -donacion: Donacion
+        -entidad: EntidadBeneficiaria
+        -necesidad: Necesidad
+        +getDonacion(): Donacion
+        +getEntidad(): EntidadBeneficiaria
+        +getNecesidad(): Necesidad
+    }
+
+    class ResultadoEjecucionAlgoritmos {
+        -id: String
+        -donacion: Donacion
+        -entidadesPropuestas: List<EntidadBeneficiaria>
+        -fechaYHoraEjecucion: LocalDateTime
+        +getDonacion(): Donacion
+        +getEntidadesPropuestas(): List<EntidadBeneficiaria>
+    }
+}
+
+' -----------------------------------------
+' 7. REPOSITORIOS Y SERVICIOS
+' -----------------------------------------
+package "Persistencia y Servicios" {
+    class RepositorioDonantes {
+        -{static} RepositorioDonantes instancia
+        -List<Donante> donantes
+        +{static} getInstance(): RepositorioDonantes
+        +agregar(donante: Donante)
+        +buscarPorId(id: String): Donante
+    }
+
+    class RepositorioEntidadesBeneficiarias {
+        -{static} RepositorioEntidadesBeneficiarias instancia
+        -List<EntidadBeneficiaria> entidades
+        +{static} getInstance(): RepositorioEntidadesBeneficiarias
+    }
+
+    class RepositorioDonaciones {
+        -{static} RepositorioDonaciones instancia
+        -List<Donacion> donaciones
+        +{static} getInstance(): RepositorioDonaciones
+    }
+
+    class RepositorioRegistroDonacion {
+        -{static} RepositorioRegistroDonacion instancia
+        -List<RegistroDonacion> registros
+        +{static} getInstance(): RepositorioRegistroDonacion
+    }
+
+     class RepositorioResultadosAlgoritmos {
+            -{static} RepositorioResultadosAlgoritmos instancia
+            -List<ResultadoEjecucionAlgoritmos> resultados
+            +{static} getInstance(): RepositorioResultadosAlgoritmos
+            +agregar(resultado: ResultadoEjecucionAlgoritmos)
+            +buscarPorDonacion(idDonacion: String): List<ResultadoEjecucionAlgoritmos>
+            +eliminarPorDonacion(idDonacion: String)
+        }
+
+        class RepositorioAsignacionesDonacion {
+            -{static} RepositorioAsignacionesDonacion instancia
+            +{static} getInstance(): RepositorioAsignacionesDonacion
+            +buscarEntreFechas(inicio: LocalDate, fin: LocalDate): List<AsignacionDonacion>
+        }
+
+    class NotificadorAusenciaService {
+        -RepositorioDonantes repoDonantes
+        -RepositorioRegistroDonacion repoRegistros
+        -Notificador notificador
+        +verificarAusenciaDonantes()
+    }
+
+    class EjecucionAlgoritmosService {
+            -RepositorioDonaciones repositorioDonaciones
+            -RepositorioEntidadesBeneficiarias repositorioEntidades
+            -RepositorioResultadosAlgoritmos repositorioResultados
+            -AlgoritmoMadre algoritmoMadre
+            +EjecucionAlgoritmosService()
+            +EjecucionAlgoritmosService(repoDonaciones, repoEntidades, repoResultados, algoritmoMadre)
+            +ejecutarAlgoritmosEnHorarioBajaCarga()
+            -buscarDonacionesPendientes(): List<Donacion>
+            +puedeEjecutarse(donacion: Donacion): boolean
+        }
+
+    class MonitoreoService {
+            +registrarCamion(camion: Camion)
+            +recibirReporte(reporte: ReporteUbicacion)
+            +ubicacionActual(patente: String)
+            +avanceDeRuta(patente: String)
+        }
+
+    class RutaService {
+            +registrarRuta(request: RutaRequest): boolean
+            +iniciarRuta(patente: String): boolean
+        }
+}
+
+' -----------------------------------------
+' 8. CAPA REST / API
+' -----------------------------------------
+package "Capa REST / API" {
+    class DonanteController {
+        +obtenerTodos()
+        +obtenerPorId(id: String)
+        +crearPersonaHumana(request: PersonaHumanaRequest)
+        +crearPersonaJuridica(request: PersonaJuridicaRequest)
+        +actualizarPersonaHumana(id: String, request: PersonaHumanaRequest)
+        +eliminarDonante(id: String)
+    }
+
+    class EntidadBeneficiariaController {
+        +obtenerTodas()
+        +obtenerPorId(id: String)
+        +crearEntidad(request: EntidadBeneficiariaRequest)
+        +actualizarEntidad(id: String, request: EntidadBeneficiariaRequest)
+    }
+
+    class NecesidadController {
+        +obtenerNecesidades(idEntidad: String)
+        +registrarRecurrente(idEntidad: String, request: NecesidadRecurrenteRequest)
+        +registrarExtraordinaria(idEntidad: String, request: NecesidadExtraordinariaRequest)
+        +eliminarNecesidad(idEntidad: String, idNecesidad: String)
+    }
+
+    class DonacionController {
+        +obtenerTodas()
+        +obtenerPorId(id: String)
+        +crearDonacion(request: DonacionRequest)
+        +cambiarEstadoDonacion(id: String, request: CambioEstadoRequest)
+    }
+
+    class CamionController {
+            -MonitoreoService servicio
+            +CamionController(servicio: MonitoreoService)
+            +registrarCamion(request: CamionRequest)
+            +recibirUbicacion(request: ReporteUbicacionRequest)
+            +ubicacionActual(patente: String)
+            +avanceDeRuta(patente: String)
+        }
+
+    class RutaController {
+            -RutaService rutaService
+            +RutaController(rutaService: RutaService)
+            +registrarRuta(request: RutaRequest)
+            +iniciarRuta(patente: String)
+        }
+
+}
+
+' =========================================
+' RELACIONES ENTRE CLASES
+' =========================================
+
+' Relaciones - Catálogo y Bienes
+Subcategoria --> Categoria
+Bien --> Subcategoria
+Bien --> UnidadMedida
+Bien --> Estado
+
+' Relaciones - Donantes
+PersonaHumana --|> Donante
+PersonaJuridica --|> Donante
+ImportacionDonantesCSV ..> Donante
+Donante --> MedioContacto
+Donante --> TipoDocumento
+Donante --> EstadoRegistro
+Donante --> TipoContactoPredeterminado
+PersonaHumana --> Genero
+PersonaJuridica --> TipoOrganizacion
+Representantes --* PersonaJuridica
+MedioContacto --> TipoMedioContacto
+
+' Relaciones - Donaciones
+RegistroDonacion --> Donante
+RegistroDonacion --> Bien
+RegistroDonacion --> Donacion : segmenta en
+Donacion --> UnidadMedida
+Donacion --> Subcategoria
+Donacion --> EstadoDonacion
+Donacion --> RegistroCambioEstado
+RegistroCambioEstado --> EstadoDonacion
+
+' Relaciones - Entidades y Necesidades
+EntidadBeneficiaria *-- Representantes
+EntidadBeneficiaria *-- Necesidad
+NecesidadRecurrente --|> Necesidad
+NecesidadExtraordinaria --|> Necesidad
+Necesidad --> Subcategoria
+NecesidadRecurrente --> Periodicidad
+
+' Relaciones - Notificaciones
+Notificador --> TipoNotificacion
+Notificador ..> Donante
+Email ..|> TipoNotificacion
+SMS ..|> TipoNotificacion
+WhatsApp ..|> TipoNotificacion
+TipoNotificacion ..> Notificacion
+Notificacion --> EstadoNotificacion
+
+' Relaciones - Logística
+Ruta "1" --> "1" Camion
+Ruta "1" *-- "0..*" Entrega
+Entrega --> EstadoEntrega
+Entrega --> EntidadBeneficiaria
+Entrega --> Donacion
+
+' Relaciones - Repositorios
+RepositorioDonantes --> Donante
+RepositorioEntidadesBeneficiarias --> EntidadBeneficiaria
+RepositorioDonaciones --> Donacion
+RepositorioRegistroDonacion --> RegistroDonacion
+
+' Relaciones - Servicios
+NotificadorAusenciaService --> RepositorioDonantes
+NotificadorAusenciaService --> RepositorioRegistroDonacion
+NotificadorAusenciaService --> Notificador
+
+' Relaciones - Controladores
+DonanteController --> RepositorioDonantes
+EntidadBeneficiariaController --> RepositorioEntidadesBeneficiarias
+NecesidadController --> RepositorioEntidadesBeneficiarias
+DonacionController --> RepositorioDonaciones
+CamionController --> MonitoreoService
+RutaController --> RutaService
+
+' Relaciones - Ejecución de Algoritmos
+EjecucionAlgoritmosService --> RepositorioDonaciones
+EjecucionAlgoritmosService --> RepositorioEntidadesBeneficiarias
+EjecucionAlgoritmosService --> RepositorioResultadosAlgoritmos
+EjecucionAlgoritmosService --> AlgoritmoMadre
+
+' Relaciones - Algoritmos de Asignación
+AlgoritmoMadre --> AlgoritmoCompatibilidadSemantica
+AlgoritmoMadre --> AlgoritmoPrioridadSubAtendidos
+AlgoritmoMadre ..> CandidaturaBeneficiaria : evalúa
+
+AlgoritmoCompatibilidadSemantica ..> CandidaturaBeneficiaria
+AlgoritmoPrioridadSubAtendidos ..> CandidaturaBeneficiaria
+AlgoritmoPrioridadSubAtendidos --> RepositorioAsignacionesDonacion
+
+CandidaturaBeneficiaria --> Donacion
+CandidaturaBeneficiaria --> EntidadBeneficiaria
+CandidaturaBeneficiaria --> Necesidad
+
+ResultadoEjecucionAlgoritmos --> Donacion
+ResultadoEjecucionAlgoritmos --> EntidadBeneficiaria : propuestas
+RepositorioResultadosAlgoritmos --> ResultadoEjecucionAlgoritmos
+
+@enduml
