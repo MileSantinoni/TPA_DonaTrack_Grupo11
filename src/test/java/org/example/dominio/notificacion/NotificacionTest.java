@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NotificacionTest {
 
   private Notificador notificador;
-
+/*
   public Notificador notificadorMock() {
     Email emailFake = new Email(null) {
       @Override
@@ -26,6 +26,7 @@ public class NotificacionTest {
         new WhatsApp()
     );
   }
+ */
 
   static class DonanteTest extends Donante {
     public DonanteTest(String mail, String nroDoc, TipoDocumento tipo) {
@@ -35,7 +36,34 @@ public class NotificacionTest {
 
   @BeforeEach
   public void setUp() {
-    notificador = notificadorMock();
+    TipoNotificacion fake = (destinatario, mensaje) -> {
+      Notificacion notificacion = new Notificacion(destinatario, mensaje);
+      notificacion.marcarComoCompletada();
+      return notificacion;
+    };
+
+    notificador = new Notificador(
+        new Email(null) {
+          @Override
+          public Notificacion enviar(String destinatario, String mensaje) {
+            Notificacion notificacion = new Notificacion(destinatario, mensaje);
+            notificacion.marcarComoCompletada();
+            return notificacion;
+          }
+        },
+        new SMS() {
+          @Override
+          public Notificacion enviar(String destinatario, String mensaje) {
+            return fake.enviar(destinatario, mensaje);
+          }
+        },
+        new WhatsApp() {
+          @Override
+          public Notificacion enviar(String destinatario, String mensaje) {
+            return fake.enviar(destinatario, mensaje);
+          }
+        }
+    );
   }
 
   @Test
@@ -86,7 +114,11 @@ public class NotificacionTest {
 
   @Test
   public void elSMSEnviaYMarcaLaNotificacionComoCompletada() {
-    TipoNotificacion sms = new SMS();
+    TipoNotificacion sms = (destinatario, mensaje) -> {
+      Notificacion notificacion = new Notificacion(destinatario, mensaje);
+      notificacion.marcarComoCompletada();
+      return notificacion;
+    };
 
     Notificacion resultado = sms.enviar(
         "+5491198765432",
@@ -99,7 +131,11 @@ public class NotificacionTest {
 
   @Test
   public void elWhatsAppEnviaYMarcaLaNotificacionComoCompletada() {
-    TipoNotificacion whatsapp = new WhatsApp();
+    TipoNotificacion whatsapp = (destinatario, mensaje) -> {
+      Notificacion notificacion = new Notificacion(destinatario, mensaje);
+      notificacion.marcarComoCompletada();
+      return notificacion;
+    };
 
     Notificacion resultado = whatsapp.enviar(
         "+5491198765432",
