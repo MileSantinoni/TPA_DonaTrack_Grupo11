@@ -247,20 +247,6 @@ class WhatsApp{
 }
 
 ' -------------------------
-' Logistica trazabilidad
-' -------------------------
-class ServicioTrazabilidadEntrega {
-  +iniciarRuta(ruta: Ruta)
-  +confirmarEntrega(entrega: Entrega)
-  +marcarNoRecibida(entrega: Entrega, motivo: String)
-}
-
-ServicioTrazabilidadEntrega ..> Ruta
-ServicioTrazabilidadEntrega ..> Entrega
-ServicioTrazabilidadEntrega ..> Donacion : actualiza estado
-ServicioTrazabilidadEntrega ..> Notificador : notifica eventos
-
-' -------------------------
 ' Logistica Entrega
 ' -------------------------
 enum EstadoEntrega {
