@@ -1,0 +1,8 @@
+Renombrar el archivo sacando el .example y reemplazar mail.username y mail.password para recibir emails.
+
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=TU_MAIL@gmail.com
+spring.mail.password=TU_APP_PASSWORD
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true

@@ -1,5 +1,8 @@
 package org.example.dominio.notificacion;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class SMS implements TipoNotificacion {
 
   @Override

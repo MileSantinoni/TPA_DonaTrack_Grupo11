@@ -1,10 +1,32 @@
 package org.example.dominio.donante;
+import org.example.dominio.notificacion.Email;
+import org.example.dominio.notificacion.Notificacion;
+import org.example.dominio.notificacion.SMS;
+import org.example.dominio.notificacion.WhatsApp;
+import org.example.service.NotificacionesService;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.example.dominio.notificacion.Notificador;
 
 public class DonanteTest {
+
+  public Notificador notificadorMock() {
+    Email emailFake = new Email(null) {
+      @Override
+      public Notificacion enviar(String destinatario, String mensaje) {
+        Notificacion notificacion = new Notificacion(destinatario, mensaje);
+        notificacion.marcarComoCompletada();
+        return notificacion;
+      }
+    };
+
+    return new Notificador(
+        emailFake,
+        new SMS(),
+        new WhatsApp()
+    );
+  }
 
   @Test
   void crearUnDonanteHumano() {
@@ -172,7 +194,7 @@ public class DonanteTest {
         "Av. Nazca 1200"
     );
 
-    Notificador notificador = new Notificador();
+    Notificador notificador = notificadorMock();
 
     administrador.activarDonante(donante,notificador);
 

@@ -16,12 +16,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class NotificacionesService  {
+public class NotificacionesService {
 
   private final RepositorioDonantes repoDonantes = RepositorioDonantes.getInstance();
   private final RepositorioRegistroDonacion repoRegistros = RepositorioRegistroDonacion.getInstance();
 
-  private final Notificador notificador = new Notificador();
+  private final Notificador notificador;
+
+  public NotificacionesService(Notificador notificador) {
+    this.notificador = notificador;
+  }
 
   //Esta tarea se ejecutará automáticamente todos los días a las 09:00 AM.
   @Scheduled(cron = "0 0 9 * * ?")
