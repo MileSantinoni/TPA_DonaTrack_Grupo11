@@ -10,6 +10,7 @@ public class DonacionRequest {
   private String idSubcategoria;
   private LocalDate fechaVencimiento;
   private Estado estadoBien;
+  private String idDonante;
 
 
   public String getDescripcionGeneral() { return descripcionGeneral; }
@@ -29,4 +30,11 @@ public class DonacionRequest {
 
   public Estado getEstadoBien() { return estadoBien; }
   public void setEstadoBien(Estado estadoBien) { this.estadoBien = estadoBien; }
+
+  public String getIdDonante() {
+    return idDonante;
+  }
+  public void setIdDonante(String idDonante) {
+    this.idDonante = idDonante;
+  }
 }

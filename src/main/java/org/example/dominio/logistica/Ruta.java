@@ -22,11 +22,6 @@ public class Ruta {
   // El chofer da inicio a la ruta: pasa a activa y sus entregas quedan En Traslado
   public void iniciar() {
     this.activa = true;
-    for (Entrega entrega : entregas) {
-      if (entrega.getEstado() == EstadoEntrega.PENDIENTE) {
-        entrega.marcarEnTraslado();
-      }
-    }
   }
 
   public int cantidadEntregas() {

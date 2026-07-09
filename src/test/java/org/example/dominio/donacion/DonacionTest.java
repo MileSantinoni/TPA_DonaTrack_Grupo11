@@ -5,10 +5,27 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
+import org.example.dominio.donante.Donante;
+import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 public class DonacionTest {
+
+  private Donante donanteDummy() {
+    return new PersonaHumana(
+        "donante@test.com",
+        "12345678",
+        TipoDocumento.DNI,
+        "Donante",
+        "Test",
+        30,
+        Genero.OTRO,
+        "Direccion test"
+    );
+  }
 
   @Test
   void unaDonacionPuedeQuedarEntregadaSiguiendoElCicloDeEstados() {
@@ -67,7 +84,8 @@ public class DonacionTest {
         "PAQUETE",
         fideos,
         LocalDate.of(2027, 1, 1),
-        null
+        null,
+        donanteDummy()
     );
   }
 }

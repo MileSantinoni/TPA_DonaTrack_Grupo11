@@ -9,6 +9,10 @@ import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donacion.Donacion;
+import org.example.dominio.donante.Donante;
+import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AlgoritmoMadreTest {
   private RepositorioAsignacionesDonacion repositorio;
+  private Donante donanteDummy() {
+    return new PersonaHumana(
+        "donante@test.com",
+        "12345678",
+        TipoDocumento.DNI,
+        "Donante",
+        "Test",
+        30,
+        Genero.OTRO,
+        "Direccion test"
+    );
+  }
 
   @BeforeEach
   void setUp() {
@@ -30,7 +46,7 @@ public class AlgoritmoMadreTest {
   @Test
   void devuelveEntidadesQueAparecenEnAmbosAlgoritmos() {
     Subcategoria papa = new Subcategoria("SUB-1", "Papa", TipoAtributo.NO_PERECEDERO);
-    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO);
+    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO,donanteDummy());
     EntidadBeneficiaria exacta = entidadConNecesidad("Entidad exacta", papa, 20);
     EntidadBeneficiaria sobraPoco = entidadConNecesidad("Entidad sobra poco", papa, 18);
     EntidadBeneficiaria faltaPoco = entidadConNecesidad("Entidad falta poco", papa, 25);
@@ -54,7 +70,7 @@ public class AlgoritmoMadreTest {
   @Test
   void siNoHayEntidadesEnComunDevuelveAmbasListasConcatenadas() {
     Subcategoria papa = new Subcategoria("SUB-1", "Papa", TipoAtributo.NO_PERECEDERO);
-    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO);
+    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO,donanteDummy());
     List<EntidadBeneficiaria> entidades = new ArrayList<>();
 
     for (int i = 1; i <= 10; i++) {
@@ -83,7 +99,7 @@ public class AlgoritmoMadreTest {
   void filtraNecesidadesPorSubcategoriaAntesDeEjecutarLosAlgoritmos() {
     Subcategoria papa = new Subcategoria("SUB-1", "Papa", TipoAtributo.NO_PERECEDERO);
     Subcategoria camas = new Subcategoria("SUB-2", "Camas", TipoAtributo.CON_ESTADO);
-    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO);
+    Donacion donacionPapa = new Donacion("Bolsa de papa", 20, "KG", papa, null, Estado.NUEVO,donanteDummy());
     EntidadBeneficiaria comedor = entidadConNecesidad("Comedor", papa, 20);
     EntidadBeneficiaria hogar = entidadConNecesidad("Hogar", camas, 20);
 
@@ -100,7 +116,7 @@ public class AlgoritmoMadreTest {
 
   private void registrarRecepciones(EntidadBeneficiaria entidad, Subcategoria subcategoria, int cantidad) {
     for (int i = 0; i < cantidad; i++) {
-      Donacion donacion = new Donacion("Donacion", 1, "UNIDAD", subcategoria, null, Estado.NUEVO);
+      Donacion donacion = new Donacion("Donacion", 1, "UNIDAD", subcategoria, null, Estado.NUEVO,donanteDummy());
       AsignacionDonacion asignacion = new AsignacionDonacion(
           donacion,
           entidad,

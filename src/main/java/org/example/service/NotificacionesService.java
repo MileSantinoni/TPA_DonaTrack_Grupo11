@@ -1,9 +1,11 @@
-package org.example.api.notificaciones;
+package org.example.service;
 
 import org.example.Repositorios.RepositorioDonantes;
 import org.example.Repositorios.RepositorioRegistroDonacion;
 import org.example.dominio.donacion.RegistroDonacion;
 import org.example.dominio.donante.Donante;
+import org.example.dominio.logistica.Entrega;
+import org.example.dominio.logistica.Ruta;
 import org.example.dominio.notificacion.Notificador;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -14,11 +16,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class NotificadorAusenciaService {
+public class NotificacionesService  {
 
   private final RepositorioDonantes repoDonantes = RepositorioDonantes.getInstance();
   private final RepositorioRegistroDonacion repoRegistros = RepositorioRegistroDonacion.getInstance();
-
 
   private final Notificador notificador = new Notificador();
 
@@ -48,5 +49,28 @@ public class NotificadorAusenciaService {
         }
       }
     }
+  }
+
+  public void notificarInicioRuta(Ruta ruta) {
+    for (Entrega entrega : ruta.getEntregas()) {
+      notificador.notificarDonante(
+          entrega.getDonacion().getDonante(),
+          "Tu donación inició su recorrido. Podés seguir la entrega en el mapa interactivo."
+      );
+    }
+  }
+
+  public void notificarEntregaExitosa(Entrega entrega) {
+    notificador.notificarDonante(
+        entrega.getDonacion().getDonante(),
+        "Tu donación fue entregada correctamente. Se generó el comprobante de entrega."
+    );
+  }
+
+  public void notificarEntregaNoRecibida(Entrega entrega, String motivo) {
+    notificador.notificarDonante(
+        entrega.getDonacion().getDonante(),
+        "No se pudo concretar la entrega de tu donación. Motivo: " + motivo
+    );
   }
 }

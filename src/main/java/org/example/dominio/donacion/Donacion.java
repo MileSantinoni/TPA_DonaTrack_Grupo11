@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.example.dominio.donante.Donante;
 
 
 public class Donacion {
@@ -21,14 +22,40 @@ public class Donacion {
   private Estado estadoBien;
   private EstadoDonacionState estadoActual;
   private List<RegistroCambioEstado> historialEstados;
+  private Donante donante;
 
-  public Donacion(String descripcionGeneral, int cantidad, String unidadMedida,Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estadoBien) {
-    this(descripcionGeneral, cantidad, unidadMedida, subcategoria, LocalDate.now(), fechaVencimiento, estadoBien);
+  public Donacion(
+      String descripcionGeneral,
+      int cantidad,
+      String unidadMedida,
+      Subcategoria subcategoria,
+      LocalDate fechaVencimiento,
+      Estado estadoBien,
+      Donante donante
+  ) {
+    this(
+        descripcionGeneral,
+        cantidad,
+        unidadMedida,
+        subcategoria,
+        LocalDate.now(),
+        fechaVencimiento,
+        estadoBien,
+        donante
+    );
   }
 
-  public Donacion(String descripcionGeneral, int cantidad, String unidadMedida, Subcategoria subcategoria,
-                  LocalDate fechaDeRegistro, LocalDate fechaVencimiento, Estado estadoBien) {
-    this.id = UUID.randomUUID().toString(); //no se agrega en el constructor sino que es random, no hay que pasarselo
+  public Donacion(
+      String descripcionGeneral,
+      int cantidad,
+      String unidadMedida,
+      Subcategoria subcategoria,
+      LocalDate fechaDeRegistro,
+      LocalDate fechaVencimiento,
+      Estado estadoBien,
+      Donante donante
+  ) {
+    this.id = UUID.randomUUID().toString();
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
@@ -38,6 +65,7 @@ public class Donacion {
     this.estadoBien = estadoBien;
     this.estadoActual = new EstadoDonacionEnDeposito();
     this.historialEstados = new ArrayList<>();
+    this.donante = donante;
   }
 
 
@@ -86,6 +114,10 @@ public class Donacion {
 
   public String getId() {
     return id;
+  }
+
+  public Donante getDonante() {
+    return donante;
   }
 
 }

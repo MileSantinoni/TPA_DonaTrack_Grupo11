@@ -13,6 +13,10 @@ import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donacion.EstadoDonacion;
+import org.example.dominio.donante.Donante;
+import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +31,19 @@ public class EjecucionAlgoritmosServiceTest {
   private RepositorioEntidadesBeneficiarias repositorioEntidades;
   private RepositorioResultadosAlgoritmos repositorioResultados;
   private RepositorioAsignacionesDonacion repositorioAsignaciones;
+
+  private Donante donanteDummy() {
+    return new PersonaHumana(
+        "donante@test.com",
+        "12345678",
+        TipoDocumento.DNI,
+        "Donante",
+        "Test",
+        30,
+        Genero.OTRO,
+        "Direccion test"
+    );
+  }
 
   @BeforeEach
   void setUp() {
@@ -97,7 +114,8 @@ public class EjecucionAlgoritmosServiceTest {
         subcategoria,
         fechaDeRegistro,
         null,
-        Estado.NUEVO
+        Estado.NUEVO,
+        donanteDummy()
     );
   }
 

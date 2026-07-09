@@ -7,6 +7,7 @@ import org.example.api.logistica.dto.UbicacionResponse;
 import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.ReporteUbicacion;
 import org.example.dominio.logistica.UbicacionCamion;
+import org.example.service.MonitoreoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -36,7 +36,8 @@ public class RegistroDonacion {
           bien.getSubcategoria(),
           this.fechaDeRegistro,
           bien.getFechaVencimiento(),
-          bien.getEstado()
+          bien.getEstado(),
+          donante
       );
 
       donaciones.add(donacion);

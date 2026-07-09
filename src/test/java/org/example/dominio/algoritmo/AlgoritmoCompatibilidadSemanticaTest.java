@@ -7,6 +7,10 @@ import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.Donacion;
+import org.example.dominio.donante.Donante;
+import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -15,6 +19,19 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AlgoritmoCompatibilidadSemanticaTest {
+
+  private Donante donanteDummy() {
+    return new PersonaHumana(
+        "donante@test.com",
+        "12345678",
+        TipoDocumento.DNI,
+        "Donante",
+        "Test",
+        30,
+        Genero.OTRO,
+        "Direccion test"
+    );
+  }
 
   @Test
   void ordenaCandidaturasPorAjusteDeCantidadSinPuntaje() {
@@ -27,7 +44,8 @@ public class AlgoritmoCompatibilidadSemanticaTest {
         "KG",
         papa,
         null,
-        Estado.NUEVO
+        Estado.NUEVO,
+        donanteDummy()
     );
 
     EntidadBeneficiaria exacta = entidadConNecesidad("Entidad exacta", papa, 20);
