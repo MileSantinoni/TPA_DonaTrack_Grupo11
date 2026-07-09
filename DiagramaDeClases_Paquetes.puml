@@ -300,6 +300,48 @@ package "Logística y Entregas" {
     }
 }
 
+
+' -----------------------------------------
+' 9. ALGORITMOS DE ASIGNACIÓN
+' -----------------------------------------
+
+
+package "Algoritmos de Asignación" {
+
+    class AlgoritmoMadre {
+        -algoritmoCompatibilidadSemantica: AlgoritmoCompatibilidadSemantica
+        -algoritmoPrioridadSubAtendidos: AlgoritmoPrioridadSubAtendidos
+        +proponer(donacion: Donacion, entidades: List<EntidadBeneficiaria>): List<EntidadBeneficiaria>
+    }
+
+    class AlgoritmoCompatibilidadSemantica {
+        +proponer(candidaturas: List<CandidaturaBeneficiaria>): List<CandidaturaBeneficiaria>
+    }
+
+    class AlgoritmoPrioridadSubAtendidos {
+        -repositorioAsignaciones: RepositorioAsignacionesDonacion
+        +proponer(candidaturas: List<CandidaturaBeneficiaria>): List<CandidaturaBeneficiaria>
+    }
+
+    class CandidaturaBeneficiaria {
+        -donacion: Donacion
+        -entidad: EntidadBeneficiaria
+        -necesidad: Necesidad
+        +getDonacion(): Donacion
+        +getEntidad(): EntidadBeneficiaria
+        +getNecesidad(): Necesidad
+    }
+
+    class ResultadoEjecucionAlgoritmos {
+        -id: String
+        -donacion: Donacion
+        -entidadesPropuestas: List<EntidadBeneficiaria>
+        -fechaYHoraEjecucion: LocalDateTime
+        +getDonacion(): Donacion
+        +getEntidadesPropuestas(): List<EntidadBeneficiaria>
+    }
+}
+
 ' -----------------------------------------
 ' 7. REPOSITORIOS Y SERVICIOS
 ' -----------------------------------------
@@ -330,12 +372,51 @@ package "Persistencia y Servicios" {
         +{static} getInstance(): RepositorioRegistroDonacion
     }
 
+     class RepositorioResultadosAlgoritmos {
+            -{static} RepositorioResultadosAlgoritmos instancia
+            -List<ResultadoEjecucionAlgoritmos> resultados
+            +{static} getInstance(): RepositorioResultadosAlgoritmos
+            +agregar(resultado: ResultadoEjecucionAlgoritmos)
+            +buscarPorDonacion(idDonacion: String): List<ResultadoEjecucionAlgoritmos>
+            +eliminarPorDonacion(idDonacion: String)
+        }
+
+        class RepositorioAsignacionesDonacion {
+            -{static} RepositorioAsignacionesDonacion instancia
+            +{static} getInstance(): RepositorioAsignacionesDonacion
+            +buscarEntreFechas(inicio: LocalDate, fin: LocalDate): List<AsignacionDonacion>
+        }
+
     class NotificadorAusenciaService {
         -RepositorioDonantes repoDonantes
         -RepositorioRegistroDonacion repoRegistros
         -Notificador notificador
         +verificarAusenciaDonantes()
     }
+
+    class EjecucionAlgoritmosService {
+            -RepositorioDonaciones repositorioDonaciones
+            -RepositorioEntidadesBeneficiarias repositorioEntidades
+            -RepositorioResultadosAlgoritmos repositorioResultados
+            -AlgoritmoMadre algoritmoMadre
+            +EjecucionAlgoritmosService()
+            +EjecucionAlgoritmosService(repoDonaciones, repoEntidades, repoResultados, algoritmoMadre)
+            +ejecutarAlgoritmosEnHorarioBajaCarga()
+            -buscarDonacionesPendientes(): List<Donacion>
+            +puedeEjecutarse(donacion: Donacion): boolean
+        }
+
+    class MonitoreoService {
+            +registrarCamion(camion: Camion)
+            +recibirReporte(reporte: ReporteUbicacion)
+            +ubicacionActual(patente: String)
+            +avanceDeRuta(patente: String)
+        }
+
+    class RutaService {
+            +registrarRuta(request: RutaRequest): boolean
+            +iniciarRuta(patente: String): boolean
+        }
 }
 
 ' -----------------------------------------
@@ -371,6 +452,23 @@ package "Capa REST / API" {
         +crearDonacion(request: DonacionRequest)
         +cambiarEstadoDonacion(id: String, request: CambioEstadoRequest)
     }
+
+    class CamionController {
+            -MonitoreoService servicio
+            +CamionController(servicio: MonitoreoService)
+            +registrarCamion(request: CamionRequest)
+            +recibirUbicacion(request: ReporteUbicacionRequest)
+            +ubicacionActual(patente: String)
+            +avanceDeRuta(patente: String)
+        }
+
+    class RutaController {
+            -RutaService rutaService
+            +RutaController(rutaService: RutaService)
+            +registrarRuta(request: RutaRequest)
+            +iniciarRuta(patente: String)
+        }
+
 }
 
 ' =========================================
@@ -428,7 +526,7 @@ Ruta "1" --> "1" Camion
 Ruta "1" *-- "0..*" Entrega
 Entrega --> EstadoEntrega
 Entrega --> EntidadBeneficiaria
-Entrega --> Donacion : donacion entregada
+Entrega --> Donacion
 
 ' Relaciones - Repositorios
 RepositorioDonantes --> Donante
@@ -446,5 +544,30 @@ DonanteController --> RepositorioDonantes
 EntidadBeneficiariaController --> RepositorioEntidadesBeneficiarias
 NecesidadController --> RepositorioEntidadesBeneficiarias
 DonacionController --> RepositorioDonaciones
+CamionController --> MonitoreoService
+RutaController --> RutaService
+
+' Relaciones - Ejecución de Algoritmos
+EjecucionAlgoritmosService --> RepositorioDonaciones
+EjecucionAlgoritmosService --> RepositorioEntidadesBeneficiarias
+EjecucionAlgoritmosService --> RepositorioResultadosAlgoritmos
+EjecucionAlgoritmosService --> AlgoritmoMadre
+
+' Relaciones - Algoritmos de Asignación
+AlgoritmoMadre --> AlgoritmoCompatibilidadSemantica
+AlgoritmoMadre --> AlgoritmoPrioridadSubAtendidos
+AlgoritmoMadre ..> CandidaturaBeneficiaria : evalúa
+
+AlgoritmoCompatibilidadSemantica ..> CandidaturaBeneficiaria
+AlgoritmoPrioridadSubAtendidos ..> CandidaturaBeneficiaria
+AlgoritmoPrioridadSubAtendidos --> RepositorioAsignacionesDonacion
+
+CandidaturaBeneficiaria --> Donacion
+CandidaturaBeneficiaria --> EntidadBeneficiaria
+CandidaturaBeneficiaria --> Necesidad
+
+ResultadoEjecucionAlgoritmos --> Donacion
+ResultadoEjecucionAlgoritmos --> EntidadBeneficiaria : propuestas
+RepositorioResultadosAlgoritmos --> ResultadoEjecucionAlgoritmos
 
 @enduml
