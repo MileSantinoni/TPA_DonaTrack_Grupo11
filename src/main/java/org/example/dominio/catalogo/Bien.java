@@ -20,10 +20,9 @@ public class Bien {
         this.cantidad = cantidad;
         this.unidadMedida = unidadMedida;
         this.subcategoria = subcategoria;
-//        this.Estado = estado;
 
         // ==========================================
-        // LÓGICA DE VALIDACIÓN SEGÚN EL TIPO
+        // VALIDACIÓN SEGÚN EL TIPO
         // ==========================================
         TipoAtributo tipoExigido = subcategoria.getTipo();
 
