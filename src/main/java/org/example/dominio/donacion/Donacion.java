@@ -16,17 +16,24 @@ public class Donacion {
   private int cantidad;
   private String unidadMedida;
   private Subcategoria subcategoria;
+  private LocalDate fechaDeRegistro;
   private LocalDate fechaVencimiento;
   private Estado estadoBien;
   private EstadoDonacionState estadoActual;
   private List<RegistroCambioEstado> historialEstados;
 
   public Donacion(String descripcionGeneral, int cantidad, String unidadMedida,Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estadoBien) {
+    this(descripcionGeneral, cantidad, unidadMedida, subcategoria, LocalDate.now(), fechaVencimiento, estadoBien);
+  }
+
+  public Donacion(String descripcionGeneral, int cantidad, String unidadMedida, Subcategoria subcategoria,
+                  LocalDate fechaDeRegistro, LocalDate fechaVencimiento, Estado estadoBien) {
     this.id = UUID.randomUUID().toString(); //no se agrega en el constructor sino que es random, no hay que pasarselo
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
     this.subcategoria = subcategoria;
+    this.fechaDeRegistro = fechaDeRegistro;
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
     this.estadoActual = new EstadoDonacionEnDeposito();
@@ -62,6 +69,10 @@ public class Donacion {
 
   public Subcategoria getSubcategoria() {
     return subcategoria;
+  }
+
+  public LocalDate getFechaDeRegistro() {
+    return fechaDeRegistro;
   }
 
   public LocalDate getFechaVencimiento(){

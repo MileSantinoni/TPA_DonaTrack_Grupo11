@@ -38,4 +38,8 @@ public class RepositorioDonaciones {
         .filter(d -> d.getId().equals(id))
         .findFirst();
   }
+
+  public void limpiar() {
+    this.donaciones.clear();
+  }
 }
