@@ -16,6 +16,7 @@ import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.PersonaHumana;
 import org.example.dominio.donante.TipoDocumento;
 import org.example.dominio.logistica.Camion;
+import org.example.dominio.logistica.MonitorCamiones;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ public class RutaServiceTest {
     Donacion donacion = donacionDePrueba();
     repositorioCamiones.agregar(camion);
     repositorioDonaciones.agregar(donacion);
-    RutaService rutaService = new RutaService(new MonitoreoService());
+    RutaService rutaService = new RutaService(new MonitorCamiones());
 
     boolean registrada = rutaService.registrarRuta(requestPara(camion, donacion));
 
@@ -61,7 +62,7 @@ public class RutaServiceTest {
     Donacion donacion = donacionDePrueba();
     repositorioCamiones.agregar(camion);
     repositorioDonaciones.agregar(donacion);
-    RutaService rutaService = new RutaService(new MonitoreoService());
+    RutaService rutaService = new RutaService(new MonitorCamiones());
 
     boolean registrada = rutaService.registrarRuta(requestPara(camion, donacion));
 

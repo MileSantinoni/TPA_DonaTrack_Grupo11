@@ -1,51 +1,48 @@
 package org.example.api.logistica;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import org.example.Repositorios.RepositorioCamiones;
 import org.example.api.logistica.dto.AvanceResponse;
 import org.example.api.logistica.dto.CamionRequest;
 import org.example.api.logistica.dto.ReporteUbicacionRequest;
 import org.example.api.logistica.dto.UbicacionResponse;
 import org.example.dominio.logistica.Camion;
+import org.example.dominio.logistica.MonitorCamiones;
 import org.example.dominio.logistica.ReporteUbicacion;
 import org.example.dominio.logistica.UbicacionCamion;
-import org.example.service.MonitoreoService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 
-@RestController
-@RequestMapping("/camiones")
 public class CamionController {
 
-  private final MonitoreoService servicio;
-  private final RepositorioCamiones repositorioCamiones = RepositorioCamiones.getInstance();
+  private final MonitorCamiones monitorCamiones;
+  private final RepositorioCamiones repositorioCamiones;
 
-  public CamionController(MonitoreoService servicio) {
-    this.servicio = servicio;
+  public CamionController() {
+    this(MonitorCamiones.getInstance(), RepositorioCamiones.getInstance());
+  }
+
+  public CamionController(MonitorCamiones monitorCamiones, RepositorioCamiones repositorioCamiones) {
+    this.monitorCamiones = monitorCamiones;
+    this.repositorioCamiones = repositorioCamiones;
   }
 
   // Alta de un camión en la flota
-  @PostMapping
-  public ResponseEntity<String> registrarCamion(@RequestBody CamionRequest request) {
+  public void registrarCamion(Context ctx) {
+    CamionRequest request = ctx.bodyAsClass(CamionRequest.class);
     Camion camion = new Camion(
         request.getPatente(),
         request.getCapacidadVolumen(),
         request.getAltura(),
         request.getCapacidadCarga());
     repositorioCamiones.agregar(camion);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Camion registrado: " + camion.getPatente());
+    ctx.status(HttpStatus.CREATED).result("Camion registrado: " + camion.getPatente());
   }
 
   // Contrato de integración: la app móvil reporta la ubicación del camión
-  @PostMapping("/ubicacion")
-  public ResponseEntity<String> recibirUbicacion(@RequestBody ReporteUbicacionRequest request) {
+  public void recibirUbicacion(Context ctx) {
+    ReporteUbicacionRequest request = ctx.bodyAsClass(ReporteUbicacionRequest.class);
     LocalDateTime fecha = request.getFechaYHora();
     if (fecha == null) {
       fecha = LocalDateTime.now();
@@ -58,19 +55,21 @@ public class CamionController {
         request.getVelocidad(),
         fecha);
 
-    boolean procesado = servicio.recibirReporte(reporte);
+    boolean procesado = monitorCamiones.recibirReporte(reporte);
     if (procesado) {
-      return ResponseEntity.ok("Ubicacion registrada");
+      ctx.status(HttpStatus.OK).result("Ubicacion registrada");
+    } else {
+      ctx.status(HttpStatus.BAD_REQUEST).result("Reporte rechazado por validacion");
     }
-    return ResponseEntity.badRequest().body("Reporte rechazado por validacion");
   }
 
   // Dashboard: última ubicación conocida del camión
-  @GetMapping("/{patente}/ubicacion")
-  public ResponseEntity<UbicacionResponse> ubicacionActual(@PathVariable String patente) {
-    UbicacionCamion ubicacion = servicio.ubicacionActual(patente);
+  public void ubicacionActual(Context ctx) {
+    String patente = ctx.pathParam("patente");
+    UbicacionCamion ubicacion = monitorCamiones.ubicacionActual(patente);
     if (ubicacion == null) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     UbicacionResponse response = new UbicacionResponse(
@@ -78,13 +77,13 @@ public class CamionController {
         ubicacion.getLongitud(),
         ubicacion.getVelocidad(),
         ubicacion.getFechaYHora());
-    return ResponseEntity.ok(response);
+    ctx.status(HttpStatus.OK).json(response);
   }
 
   // Dashboard: avance del camión sobre su ruta
-  @GetMapping("/{patente}/avance")
-  public ResponseEntity<AvanceResponse> avanceDeRuta(@PathVariable String patente) {
-    double avance = servicio.avanceDeRuta(patente);
-    return ResponseEntity.ok(new AvanceResponse(patente, avance));
+  public void avanceDeRuta(Context ctx) {
+    String patente = ctx.pathParam("patente");
+    double avance = monitorCamiones.avanceDeRuta(patente);
+    ctx.status(HttpStatus.OK).json(new AvanceResponse(patente, avance));
   }
 }

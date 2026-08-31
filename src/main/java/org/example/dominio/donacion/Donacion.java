@@ -120,4 +120,19 @@ public class Donacion {
     return donante;
   }
 
+  public AsignacionDonacion asignarA(org.example.dominio.beneficiario.EntidadBeneficiaria entidad) {
+    if (this.getEstadoActual() != EstadoDonacion.EN_DEPOSITO) {
+      throw new IllegalStateException("La donacion no esta en deposito");
+    }
+    org.example.dominio.beneficiario.Necesidad necesidad =
+        entidad.getNecesidades().isEmpty() ? null : entidad.getNecesidades().get(0);
+    AsignacionDonacion asignacion =
+        new AsignacionDonacion(this, entidad, necesidad, LocalDate.now());
+    cambiarEstado(
+        EstadoDonacion.ASIGNACION_REALIZADA,
+        "Asignada a la entidad beneficiaria " + entidad.getRazonSocial()
+    );
+    return asignacion;
+  }
+
 }

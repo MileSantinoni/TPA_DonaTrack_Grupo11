@@ -7,15 +7,36 @@ import java.util.List;
 // para reflejar la posición y el avance de cada camión en el dashboard.
 public class MonitorCamiones {
 
+  private static MonitorCamiones instancia;
   private List<Ruta> rutasEnSeguimiento;
 
   public MonitorCamiones() {
     this.rutasEnSeguimiento = new ArrayList<>();
   }
 
+  public static MonitorCamiones getInstance() {
+    if (instancia == null) {
+      instancia = new MonitorCamiones();
+    }
+    return instancia;
+  }
+
+  public void limpiar() {
+    this.rutasEnSeguimiento.clear();
+  }
+
   // Se registra una ruta para poder monitorearla (el camión ya salió del depósito)
   public void registrarRuta(Ruta ruta) {
     this.rutasEnSeguimiento.add(ruta);
+  }
+
+  public boolean iniciarRuta(String patente) {
+    Ruta ruta = buscarRutaPorPatente(patente);
+    if (ruta == null) {
+      return false;
+    }
+    ruta.iniciar();
+    return true;
   }
 
   // Punto de entrada: recibe un reporte, lo valida y, si es válido, actualiza
