@@ -9,7 +9,7 @@ import org.example.dominio.logistica.EstadoEntrega;
 import org.example.dominio.logistica.Ruta;
 import org.example.service.NotificacionesService;
 import org.springframework.stereotype.Service;
-
+//este no tiene razon de ser
 @Service
 public class TrazabilidadEntregaService {
 

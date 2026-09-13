@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
+// no usar service
 @Service
 public class NotificacionesService {
 
@@ -31,6 +32,7 @@ public class NotificacionesService {
     this.notificador = notificador;
   }
 
+  // cambiar esto, tiene que ser planificacion externa
   @Scheduled(cron = "0 0 9 * * ?")
   public void verificarAusenciaDonantes() {
     LocalDate hoy = LocalDate.now();

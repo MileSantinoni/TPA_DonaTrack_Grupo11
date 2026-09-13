@@ -51,6 +51,7 @@ public class Notificador {
     return email.enviar(destinatario, mensaje);
   }
 
+  // este hay que borrarlo quedo olvidado je
   private String resolverDestinatario(Donante donante) {
     TipoContactoPredeterminado tipo = donante.getContactoPredeterminado();
 

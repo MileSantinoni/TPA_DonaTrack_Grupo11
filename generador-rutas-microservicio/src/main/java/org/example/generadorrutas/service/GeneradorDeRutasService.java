@@ -11,6 +11,8 @@ import org.example.generadorrutas.dto.GenerarRutasRequest;
 import org.example.generadorrutas.dto.RutaGeneradaResponse;
 import org.example.generadorrutas.dto.UbicacionRequest;
 import org.springframework.stereotype.Service;
+// este puede convertirse en una clase que hace cositas
+// era un componente externo je no hace falta (lo dejamos aca por las dudas para la prox) esto es una especie de adapter que se va a comunicar con el componente externo :)
 
 @Service
 public class GeneradorDeRutasService {

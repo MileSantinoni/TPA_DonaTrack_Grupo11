@@ -39,7 +39,9 @@ public class EjecucionAlgoritmosService {
     this.repositorioResultados = repositorioResultados;
     this.algoritmoMadre = algoritmoMadre;
   }
-
+// CAMBIAR ANOTACIONES (NO SE PUEDEN USAR)
+  // de horarios no va nada, planificaciones en el main
+//TODO
   @Scheduled(cron = "0 0 3 * * ?", zone = "America/Buenos_Aires")
   public void ejecutarAlgoritmosEnHorarioBajaCarga() {
     List<Donacion> donacionesPendientes = buscarDonacionesPendientes();
