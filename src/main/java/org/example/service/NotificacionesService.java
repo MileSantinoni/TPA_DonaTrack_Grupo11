@@ -11,16 +11,13 @@ import org.example.dominio.logistica.Entrega;
 import org.example.dominio.logistica.Ruta;
 import org.example.dominio.notificacion.Notificacion;
 import org.example.dominio.notificacion.Notificador;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
-// no usar service
-@Service
+
 public class NotificacionesService {
 
   private final RepositorioDonantes repoDonantes = RepositorioDonantes.getInstance();
@@ -32,8 +29,7 @@ public class NotificacionesService {
     this.notificador = notificador;
   }
 
-  // cambiar esto, tiene que ser planificacion externa
-  @Scheduled(cron = "0 0 9 * * ?")
+
   public void verificarAusenciaDonantes() {
     LocalDate hoy = LocalDate.now();
     List<Donante> todosLosDonantes = repoDonantes.buscarTodos();

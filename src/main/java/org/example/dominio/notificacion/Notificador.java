@@ -7,20 +7,18 @@ import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
 import org.example.service.NotificacionesService;
-import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-@Component
 public class Notificador {
 
   private final Map<TipoContactoPredeterminado, TipoNotificacion> estrategias;
 
-  public Notificador() {
-    this(new Email(null), new SMS(), new WhatsApp());
-  }
+//  public Notificador() {
+//    this(new Email(null), new SMS(), new WhatsApp());
+//  }
 
   public Notificador(Email email, SMS sms, WhatsApp whatsApp) {
     this.estrategias = new EnumMap<>(TipoContactoPredeterminado.class);

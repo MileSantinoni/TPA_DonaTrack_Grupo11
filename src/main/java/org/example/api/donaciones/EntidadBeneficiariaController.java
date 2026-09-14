@@ -1,40 +1,44 @@
 package org.example.api.donaciones;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import org.example.Repositorios.RepositorioEntidadesBeneficiarias;
 import org.example.api.donaciones.dto.EntidadBeneficiariaRequest;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/entidades")
 public class EntidadBeneficiariaController {
 
-  // Instanciamos tu nuevo repositorio Singleton
-  private final RepositorioEntidadesBeneficiarias repositorio = RepositorioEntidadesBeneficiarias.getInstance();
+  private final RepositorioEntidadesBeneficiarias repositorio;
 
-  // 1. LEER TODAS (GET)
-  @GetMapping
-  public ResponseEntity<List<EntidadBeneficiaria>> obtenerTodas() {
-    return ResponseEntity.ok(repositorio.buscarTodas());
+  public EntidadBeneficiariaController(RepositorioEntidadesBeneficiarias repositorio) {
+    this.repositorio = repositorio;
   }
 
-  // 2. LEER POR ID (GET)
-  @GetMapping("/{id}")
-  public ResponseEntity<EntidadBeneficiaria> obtenerPorId(@PathVariable String id) {
+  // GET /entidades
+  public void obtenerTodas(Context ctx) {
+    List<EntidadBeneficiaria> entidades = repositorio.buscarTodas();
+    ctx.status(HttpStatus.OK).json(entidades);
+  }
+
+  // GET /entidades/{id}
+  public void obtenerPorId(Context ctx) {
+    String id = ctx.pathParam("id");
     Optional<EntidadBeneficiaria> entidad = repositorio.buscarPorId(id);
-    return entidad.map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+
+    if (entidad.isPresent()) {
+      ctx.status(HttpStatus.OK).json(entidad.get());
+    } else {
+      ctx.status(HttpStatus.NOT_FOUND);
+    }
   }
 
-  // 3. CREAR ENTIDAD (POST)
-  @PostMapping
-  public ResponseEntity<String> crearEntidad(@RequestBody EntidadBeneficiariaRequest request) {
-    // Asumiendo que tu constructor recibe razonSocial, direccion y telefono [2]
+  // POST /entidades
+  public void crearEntidad(Context ctx) {
+    EntidadBeneficiariaRequest request = ctx.bodyAsClass(EntidadBeneficiariaRequest.class);
+
     EntidadBeneficiaria nuevaEntidad = new EntidadBeneficiaria(
         request.getRazonSocial(),
         request.getDireccion(),
@@ -42,38 +46,40 @@ public class EntidadBeneficiariaController {
     );
 
     repositorio.agregar(nuevaEntidad);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Entidad Beneficiaria creada exitosamente.");
+    ctx.status(HttpStatus.CREATED).result("Entidad Beneficiaria creada exitosamente.");
   }
 
-  // 4. ACTUALIZAR ENTIDAD (PUT)
-  @PutMapping("/{id}")
-  public ResponseEntity<String> actualizarEntidad(@PathVariable String id, @RequestBody EntidadBeneficiariaRequest request) {
+  // PUT /entidades/{id}
+  public void actualizarEntidad(Context ctx) {
+    String id = ctx.pathParam("id");
+    EntidadBeneficiariaRequest request = ctx.bodyAsClass(EntidadBeneficiariaRequest.class);
+
     Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(id);
 
     if (entidadOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     EntidadBeneficiaria entidad = entidadOpt.get();
 
-    // Asumiendo que tenés estos setters en tu clase EntidadBeneficiaria
     entidad.setRazonSocial(request.getRazonSocial());
     entidad.setDireccion(request.getDireccion());
     entidad.setTelefono(request.getTelefono());
 
-    return ResponseEntity.ok("Entidad Beneficiaria actualizada exitosamente.");
+    ctx.status(HttpStatus.OK).result("Entidad Beneficiaria actualizada exitosamente.");
   }
 
-  // 5. ELIMINAR ENTIDAD (DELETE)
-  @DeleteMapping("/{id}")
-  public ResponseEntity<String> eliminarEntidad(@PathVariable String id) {
+  // DELETE /entidades/{id}
+  public void eliminarEntidad(Context ctx) {
+    String id = ctx.pathParam("id");
     Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(id);
 
     if (entidadOpt.isPresent()) {
       repositorio.eliminar(entidadOpt.get());
-      return ResponseEntity.ok("Entidad Beneficiaria eliminada exitosamente.");
+      ctx.status(HttpStatus.OK).result("Entidad Beneficiaria eliminada exitosamente.");
+    } else {
+      ctx.status(HttpStatus.NOT_FOUND);
     }
-
-    return ResponseEntity.notFound().build();
   }
 }

@@ -1,5 +1,7 @@
 package org.example.api.donaciones;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import org.example.Repositorios.RepositorioDonaciones;
 import org.example.Repositorios.RepositorioDonantes;
 import org.example.api.donaciones.dto.CambioEstadoRequest;
@@ -8,48 +10,56 @@ import org.example.dominio.donacion.Donacion;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Donante;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/donaciones")
 public class DonacionController {
 
-  private final RepositorioDonaciones repositorio = RepositorioDonaciones.getInstance();
-  private final RepositorioDonantes repositorioDonantes = RepositorioDonantes.getInstance();
+  private final RepositorioDonaciones repositorioDonaciones;
+  private final RepositorioDonantes repositorioDonantes;
 
-
-  @GetMapping
-  public ResponseEntity<List<Donacion>> obtenerTodas() {
-    return ResponseEntity.ok(repositorio.buscarTodas());
+  public DonacionController(RepositorioDonaciones repositorioDonaciones, RepositorioDonantes repositorioDonantes) {
+    this.repositorioDonaciones = repositorioDonaciones;
+    this.repositorioDonantes = repositorioDonantes;
   }
 
 
-  @GetMapping("/{id}")
-  public ResponseEntity<Donacion> obtenerPorId(@PathVariable String id) {
-    Optional<Donacion> donacion = repositorio.buscarPorId(id);
-    return donacion.map(ResponseEntity::ok)
-        .orElseGet(() -> ResponseEntity.notFound().build());
+  public void obtenerTodas(Context ctx) {
+    List<Donacion> donaciones = repositorioDonaciones.buscarTodas();
+    ctx.status(HttpStatus.OK).json(donaciones);
   }
 
 
-  @PostMapping
-  public ResponseEntity<String> crearDonacion(@RequestBody DonacionRequest request) {
-    //simulacionnnnnnnnn
-    Subcategoria subcategoriaMock = new Subcategoria(request.getIdSubcategoria(), "Mock", TipoAtributo.NO_PERECEDERO);
+  public void obtenerPorId(Context ctx) {
+    String id = ctx.pathParam("id");
+    Optional<Donacion> donacion = repositorioDonaciones.buscarPorId(id);
+
+    if (donacion.isPresent()) {
+      ctx.status(HttpStatus.OK).json(donacion.get());
+    } else {
+      ctx.status(HttpStatus.NOT_FOUND);
+    }
+  }
+
+  // POST /donaciones
+  public void crearDonacion(Context ctx) {
+    DonacionRequest request = ctx.bodyAsClass(DonacionRequest.class);
+
+    // simulacionnnnnnnnn
+    Subcategoria subcategoriaMock = new Subcategoria(
+        request.getIdSubcategoria(),
+        "Mock",
+        TipoAtributo.NO_PERECEDERO
+    );
 
     Optional<Donante> donanteOpt = repositorioDonantes.buscarPorId(request.getIdDonante());
 
     if (donanteOpt.isEmpty()) {
-      return ResponseEntity
-          .status(HttpStatus.NOT_FOUND)
-          .body("No existe el donante: " + request.getIdDonante());
+      ctx.status(HttpStatus.NOT_FOUND)
+          .result("No existe el donante: " + request.getIdDonante());
+      return;
     }
-
 
     Donacion nuevaDonacion = new Donacion(
         request.getDescripcionGeneral(),
@@ -61,36 +71,39 @@ public class DonacionController {
         donanteOpt.get()
     );
 
-    repositorio.agregar(nuevaDonacion);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Donación creada exitosamente.");
+    repositorioDonaciones.agregar(nuevaDonacion);
+    ctx.status(HttpStatus.CREATED).result("Donación creada exitosamente.");
   }
 
+  // DELETE /donaciones/{id}
+  public void eliminarDonacion(Context ctx) {
+    String id = ctx.pathParam("id");
+    Optional<Donacion> donacionOpt = repositorioDonaciones.buscarPorId(id);
 
-  @DeleteMapping("/{id}")
-  public ResponseEntity<String> eliminarDonacion(@PathVariable String id) {
-    Optional<Donacion> donacionOpt = repositorio.buscarPorId(id);
     if (donacionOpt.isPresent()) {
-      repositorio.eliminar(donacionOpt.get());
-      return ResponseEntity.ok("Donación eliminada exitosamente.");
+      repositorioDonaciones.eliminar(donacionOpt.get());
+      ctx.status(HttpStatus.OK).result("Donación eliminada exitosamente.");
+    } else {
+      ctx.status(HttpStatus.NOT_FOUND);
     }
-    return ResponseEntity.notFound().build();
   }
 
+  // PATCH /donaciones/{id}/estado
+  public void cambiarEstadoDonacion(Context ctx) {
+    String id = ctx.pathParam("id");
+    CambioEstadoRequest request = ctx.bodyAsClass(CambioEstadoRequest.class);
 
-  @PatchMapping("/{id}/estado")
-  public ResponseEntity<String> cambiarEstadoDonacion(
-      @PathVariable String id,
-      @RequestBody CambioEstadoRequest request) {
+    Optional<Donacion> donacionOpt = repositorioDonaciones.buscarPorId(id);
 
-    Optional<Donacion> donacionOpt = repositorio.buscarPorId(id);
     if (donacionOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     Donacion donacion = donacionOpt.get();
-
     donacion.cambiarEstado(request.getNuevoEstado(), request.getJustificativo());
 
-    return ResponseEntity.ok("Estado de la donación actualizado a: " + request.getNuevoEstado());
+    ctx.status(HttpStatus.OK)
+        .result("Estado de la donación actualizado a: " + request.getNuevoEstado());
   }
 }

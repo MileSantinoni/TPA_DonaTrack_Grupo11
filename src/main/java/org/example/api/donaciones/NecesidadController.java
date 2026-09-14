@@ -1,5 +1,7 @@
 package org.example.api.donaciones;
 
+import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import org.example.Repositorios.RepositorioEntidadesBeneficiarias;
 import org.example.api.donaciones.dto.NecesidadExtraordinariaRequest;
 import org.example.api.donaciones.dto.NecesidadRecurrenteRequest;
@@ -9,45 +11,53 @@ import org.example.dominio.beneficiario.NecesidadExtraordinaria;
 import org.example.dominio.beneficiario.NecesidadRecurrente;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/entidades/{idEntidad}/necesidades")
 public class NecesidadController {
 
-  private final RepositorioEntidadesBeneficiarias repositorio = RepositorioEntidadesBeneficiarias.getInstance();
+  private final RepositorioEntidadesBeneficiarias repositorio;
 
-  @GetMapping
-  public ResponseEntity<List<Necesidad>> obtenerNecesidades(@PathVariable String idEntidad) {
-    Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(idEntidad);
-
-    if (entidadOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
-    }
-
-    return ResponseEntity.ok(entidadOpt.get().getNecesidades());
+  public NecesidadController(RepositorioEntidadesBeneficiarias repositorio) {
+    this.repositorio = repositorio;
   }
 
-  @PostMapping("/recurrentes")
-  public ResponseEntity<String> registrarRecurrente(
-      @PathVariable String idEntidad,
-      @RequestBody NecesidadRecurrenteRequest request) {
+  // GET /entidades/{idEntidad}/necesidades
+  public void obtenerNecesidades(Context ctx) {
+    String idEntidad = ctx.pathParam("idEntidad");
+    Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(idEntidad);
+
+    if (entidadOpt.isEmpty()) {
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
+    }
+
+    List<Necesidad> necesidades = entidadOpt.get().getNecesidades();
+    ctx.status(HttpStatus.OK).json(necesidades);
+  }
+
+  // POST /entidades/{idEntidad}/necesidades/recurrentes
+  public void registrarRecurrente(Context ctx) {
+    String idEntidad = ctx.pathParam("idEntidad");
+    NecesidadRecurrenteRequest request = ctx.bodyAsClass(NecesidadRecurrenteRequest.class);
 
     Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(idEntidad);
+
     if (entidadOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     EntidadBeneficiaria entidad = entidadOpt.get();
 
     // mock temporal
-    Subcategoria subcategoriaMock = new Subcategoria(request.getIdSubcategoria(), "Mock", TipoAtributo.NO_PERECEDERO);
-
+    // TODO
+    Subcategoria subcategoriaMock = new Subcategoria(
+        request.getIdSubcategoria(),
+        "Mock",
+        TipoAtributo.NO_PERECEDERO
+    );
 
     NecesidadRecurrente nuevaNecesidad = new NecesidadRecurrente(
         request.getDescripcion(),
@@ -58,23 +68,28 @@ public class NecesidadController {
     );
 
     entidad.registrarNecesidad(nuevaNecesidad);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Necesidad recurrente registrada exitosamente.");
+    ctx.status(HttpStatus.CREATED).result("Necesidad recurrente registrada exitosamente.");
   }
 
-  @PostMapping("/extraordinarias")
-  public ResponseEntity<String> registrarExtraordinaria(
-      @PathVariable String idEntidad,
-      @RequestBody NecesidadExtraordinariaRequest request) {
+  // POST /entidades/{idEntidad}/necesidades/extraordinarias
+  public void registrarExtraordinaria(Context ctx) {
+    String idEntidad = ctx.pathParam("idEntidad");
+    NecesidadExtraordinariaRequest request = ctx.bodyAsClass(NecesidadExtraordinariaRequest.class);
 
     Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(idEntidad);
+
     if (entidadOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     EntidadBeneficiaria entidad = entidadOpt.get();
 
-    Subcategoria subcategoriaMock = new Subcategoria(request.getIdSubcategoria(), "Mock", TipoAtributo.NO_PERECEDERO);
-
+    Subcategoria subcategoriaMock = new Subcategoria(
+        request.getIdSubcategoria(),
+        "Mock",
+        TipoAtributo.NO_PERECEDERO
+    );
 
     NecesidadExtraordinaria nuevaNecesidad = new NecesidadExtraordinaria(
         request.getDescripcion(),
@@ -84,27 +99,31 @@ public class NecesidadController {
     );
 
     entidad.registrarNecesidad(nuevaNecesidad);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Necesidad extraordinaria registrada exitosamente.");
+    ctx.status(HttpStatus.CREATED).result("Necesidad extraordinaria registrada exitosamente.");
   }
 
-  @DeleteMapping("/{idNecesidad}")
-  public ResponseEntity<String> eliminarNecesidad(
-      @PathVariable String idEntidad,
-      @PathVariable String idNecesidad) {
+  // DELETE /entidades/{idEntidad}/necesidades/{idNecesidad}
+  public void eliminarNecesidad(Context ctx) {
+    String idEntidad = ctx.pathParam("idEntidad");
+    String idNecesidad = ctx.pathParam("idNecesidad");
 
     Optional<EntidadBeneficiaria> entidadOpt = repositorio.buscarPorId(idEntidad);
+
     if (entidadOpt.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      ctx.status(HttpStatus.NOT_FOUND);
+      return;
     }
 
     EntidadBeneficiaria entidad = entidadOpt.get();
 
-    boolean removida = entidad.getNecesidades().removeIf(n -> n.getId().equals(idNecesidad));
+    boolean removida = entidad.getNecesidades()
+        .removeIf(n -> n.getId().equals(idNecesidad));
 
     if (removida) {
-      return ResponseEntity.ok("Necesidad eliminada.");
+      ctx.status(HttpStatus.OK).result("Necesidad eliminada.");
     } else {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Necesidad no encontrada en esta entidad.");
+      ctx.status(HttpStatus.NOT_FOUND)
+          .result("Necesidad no encontrada en esta entidad.");
     }
   }
 }
