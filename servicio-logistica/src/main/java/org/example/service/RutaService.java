@@ -63,4 +63,7 @@ public class RutaService {
     return true;
   }
 
+  public boolean iniciarRuta(String patente) {
+    return monitorCamiones.iniciarRuta(patente);
+  }
 }

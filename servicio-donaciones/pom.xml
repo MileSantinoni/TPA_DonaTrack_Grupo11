@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>org.example</groupId>
-    <artifactId>TPA_DonaTrack_Grupo11</artifactId>
+    <artifactId>servicio-donaciones</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -33,10 +33,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -93,11 +89,9 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>org.example.LogisticaApplication</mainClass>
-                </configuration>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
             </plugin>
         </plugins>
     </build>
