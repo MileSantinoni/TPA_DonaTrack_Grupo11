@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class LogisticaApiJavalinTest {
+  private final org.example.dominio.notificacion.Notificador notificador = mock(org.example.dominio.notificacion.Notificador.class);
 
   private MonitorCamiones monitor;
   private RepositorioCamiones repoCamiones;
@@ -57,8 +58,25 @@ public class LogisticaApiJavalinTest {
     RepositorioAsignacionesDonacion.getInstance().limpiar();
 
     camionController = new CamionController(monitor, repoCamiones);
-    rutaController = new RutaController(new RutaService(monitor));
+    rutaController = new RutaController(new RutaService(monitor), monitor, notificador);
     asignacionController = new AsignacionController();
+  }
+
+  @Test
+  public void inicioDeRutaInvalidaRespondeConflictoSinActivarla() {
+    Camion camion = new Camion("AB123CD", 25, 3, 4000);
+    Ruta ruta = new Ruta(camion);
+    Donacion donacion = new Donacion("Arroz", 10, "kg", null, null, null, null);
+    ruta.agregarEntrega(new Entrega(donacion, new EntidadBeneficiaria("Comedor", "Dir", "123"), 1));
+    monitor.registrarRuta(ruta);
+    Context ctx = mock(Context.class);
+    when(ctx.pathParam("patente")).thenReturn("AB123CD");
+    when(ctx.status(any(HttpStatus.class))).thenReturn(ctx);
+    rutaController.iniciarRuta(ctx);
+    verify(ctx).status(HttpStatus.CONFLICT);
+    assertFalse(ruta.estaActiva());
+    assertEquals(EstadoDonacion.EN_DEPOSITO, donacion.getEstadoActual());
+    verifyNoInteractions(notificador);
   }
 
   @Test
@@ -84,7 +102,7 @@ public class LogisticaApiJavalinTest {
     Camion camion = new Camion("AB123CD", 25.0, 2.8, 4000.0);
     repoCamiones.agregar(camion);
     Ruta ruta = new Ruta(camion);
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     monitor.registrarRuta(ruta);
 
     Context ctxValido = mock(Context.class);
@@ -129,11 +147,15 @@ public class LogisticaApiJavalinTest {
 
     EntidadBeneficiaria ent1 = new EntidadBeneficiaria("Comedor 1", "Dir 1", "123");
     EntidadBeneficiaria ent2 = new EntidadBeneficiaria("Comedor 2", "Dir 2", "456");
+    for (Donacion donacion : java.util.List.of(d1, d2)) {
+      donacion.cambiarEstado(EstadoDonacion.ASIGNACION_REALIZADA, "Asignacion");
+      donacion.cambiarEstado(EstadoDonacion.LISTA_PARA_ENTREGAR, "Planificacion");
+    }
     Entrega e1 = new Entrega(d1, ent1, 1);
     Entrega e2 = new Entrega(d2, ent2, 2);
     ruta.agregarEntrega(e1);
     ruta.agregarEntrega(e2);
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     monitor.registrarRuta(ruta);
 
     ReporteUbicacionRequest req = new ReporteUbicacionRequest();
@@ -156,7 +178,7 @@ public class LogisticaApiJavalinTest {
     verify(ctxUbicacion).status(HttpStatus.OK);
     verify(ctxUbicacion).json(any(UbicacionResponse.class));
 
-    e1.marcarEntregada(camion);
+    e1.confirmarRecepcion(camion, notificador);
     Context ctxAvance = mock(Context.class);
     when(ctxAvance.pathParam("patente")).thenReturn("AB123CD");
     when(ctxAvance.status(any(HttpStatus.class))).thenReturn(ctxAvance);

@@ -16,8 +16,8 @@ import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.TipoNotificacion;
 import org.example.dominio.notificacion.WhatsApp;
-import org.example.service.NotificacionesService;
-import org.example.service.TrazabilidadEntregaService;
+import static org.mockito.Mockito.mock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,25 +31,7 @@ public class MonitoreoCamionesTest {
   private Camion camion;
   private Ruta ruta;
 
-  private NotificacionesService notificacionesServiceFake() {
-    Email emailFake = new Email(null) {
-      @Override
-      public Notificacion enviar(String destinatario, String mensaje) {
-        Notificacion notificacion = new Notificacion(destinatario, mensaje);
-        notificacion.marcarComoCompletada();
-        return notificacion;
-      }
-    };
-
-    Notificador notificador = new Notificador(
-        emailFake,
-        new SMS(),
-        new WhatsApp()
-    );
-
-    return new NotificacionesService(notificador);
-  }
-
+  private final Notificador notificador = mock(Notificador.class);
 
   @BeforeEach
   public void setUp() {
@@ -134,10 +116,7 @@ public class MonitoreoCamionesTest {
 
   @Test
   public void alIniciarLaRutaLasEntregasPasanAEnTraslado() {
-    TrazabilidadEntregaService trazabilidadService =
-        new TrazabilidadEntregaService(notificacionesServiceFake());
-
-    trazabilidadService.iniciarRuta(ruta);
+    ruta.iniciar(notificador);
 
     for (Entrega entrega : ruta.getEntregas()) {
       assertEquals(EstadoEntrega.EN_TRASLADO, entrega.getEstado());
@@ -156,7 +135,7 @@ public class MonitoreoCamionesTest {
     Ruta rutaConDeposito = new Ruta(camionConDeposito, ubicacionDeposito);
 
     monitor.registrarRuta(rutaConDeposito);
-    rutaConDeposito.iniciar();
+    rutaConDeposito.iniciar(notificador);
 
     UbicacionCamion ubicacionActual = monitor.ubicacionActual("CD456EF");
 
@@ -167,14 +146,14 @@ public class MonitoreoCamionesTest {
 
   @Test
   public void elAvanceReflejaLasEntregasCompletadas() {
-    ruta.iniciar();
-    ruta.getEntregas().get(0).marcarEntregada(camion);
+    ruta.iniciar(notificador);
+    ruta.getEntregas().get(0).confirmarRecepcion(camion, notificador);
     assertEquals(50.0, ruta.porcentajeAvance());
   }
 
   @Test
   public void unReporteValidoActualizaLaUbicacionDelCamion() {
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     ReporteUbicacion reporte = new ReporteUbicacion("AB123CD", -34.60, -58.38, 45.0, LocalDateTime.now());
 
     boolean procesado = monitor.recibirReporte(reporte);
@@ -185,7 +164,7 @@ public class MonitoreoCamionesTest {
 
   @Test
   public void seRechazaElReporteDeUnaPatenteDesconocida() {
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     ReporteUbicacion reporte = new ReporteUbicacion("XX999XX", -34.60, -58.38, 45.0, LocalDateTime.now());
     assertFalse(monitor.recibirReporte(reporte));
   }
@@ -199,7 +178,7 @@ public class MonitoreoCamionesTest {
 
   @Test
   public void seRechazaElReporteConCoordenadasInvalidas() {
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     ReporteUbicacion reporte = new ReporteUbicacion("AB123CD", 200.0, -58.38, 45.0, LocalDateTime.now());
     assertFalse(monitor.recibirReporte(reporte));
   }

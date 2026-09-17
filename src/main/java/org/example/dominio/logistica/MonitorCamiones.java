@@ -2,6 +2,7 @@ package org.example.dominio.logistica;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.example.dominio.notificacion.Notificador;
 
 // Recibe los reportes de ubicación de la app móvil, los valida y los procesa
 // para reflejar la posición y el avance de cada camión en el dashboard.
@@ -30,12 +31,12 @@ public class MonitorCamiones {
     this.rutasEnSeguimiento.add(ruta);
   }
 
-  public boolean iniciarRuta(String patente) {
+  public boolean iniciarRuta(String patente, Notificador notificador) {
     Ruta ruta = buscarRutaPorPatente(patente);
     if (ruta == null) {
       return false;
     }
-    ruta.iniciar();
+    ruta.iniciar(notificador);
     return true;
   }
 

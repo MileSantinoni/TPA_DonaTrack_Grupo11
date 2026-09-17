@@ -7,8 +7,6 @@ import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donacion.RegistroDonacion;
 import org.example.dominio.donante.Donante;
-import org.example.dominio.logistica.Entrega;
-import org.example.dominio.logistica.Ruta;
 import org.example.dominio.notificacion.Notificacion;
 import org.example.dominio.notificacion.Notificador;
 
@@ -52,41 +50,6 @@ public class NotificacionesService {
         }
       }
     }
-  }
-
-  public void notificarInicioRuta(Ruta ruta) {
-    for (Entrega entrega : ruta.getEntregas()) {
-      notificador.notificarEntidadBeneficiaria(
-              entrega.getDestino(),
-              "Tu envio ya esta en camino. Podes seguirlo en el mapa interactivo."
-      );
-      notificador.notificarDonante(
-              entrega.getDonacion().getDonante(),
-              "Tu donacion ya esta en camino. Podes seguir el envio en el mapa interactivo."
-      );
-    }
-  }
-
-  public void notificarEntregaExitosa(Entrega entrega) {
-    notificador.notificarEntidadBeneficiaria(
-            entrega.getDestino(),
-            "El envio fue recibido correctamente. Se genero el comprobante de entrega."
-    );
-    notificador.notificarDonante(
-            entrega.getDonacion().getDonante(),
-            "Tu donacion fue entregada correctamente. Se genero el comprobante de entrega."
-    );
-  }
-
-  public void notificarEntregaNoRecibida(Entrega entrega, String motivo) {
-    notificador.notificarEntidadBeneficiaria(
-            entrega.getDestino(),
-            "No se pudo concretar la recepcion del envio. Motivo: " + motivo
-    );
-    notificador.notificarDonante(
-            entrega.getDonacion().getDonante(),
-            "No se pudo concretar la entrega de tu donacion. Motivo: " + motivo
-    );
   }
 
   public Notificacion notificarDonacionAsignadaBeneficiario(AsignacionDonacion asignacion) {

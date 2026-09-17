@@ -2,6 +2,9 @@ package org.example.dominio.logistica;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.HashSet;
+import org.example.dominio.notificacion.Notificador;
 
 public class Ruta {
 
@@ -26,11 +29,26 @@ public class Ruta {
   }
 
   // El chofer da inicio a la ruta: pasa a activa y sus entregas quedan En Traslado
-  public void iniciar() {
+  public void iniciar(Notificador notificador) {
+    Objects.requireNonNull(notificador, "El notificador es obligatorio");
+    if (activa) {
+      return;
+    }
+    var donaciones = new HashSet<String>();
+    for (Entrega entrega : entregas) {
+      entrega.validarInicioTraslado();
+      if (!donaciones.add(entrega.getDonacion().getId())) {
+        throw new IllegalStateException("La ruta contiene una donacion repetida");
+      }
+    }
+    for (Entrega entrega : entregas) {
+      entrega.iniciarTraslado();
+    }
     this.activa = true;
     if (ubicacionDeposito != null) {
       camion.establecerUbicacionInicial(ubicacionDeposito);
     }
+    notificador.notificarInicioRuta(this);
   }
 
   public int cantidadEntregas() {

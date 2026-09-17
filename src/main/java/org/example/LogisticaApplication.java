@@ -16,7 +16,8 @@ import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
-import org.example.service.NotificacionesService;
+import org.example.service.RutaService;
+import org.example.dominio.logistica.MonitorCamiones;
 import org.example.api.donaciones.DonanteController;
 import org.example.api.donaciones.DonacionController;
 import org.example.api.donaciones.EntidadBeneficiariaController;
@@ -25,6 +26,10 @@ import org.example.api.donaciones.NecesidadController;
 public class LogisticaApplication {
 
   public static Javalin crearApp() {
+    return crearApp(new Notificador(new Email(null), new SMS(), new WhatsApp()));
+  }
+
+  public static Javalin crearApp(Notificador notificador) {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
     objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -40,16 +45,11 @@ public class LogisticaApplication {
     RepositorioEntidadesBeneficiarias repoEntidades = RepositorioEntidadesBeneficiarias.getInstance();
 
     // también instanciar notificador y servicio
-    Notificador notificador = new Notificador(
-        new Email(null),
-        new SMS(),
-        new WhatsApp()
-    );
-    NotificacionesService notificacionesService = new NotificacionesService(notificador);
 
     //controllers de logistica
     CamionController camionController = new CamionController();
-    RutaController rutaController = new RutaController();
+    RutaController rutaController = new RutaController(new RutaService(),
+        MonitorCamiones.getInstance(), notificador);
     AsignacionController asignacionController = new AsignacionController();
 
     //instanciar controllers de donaciones

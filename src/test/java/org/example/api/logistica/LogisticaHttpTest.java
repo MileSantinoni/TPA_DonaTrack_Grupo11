@@ -46,7 +46,7 @@ public class LogisticaHttpTest {
     RepositorioEntidadesBeneficiarias.getInstance().limpiar();
     RepositorioAsignacionesDonacion.getInstance().limpiar();
 
-    app = LogisticaApplication.crearApp();
+    app = LogisticaApplication.crearApp(org.mockito.Mockito.mock(org.example.dominio.notificacion.Notificador.class));
     app.start(0);
     port = app.port();
 
@@ -80,6 +80,8 @@ public class LogisticaHttpTest {
     // 2. Registrar donacion y entidad en repositorios para la ruta
     Donante donante = new DonanteStub("donante@test.com", "30123456", TipoDocumento.DNI);
     Donacion donacion = new Donacion("Fideos", 100, "paquetes", null, LocalDate.now().plusDays(30), null, donante);
+    donacion.cambiarEstado(org.example.dominio.donacion.EstadoDonacion.ASIGNACION_REALIZADA, "Asignacion");
+    donacion.cambiarEstado(org.example.dominio.donacion.EstadoDonacion.LISTA_PARA_ENTREGAR, "Planificacion");
     RepositorioDonaciones.getInstance().agregar(donacion);
 
     // 3. Registrar ruta por POST /rutas
@@ -107,6 +109,9 @@ public class LogisticaHttpTest {
     HttpResponse<String> resIniciar = client.send(reqIniciar, HttpResponse.BodyHandlers.ofString());
     assertEquals(200, resIniciar.statusCode());
     assertEquals("Ruta iniciada", resIniciar.body());
+    assertEquals(org.example.dominio.donacion.EstadoDonacion.EN_TRASLADO, donacion.getEstadoActual());
+    assertEquals(org.example.dominio.logistica.EstadoEntrega.EN_TRASLADO,
+        MonitorCamiones.getInstance().rutaDe("AA100BB").getEntregas().get(0).getEstado());
 
     // 5. Enviar ubicacion por POST /camiones/ubicacion
     String ubicacionJson = "{\"patente\":\"AA100BB\",\"latitud\":-34.6037,\"longitud\":-58.3816,\"velocidad\":55.0}";

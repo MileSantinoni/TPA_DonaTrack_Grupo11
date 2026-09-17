@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.dominio.notificacion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -23,19 +23,22 @@ import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
 import org.junit.jupiter.api.Test;
 
-public class NotificacionesServiceTest {
+public class NotificadorLogisticaTest {
 
   @Test
   public void losEventosLogisticosNotificanALaEntidadYAlDonante() {
     NotificadorConRegistro notificador = new NotificadorConRegistro();
-    NotificacionesService service = new NotificacionesService(notificador);
+
     Entrega entrega = entregaDePrueba();
     Ruta ruta = new Ruta(new Camion("AB123CD", 20.0, 2.5, 3500.0));
     ruta.agregarEntrega(entrega);
 
-    service.notificarInicioRuta(ruta);
-    service.notificarEntregaExitosa(entrega);
-    service.notificarEntregaNoRecibida(entrega, "La entidad no pudo recibir");
+    notificador.notificarInicioRuta(ruta);
+    entrega.getDonacion().cambiarEstado(org.example.dominio.donacion.EstadoDonacion.ASIGNACION_REALIZADA, "Asignacion");
+    entrega.getDonacion().cambiarEstado(org.example.dominio.donacion.EstadoDonacion.LISTA_PARA_ENTREGAR, "Planificacion");
+    entrega.iniciarTraslado();
+    entrega.confirmarRecepcion(ruta.getCamion(), notificador);
+    notificador.notificarEntregaNoRecibida(entrega, "La entidad no pudo recibir");
 
     assertEquals(3, notificador.mensajesEntidad.size());
     assertEquals(3, notificador.mensajesDonante.size());

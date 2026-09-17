@@ -6,7 +6,8 @@ import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
-import org.example.service.NotificacionesService;
+import org.example.dominio.logistica.Ruta;
+import org.example.dominio.logistica.Entrega;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -26,6 +27,41 @@ public class Notificador {
     estrategias.put(TipoContactoPredeterminado.MAIL, email);
     estrategias.put(TipoContactoPredeterminado.TELEFONO, sms);
     estrategias.put(TipoContactoPredeterminado.WHATSAPP, whatsApp);
+  }
+
+  public void notificarInicioRuta(Ruta ruta) {
+    for (Entrega entrega : ruta.getEntregas()) {
+      notificarEntidadBeneficiaria(
+              entrega.getDestino(),
+              "Tu envio ya esta en camino. Podes seguirlo en el mapa interactivo."
+      );
+      notificarDonante(
+              entrega.getDonacion().getDonante(),
+              "Tu donacion ya esta en camino. Podes seguir el envio en el mapa interactivo."
+      );
+    }
+  }
+
+  public void notificarEntregaExitosa(Entrega entrega) {
+    notificarEntidadBeneficiaria(
+            entrega.getDestino(),
+            "Comprobante de entrega: " + entrega.getFechaRecepcion() + ". Camion: " + entrega.getCamionResponsable().getPatente()
+    );
+    notificarDonante(
+            entrega.getDonacion().getDonante(),
+            "Comprobante de entrega: " + entrega.getFechaRecepcion() + ". Camion: " + entrega.getCamionResponsable().getPatente()
+    );
+  }
+
+  public void notificarEntregaNoRecibida(Entrega entrega, String motivo) {
+    notificarEntidadBeneficiaria(
+            entrega.getDestino(),
+            "No se pudo concretar la recepcion del envio. Motivo: " + motivo
+    );
+    notificarDonante(
+            entrega.getDonacion().getDonante(),
+            "No se pudo concretar la entrega de tu donacion. Motivo: " + motivo
+    );
   }
 
   public Notificacion notificarDonante(Donante donante, String mensaje) {
