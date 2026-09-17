@@ -119,4 +119,22 @@ public class MonitorCamiones {
     }
     return reporte.getFechaYHora().isBefore(ultima.getFechaYHora());
   }
+  public boolean registrarRuta(PlanDeRuta plan,
+      org.example.Repositorios.RepositorioCamiones camiones,
+      java.util.function.Function<String, java.util.Optional<org.example.dominio.donacion.Donacion>> donaciones) {
+    Camion camion = camiones.buscarPorPatente(plan.patente()).orElse(null);
+    if (camion == null || !camion.estaDisponible()) return false;
+    Ruta ruta = new Ruta(camion, plan.deposito());
+    for (PlanDeRuta.Destino destino : plan.destinos()) {
+      var donacion = donaciones.apply(destino.idDonacion()).orElse(null);
+      if (donacion == null) return false;
+      ruta.agregarEntrega(new Entrega(donacion,
+          new org.example.dominio.beneficiario.EntidadBeneficiaria(
+              destino.razonSocial(), destino.direccion(), destino.telefono()), destino.orden()));
+    }
+    registrarRuta(ruta);
+    camion.marcarNoDisponible();
+    return true;
+  }
+
 }

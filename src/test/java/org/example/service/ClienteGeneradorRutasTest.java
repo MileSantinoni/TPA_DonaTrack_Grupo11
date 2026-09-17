@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.integracion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

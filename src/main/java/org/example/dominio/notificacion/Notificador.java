@@ -1,5 +1,7 @@
 package org.example.dominio.notificacion;
 
+import org.example.dominio.donacion.AsignacionDonacion;
+
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
 import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.donante.Donante;
@@ -131,4 +133,37 @@ public class Notificador {
 
     return null;
   }
+  public Notificacion notificarDonacionAsignadaBeneficiario(AsignacionDonacion asignacion) {
+    EntidadBeneficiaria entidad = asignacion.getEntidad();
+    String email = obtenerEmailDeContacto(entidad);
+
+    if (email == null) {
+      return null;
+    }
+
+    String mensaje = "Se le asigno una donacion en base a sus necesidades. "
+            + "Entidad: " + entidad.getRazonSocial() + ".";
+
+    return notificarPorEmail(email, mensaje);
+  }
+
+  public Notificacion notificarDonacionAsignadaDonante(AsignacionDonacion asignacion) {
+    Donante donante = asignacion.getDonacion().getDonante();
+
+    String mensaje = "Tu donacion acaba de ser asignada a la entidad beneficiaria "
+            + asignacion.getEntidad().getRazonSocial() + ".";
+
+    return notificarDonante(donante, mensaje);
+  }
+
+  private String obtenerEmailDeContacto(EntidadBeneficiaria entidad) {
+    for (Representante representante : entidad.getRepresentantes()) {
+      if (representante.getEmail() != null) {
+        return representante.getEmail();
+      }
+    }
+
+    return null;
+  }
+
 }

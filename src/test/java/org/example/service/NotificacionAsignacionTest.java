@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class NotificacionAsignacionTest {
 
-    private NotificacionesService notificacionesService;
+    private Notificador notificacionesService;
 
     static class DonanteTest extends Donante {
         public DonanteTest(String mail, String nroDoc, TipoDocumento tipo) {
@@ -59,7 +59,7 @@ public class NotificacionAsignacionTest {
                 }
         );
 
-        notificacionesService = new NotificacionesService(notificador);
+        notificacionesService = notificador;
     }
 
     private AsignacionDonacion asignacionCon(Donante donante, EntidadBeneficiaria entidad) {

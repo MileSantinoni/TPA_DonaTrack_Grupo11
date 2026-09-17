@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.integracion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +9,8 @@ import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.UbicacionCamion;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-@Service
 public class ClienteGeneradorRutas {
 
   private static final String URL_GENERADOR_RUTAS = "http://localhost:8081/rutas/generar";

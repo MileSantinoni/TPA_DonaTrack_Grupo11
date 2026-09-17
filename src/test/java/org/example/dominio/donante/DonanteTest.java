@@ -3,7 +3,6 @@ import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificacion;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
-import org.example.service.NotificacionesService;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

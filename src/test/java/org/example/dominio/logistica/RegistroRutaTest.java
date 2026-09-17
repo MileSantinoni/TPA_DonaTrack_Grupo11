@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.dominio.logistica;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class RutaServiceTest {
+public class RegistroRutaTest {
 
   private RepositorioCamiones repositorioCamiones;
   private RepositorioDonaciones repositorioDonaciones;
@@ -46,9 +46,10 @@ public class RutaServiceTest {
     Donacion donacion = donacionDePrueba();
     repositorioCamiones.agregar(camion);
     repositorioDonaciones.agregar(donacion);
-    RutaService rutaService = new RutaService(new MonitorCamiones());
+    MonitorCamiones monitor = new MonitorCamiones();
 
-    boolean registrada = rutaService.registrarRuta(requestPara(camion, donacion));
+    boolean registrada = monitor.registrarRuta(requestPara(camion, donacion).aPlan(),
+        repositorioCamiones, repositorioDonaciones::buscarPorId);
 
     assertTrue(registrada);
     assertFalse(camion.estaDisponible());
@@ -62,9 +63,10 @@ public class RutaServiceTest {
     Donacion donacion = donacionDePrueba();
     repositorioCamiones.agregar(camion);
     repositorioDonaciones.agregar(donacion);
-    RutaService rutaService = new RutaService(new MonitorCamiones());
+    MonitorCamiones monitor = new MonitorCamiones();
 
-    boolean registrada = rutaService.registrarRuta(requestPara(camion, donacion));
+    boolean registrada = monitor.registrarRuta(requestPara(camion, donacion).aPlan(),
+        repositorioCamiones, repositorioDonaciones::buscarPorId);
 
     assertFalse(registrada);
   }

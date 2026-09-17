@@ -90,4 +90,14 @@ public class RutaRequest {
       this.orden = orden;
     }
   }
+  public org.example.dominio.logistica.PlanDeRuta aPlan() {
+    var deposito = latitudDeposito == null || longitudDeposito == null ? null
+        : new org.example.dominio.logistica.UbicacionCamion(
+            latitudDeposito, longitudDeposito, 0, java.time.LocalDateTime.now());
+    return new org.example.dominio.logistica.PlanDeRuta(patente,
+        entregas.stream().map(e -> new org.example.dominio.logistica.PlanDeRuta.Destino(
+            e.getIdDonacion(), e.getRazonSocial(), e.getDireccion(), e.getTelefono(), e.getOrden()))
+            .toList(), deposito);
+  }
+
 }

@@ -135,4 +135,14 @@ public class Donacion {
     return asignacion;
   }
 
+  public AsignacionDonacion asignarA(
+      org.example.dominio.beneficiario.EntidadBeneficiaria entidad,
+      org.example.dominio.notificacion.Notificador notificador) {
+    java.util.Objects.requireNonNull(notificador, "El notificador es obligatorio");
+    AsignacionDonacion asignacion = asignarA(entidad);
+    notificador.notificarDonacionAsignadaBeneficiario(asignacion);
+    notificador.notificarDonacionAsignadaDonante(asignacion);
+    return asignacion;
+  }
+
 }

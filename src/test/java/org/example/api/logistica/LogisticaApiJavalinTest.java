@@ -22,7 +22,6 @@ import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.Entrega;
 import org.example.dominio.logistica.MonitorCamiones;
 import org.example.dominio.logistica.Ruta;
-import org.example.service.RutaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,7 +57,7 @@ public class LogisticaApiJavalinTest {
     RepositorioAsignacionesDonacion.getInstance().limpiar();
 
     camionController = new CamionController(monitor, repoCamiones);
-    rutaController = new RutaController(new RutaService(monitor), monitor, notificador);
+    rutaController = new RutaController(monitor, notificador);
     asignacionController = new AsignacionController();
   }
 
