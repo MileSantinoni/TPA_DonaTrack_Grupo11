@@ -1,61 +1,63 @@
-package org.example.service;
+package org.example.integracion;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.example.Repositorios.RepositorioAsignacionesDonacion;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.Repositorios.RepositorioCamiones;
 import org.example.api.logistica.dto.RutaRequest;
-import org.example.dominio.donacion.AsignacionDonacion;
+
 import org.example.dominio.logistica.Camion;
 import org.example.dominio.logistica.UbicacionCamion;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-@Service
+
+
 public class ClienteGeneradorRutas {
 
   private static final String URL_GENERADOR_RUTAS = "http://localhost:8081/rutas/generar";
 
-  private final RestTemplate restTemplate;
+  private final HttpClient http;
+  private final ObjectMapper json = new ObjectMapper();
   private final String urlGeneradorRutas;
   private final RepositorioCamiones repositorioCamiones;
-  private final RepositorioAsignacionesDonacion repositorioAsignaciones;
+  private final ClienteDonaciones donaciones;
 
   public ClienteGeneradorRutas() {
     this(
-        new RestTemplate(),
-        URL_GENERADOR_RUTAS,
+        HttpClient.newHttpClient(),
+        System.getenv().getOrDefault("GENERADOR_RUTAS_URL", URL_GENERADOR_RUTAS),
         RepositorioCamiones.getInstance(),
-        RepositorioAsignacionesDonacion.getInstance()
+        new ClienteDonaciones(System.getenv().getOrDefault("DONACIONES_URL", "http://localhost:8080"))
     );
   }
 
   public ClienteGeneradorRutas(
-      RestTemplate restTemplate,
+      HttpClient http,
       String urlGeneradorRutas,
       RepositorioCamiones repositorioCamiones,
-      RepositorioAsignacionesDonacion repositorioAsignaciones
+      ClienteDonaciones donaciones
   ) {
-    this.restTemplate = restTemplate;
+    this.http = http;
     this.urlGeneradorRutas = urlGeneradorRutas;
     this.repositorioCamiones = repositorioCamiones;
-    this.repositorioAsignaciones = repositorioAsignaciones;
+    this.donaciones = donaciones;
   }
 
-  public List<RutaRequest> solicitarRutasDesdeRepositorios(UbicacionCamion ubicacionDeposito) {
+  public List<RutaRequest> solicitarRutasDesdeRepositorios(UbicacionCamion ubicacionDeposito) throws IOException, InterruptedException {
     return solicitarRutas(
         repositorioCamiones.buscarDisponibles(),
-        repositorioAsignaciones.buscarTodas(),
+        donaciones.listarAsignaciones(),
         ubicacionDeposito
     );
   }
 
   public List<RutaRequest> solicitarRutas(
       List<Camion> camionesDisponibles,
-      List<AsignacionDonacion> asignaciones,
+      List<AsignacionDisponible> asignaciones,
       UbicacionCamion ubicacionDeposito
-  ) {
+  ) throws IOException, InterruptedException {
     if (camionesDisponibles.isEmpty() || asignaciones.isEmpty()) {
       return new ArrayList<>();
     }
@@ -63,18 +65,17 @@ public class ClienteGeneradorRutas {
     GenerarRutasRequest request =
         armarRequest(camionesDisponibles, asignaciones, ubicacionDeposito);
 
-    ResponseEntity<RutaGeneradaResponse[]> response = restTemplate.postForEntity(
-        urlGeneradorRutas,
-        request,
-        RutaGeneradaResponse[].class
-    );
-
-    return convertirRespuesta(response.getBody());
+    HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(urlGeneradorRutas))
+        .timeout(java.time.Duration.ofSeconds(30)).header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(request))).build();
+    HttpResponse<String> response = http.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() != 200) throw new IOException("Generador respondio " + response.statusCode());
+    return convertirRespuesta(json.readValue(response.body(), RutaGeneradaResponse[].class));
   }
 
   public GenerarRutasRequest armarRequest(
       List<Camion> camionesDisponibles,
-      List<AsignacionDonacion> asignaciones,
+      List<AsignacionDisponible> asignaciones,
       UbicacionCamion ubicacionDeposito
   ) {
     GenerarRutasRequest request = new GenerarRutasRequest();
@@ -158,17 +159,17 @@ public class ClienteGeneradorRutas {
   }
 
   private List<AsignacionRutaRequest> crearAsignacionesRequest(
-      List<AsignacionDonacion> asignaciones
+      List<AsignacionDisponible> asignaciones
   ) {
     List<AsignacionRutaRequest> asignacionesRequest = new ArrayList<>();
 
-    for (AsignacionDonacion asignacion : asignaciones) {
+    for (AsignacionDisponible asignacion : asignaciones) {
       AsignacionRutaRequest asignacionRequest = new AsignacionRutaRequest();
-      asignacionRequest.setIdDonacion(asignacion.getDonacion().getId());
-      asignacionRequest.setEstadoDonacion(asignacion.getDonacion().getEstadoActual().name());
-      asignacionRequest.setRazonSocialEntidad(asignacion.getEntidad().getRazonSocial());
-      asignacionRequest.setDireccionEntidad(asignacion.getEntidad().getDireccion());
-      asignacionRequest.setTelefonoEntidad(asignacion.getEntidad().getTelefono());
+      asignacionRequest.setIdDonacion(asignacion.idDonacion());
+      asignacionRequest.setEstadoDonacion(asignacion.estadoDonacion());
+      asignacionRequest.setRazonSocialEntidad(asignacion.razonSocial());
+      asignacionRequest.setDireccionEntidad(asignacion.direccion());
+      asignacionRequest.setTelefonoEntidad(asignacion.telefono());
       asignacionesRequest.add(asignacionRequest);
     }
 

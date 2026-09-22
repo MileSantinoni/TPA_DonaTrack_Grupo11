@@ -6,7 +6,7 @@ import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
-import org.example.service.NotificacionesService;
+import org.example.dominio.donacion.AsignacionDonacion;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -95,4 +95,51 @@ public class Notificador {
 
     return null;
   }
+  public Notificacion notificarDonacionAsignadaBeneficiario(AsignacionDonacion asignacion) {
+    EntidadBeneficiaria entidad = asignacion.getEntidad();
+    String email = buscarEmailRepresentante(entidad);
+
+    if (email == null) {
+      return null;
+    }
+
+    String mensaje = "Se le asigno una donacion en base a sus necesidades. "
+            + "Entidad: " + entidad.getRazonSocial() + ".";
+
+    return notificarPorEmail(email, mensaje);
+  }
+
+  public Notificacion notificarDonacionAsignadaDonante(AsignacionDonacion asignacion) {
+    Donante donante = asignacion.getDonacion().getDonante();
+
+    String mensaje = "Tu donacion acaba de ser asignada a la entidad beneficiaria "
+            + asignacion.getEntidad().getRazonSocial() + ".";
+
+    return notificarDonante(donante, mensaje);
+  }
+
+  public void notificarEventoLogistico(AsignacionDonacion asignacion,
+      org.example.dominio.donacion.EventoLogistico evento) {
+    String mensajeEntidad;
+    String mensajeDonante;
+    switch (evento.tipo()) {
+      case INICIO_TRASLADO -> {
+        mensajeEntidad = "Tu envio ya esta en camino. Podes seguirlo en el mapa interactivo.";
+        mensajeDonante = "Tu donacion ya esta en camino. Podes seguir el envio en el mapa interactivo.";
+      }
+      case RECEPCION -> {
+        mensajeEntidad = "Comprobante de entrega: " + evento.fecha() + ". Camion: " + evento.patente();
+        mensajeDonante = mensajeEntidad;
+      }
+      case NO_RECIBIDA -> {
+        mensajeEntidad = "No se pudo concretar la recepcion del envio. Motivo: " + evento.motivo();
+        mensajeDonante = "No se pudo concretar la entrega de tu donacion. Motivo: " + evento.motivo();
+      }
+      case RETORNO_DEPOSITO -> { return; }
+      default -> throw new IllegalArgumentException("Evento no soportado");
+    }
+    notificarEntidadBeneficiaria(asignacion.getEntidad(), mensajeEntidad);
+    notificarDonante(asignacion.getDonacion().getDonante(), mensajeDonante);
+  }
+
 }

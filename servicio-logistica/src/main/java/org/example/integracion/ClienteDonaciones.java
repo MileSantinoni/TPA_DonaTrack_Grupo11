@@ -10,13 +10,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class ClienteDonaciones {
+public class ClienteDonaciones implements org.example.dominio.logistica.Donaciones {
   private final HttpClient http;
   private final ObjectMapper json;
   private final String baseUrl;
 
   public ClienteDonaciones(String baseUrl) {
-    this(HttpClient.newHttpClient(), new ObjectMapper(), baseUrl);
+    this(HttpClient.newHttpClient(), new ObjectMapper().findAndRegisterModules(), baseUrl);
   }
 
   public ClienteDonaciones(HttpClient http, ObjectMapper json, String baseUrl) {
@@ -28,7 +28,7 @@ public class ClienteDonaciones {
   public Optional<AsignacionDisponible> buscarAsignacion(String idAsignacion)
       throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(
-        URI.create(baseUrl + "/interno/asignaciones/" + idAsignacion)).GET().build();
+        URI.create(baseUrl + "/interno/asignaciones/" + idAsignacion)).timeout(java.time.Duration.ofSeconds(10)).GET().build();
     HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() == 404) return Optional.empty();
     if (response.statusCode() != 200) {
@@ -40,7 +40,7 @@ public class ClienteDonaciones {
   public boolean existeDonacion(String idDonacion) throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(
         URI.create(baseUrl + "/interno/donaciones/" + idDonacion + "/existe"))
-        .GET().build();
+        .timeout(java.time.Duration.ofSeconds(10)).GET().build();
     HttpResponse<Void> response = http.send(request, HttpResponse.BodyHandlers.discarding());
     if (response.statusCode() == 204) return true;
     if (response.statusCode() == 404) return false;
@@ -50,7 +50,7 @@ public class ClienteDonaciones {
   public List<AsignacionDisponible> listarAsignaciones()
       throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(
-        URI.create(baseUrl + "/interno/asignaciones")).GET().build();
+        URI.create(baseUrl + "/interno/asignaciones")).timeout(java.time.Duration.ofSeconds(10)).GET().build();
     HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() != 200) {
       throw new IOException("Donaciones respondio " + response.statusCode());
@@ -58,4 +58,26 @@ public class ClienteDonaciones {
     return Arrays.asList(json.readValue(response.body(), AsignacionDisponible[].class));
   }
 
+  @Override
+  public List<org.example.dominio.logistica.Donaciones.Asignacion> listarDestinos()
+      throws IOException, InterruptedException {
+    return listarAsignaciones().stream().map(a -> new org.example.dominio.logistica.Donaciones.Asignacion(
+        a.idDonacion(), a.idEntidad(), a.razonSocial(), a.direccion(), a.telefono(), a.estadoDonacion())).toList();
+  }
+
+  @Override
+  public void informar(org.example.dominio.logistica.EventoLogistico evento)
+      throws IOException, InterruptedException {
+    HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/interno/logistica/eventos"))
+        .timeout(java.time.Duration.ofSeconds(10))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(evento))).build();
+    HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() == 204) return;
+    if (response.statusCode() == 409 || response.statusCode() == 404) {
+      throw new IllegalStateException(response.body());
+    }
+    if (response.statusCode() == 400) throw new IllegalArgumentException(response.body());
+    throw new IOException("Donaciones respondio " + response.statusCode());
+  }
 }

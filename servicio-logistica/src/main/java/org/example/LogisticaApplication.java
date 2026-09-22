@@ -29,12 +29,15 @@ public class LogisticaApplication {
     RutaController rutaController = new RutaController(camiones, monitor, clienteDonaciones);
 
     app.get("/health", ctx -> ctx.result("OK"));
-    app.post("/camiones", camionController::registrarCamion);
-    app.post("/camiones/ubicacion", camionController::recibirUbicacion);
-    app.get("/camiones/{patente}/ubicacion", camionController::ubicacionActual);
-    app.get("/camiones/{patente}/avance", camionController::avanceDeRuta);
-    app.post("/rutas", rutaController::registrarRuta);
-    app.post("/rutas/{patente}/iniciar", rutaController::iniciarRuta);
+    org.example.Routes.RoutesLogistica.registrar(app, camionController, rutaController,
+        new org.example.api.logistica.EntregaController(monitor, clienteDonaciones));
+    app.exception(IllegalArgumentException.class, (e, ctx) -> ctx.status(400).result(e.getMessage()));
+    app.exception(IllegalStateException.class, (e, ctx) -> ctx.status(409).result(e.getMessage()));
+    app.exception(java.io.IOException.class, (e, ctx) -> ctx.status(502).result("No se pudo comunicar con Donaciones"));
+    app.exception(InterruptedException.class, (e, ctx) -> {
+      Thread.currentThread().interrupt();
+      ctx.status(503).result("Comunicacion con Donaciones interrumpida");
+    });
     return app;
   }
 

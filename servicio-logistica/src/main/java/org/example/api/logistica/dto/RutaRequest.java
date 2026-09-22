@@ -90,4 +90,26 @@ public class RutaRequest {
       this.orden = orden;
     }
   }
+  public org.example.dominio.logistica.PlanDeRuta aPlan() {
+    if (patente == null || patente.isBlank() || entregas == null || entregas.isEmpty()
+        || entregas.stream().anyMatch(e -> e == null || e.getIdDonacion() == null || e.getIdDonacion().isBlank())) {
+      throw new IllegalArgumentException("Patente y entregas son obligatorias");
+    }
+    if ((latitudDeposito == null) != (longitudDeposito == null)) {
+      throw new IllegalArgumentException("Debe informar ambas coordenadas del deposito");
+    }
+    if (latitudDeposito != null && (!Double.isFinite(latitudDeposito) || !Double.isFinite(longitudDeposito)
+        || Math.abs(latitudDeposito) > 90 || Math.abs(longitudDeposito) > 180)) {
+      throw new IllegalArgumentException("Coordenadas del deposito invalidas");
+    }
+
+    var deposito = latitudDeposito == null || longitudDeposito == null ? null
+        : new org.example.dominio.logistica.UbicacionCamion(
+            latitudDeposito, longitudDeposito, 0, java.time.LocalDateTime.now());
+    return new org.example.dominio.logistica.PlanDeRuta(patente,
+        entregas.stream().map(e -> new org.example.dominio.logistica.PlanDeRuta.Destino(
+            e.getIdDonacion(), e.getRazonSocial(), e.getDireccion(), e.getTelefono(), e.getOrden()))
+            .toList(), deposito);
+  }
+
 }

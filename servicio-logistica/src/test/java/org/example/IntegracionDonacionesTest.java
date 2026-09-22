@@ -1,66 +1,94 @@
 package org.example;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.javalin.Javalin;
+import io.javalin.json.JavalinJackson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.http.*;
+import java.util.*;
 import org.example.Repositorios.RepositorioCamiones;
-import org.example.dominio.logistica.MonitorCamiones;
-import org.example.dominio.logistica.EstadoEntrega;
-import org.junit.jupiter.api.Test;
+import org.example.dominio.logistica.*;
+import org.example.integracion.AsignacionDisponible;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class IntegracionDonacionesTest {
-  @Test
-  void registraEIniciaRutaSinCompartirObjetosDelDominioDonaciones() throws Exception {
-    Javalin donaciones = Javalin.create();
-    donaciones.get("/interno/donaciones/DON-1/existe", ctx -> ctx.status(204));
-    donaciones.start(0);
+class IntegracionDonacionesTest {
+  Javalin remoto;
+  Javalin app;
+  HttpClient http = HttpClient.newHttpClient();
+  List<EventoLogistico> eventos = new ArrayList<>();
+  int respuesta = 204;
 
+  @BeforeEach void preparar() {
     RepositorioCamiones.getInstance().limpiar();
     MonitorCamiones.getInstance().limpiar();
-    Javalin logistica = LogisticaApplication.crearApp("http://localhost:" + donaciones.port());
-    logistica.start(0);
-    try {
-      HttpClient http = HttpClient.newHttpClient();
-      String base = "http://localhost:" + logistica.port();
-      HttpResponse<String> camion = http.send(HttpRequest.newBuilder(URI.create(base + "/camiones"))
-          .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(
-              "{\"patente\":\"AA100BB\",\"capacidadVolumen\":30,\"altura\":3,\"capacidadCarga\":5000}"))
-          .build(), HttpResponse.BodyHandlers.ofString());
-      assertEquals(201, camion.statusCode());
+    remoto = Javalin.create(c -> c.jsonMapper(new JavalinJackson(new ObjectMapper().findAndRegisterModules())));
+    remoto.get("/interno/asignaciones", ctx -> ctx.json(List.of(
+        new AsignacionDisponible("D1", "E1", "Comedor Sol", "Calle real", "123", "LISTA_PARA_ENTREGAR"))));
+    remoto.post("/interno/logistica/eventos", ctx -> {
+      eventos.add(ctx.bodyAsClass(EventoLogistico.class));
+      ctx.status(respuesta).result(respuesta == 204 ? "" : "Rechazado");
+    });
+    remoto.start(0);
+    app = LogisticaApplication.crearApp("http://localhost:" + remoto.port()).start(0);
+  }
+  @AfterEach void cerrar() {
+    app.stop(); remoto.stop();
+    RepositorioCamiones.getInstance().limpiar(); MonitorCamiones.getInstance().limpiar();
+  }
+  HttpResponse<String> post(String path, String body) throws Exception {
+    return http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + app.port() + path))
+        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+        HttpResponse.BodyHandlers.ofString());
+  }
+  void registrar() throws Exception {
+    assertEquals(201, post("/camiones", "{\"patente\":\"ABC\",\"capacidadVolumen\":30,\"altura\":3,\"capacidadCarga\":5000}").statusCode());
+    assertEquals(201, post("/rutas", "{\"patente\":\"ABC\",\"latitudDeposito\":-34.6,\"longitudDeposito\":-58.38,\"entregas\":[{\"idDonacion\":\"D1\",\"orden\":1}]}").statusCode());
+  }
+  Entrega entrega() { return MonitorCamiones.getInstance().rutaDe("ABC").getEntregas().get(0); }
 
-      HttpResponse<String> ruta = http.send(HttpRequest.newBuilder(URI.create(base + "/rutas"))
-          .header("Content-Type", "application/json")
-          .POST(HttpRequest.BodyPublishers.ofString(
-              "{\"patente\":\"AA100BB\",\"entregas\":[{\"idDonacion\":\"DON-1\","
-                  + "\"razonSocial\":\"Comedor Sol\",\"direccion\":\"Av. Central 10\","
-                  + "\"telefono\":\"1122334455\",\"orden\":1}]}"))
-          .build(), HttpResponse.BodyHandlers.ofString());
-      assertEquals(201, ruta.statusCode(), ruta.body());
-      assertNotNull(MonitorCamiones.getInstance().rutaDe("AA100BB"));
-      assertEquals("Comedor Sol", MonitorCamiones.getInstance().rutaDe("AA100BB")
-          .getEntregas().get(0).getRazonSocial());
-      assertEquals(EstadoEntrega.PENDIENTE, MonitorCamiones.getInstance().rutaDe("AA100BB")
-          .getEntregas().get(0).getEstado());
-
-      HttpResponse<String> inicio = http.send(HttpRequest.newBuilder(
-          URI.create(base + "/rutas/AA100BB/iniciar"))
-          .POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
-      assertEquals(200, inicio.statusCode(), inicio.body());
-      assertTrue(MonitorCamiones.getInstance().rutaDe("AA100BB").estaActiva());
-      assertEquals(EstadoEntrega.PENDIENTE, MonitorCamiones.getInstance().rutaDe("AA100BB")
-          .getEntregas().get(0).getEstado());
-    } finally {
-      logistica.stop();
-      donaciones.stop();
-      RepositorioCamiones.getInstance().limpiar();
-      MonitorCamiones.getInstance().limpiar();
-    }
+  @Test void registraIniciaYConfirmaPorHttpSinCompartirEntidades() throws Exception {
+    registrar();
+    assertEquals("E1", entrega().getIdEntidad());
+    assertEquals("Calle real", entrega().getDireccion());
+    assertEquals(200, post("/rutas/ABC/iniciar", "").statusCode());
+    assertEquals(EstadoEntrega.EN_TRASLADO, entrega().getEstado());
+    assertEquals(-34.6, MonitorCamiones.getInstance().ubicacionActual("ABC").getLatitud());
+    assertEquals(204, post("/rutas/ABC/entregas/D1/recepcion", "{\"fotos\":[\"foto.jpg\"]}").statusCode());
+    assertEquals(EstadoEntrega.ENTREGADA, entrega().getEstado());
+    assertEquals(List.of("foto.jpg"), entrega().getFotosRecepcion());
+    assertEquals(100, MonitorCamiones.getInstance().avanceDeRuta("ABC"));
+    assertEquals(List.of(EventoLogistico.Tipo.INICIO_TRASLADO, EventoLogistico.Tipo.RECEPCION),
+        eventos.stream().map(EventoLogistico::tipo).toList());
+  }
+  @Test void informaEntregaFallidaYRetornoPorHttp() throws Exception {
+    registrar(); post("/rutas/ABC/iniciar", "");
+    assertEquals(204, post("/rutas/ABC/entregas/D1/no-recibida", "{\"motivo\":\"Cerrado\"}").statusCode());
+    assertEquals(EstadoEntrega.NO_RECIBIDA, entrega().getEstado());
+    assertEquals(204, post("/rutas/ABC/entregas/D1/retorno", "{\"motivo\":\"Regreso al deposito\"}").statusCode());
+    assertEquals(EstadoEntrega.PENDIENTE, entrega().getEstado());
+  }
+  @Test void conflictoRemotoNoCambiaElEstadoLocal() throws Exception {
+    registrar(); respuesta = 409;
+    assertEquals(409, post("/rutas/ABC/iniciar", "").statusCode());
+    assertFalse(MonitorCamiones.getInstance().rutaDe("ABC").estaActiva());
+    assertEquals(EstadoEntrega.PENDIENTE, entrega().getEstado());
+  }
+  @Test void errorRemotoSeReportaComo502YPermiteReintentar() throws Exception {
+    registrar(); respuesta = 500;
+    assertEquals(502, post("/rutas/ABC/iniciar", "").statusCode());
+    respuesta = 204;
+    assertEquals(200, post("/rutas/ABC/iniciar", "").statusCode());
+    assertEquals(eventos.get(0), eventos.get(1));
+  }
+  @Test void fotosInvalidasNoConfirmanRecepcion() throws Exception {
+    registrar(); post("/rutas/ABC/iniciar", "");
+    assertEquals(400, post("/rutas/ABC/entregas/D1/recepcion", "{\"fotos\":[\"\"]}").statusCode());
+    assertEquals(EstadoEntrega.EN_TRASLADO, entrega().getEstado());
+    assertEquals(1, eventos.size());
+  }
+  @Test void validaRutaIncompleta() throws Exception {
+    assertEquals(400, post("/rutas", "{\"patente\":\"ABC\"}").statusCode());
+    assertEquals(404, post("/rutas/INEXISTENTE/iniciar", "").statusCode());
   }
 }

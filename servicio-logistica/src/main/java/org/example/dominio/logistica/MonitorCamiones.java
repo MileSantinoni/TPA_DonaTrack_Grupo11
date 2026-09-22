@@ -30,12 +30,13 @@ public class MonitorCamiones {
     this.rutasEnSeguimiento.add(ruta);
   }
 
-  public boolean iniciarRuta(String patente) {
+  public boolean iniciarRuta(String patente, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
     Ruta ruta = buscarRutaPorPatente(patente);
     if (ruta == null) {
       return false;
     }
-    ruta.iniciar();
+    ruta.iniciar(donaciones);
     return true;
   }
 
@@ -118,4 +119,36 @@ public class MonitorCamiones {
     }
     return reporte.getFechaYHora().isBefore(ultima.getFechaYHora());
   }
+  public synchronized boolean registrarRuta(PlanDeRuta plan,
+      org.example.Repositorios.RepositorioCamiones camiones, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
+    Camion camion = camiones.buscarPorPatente(plan.patente()).orElse(null);
+    if (camion == null || !camion.estaDisponible()) return false;
+    if (rutaDe(plan.patente()) != null) throw new IllegalStateException("El camion ya tiene una ruta registrada");
+    if (plan.destinos().isEmpty()) throw new IllegalArgumentException("La ruta no tiene entregas");
+    var asignaciones = donaciones.listarDestinos();
+    Ruta ruta = new Ruta(camion, plan.deposito());
+    var ids = new java.util.HashSet<String>();
+    for (PlanDeRuta.Destino destino : plan.destinos()) {
+      if (!ids.add(destino.idDonacion())) throw new IllegalStateException("La ruta contiene una donacion repetida");
+      if (rutasEnSeguimiento.stream().flatMap(r -> r.getEntregas().stream())
+          .anyMatch(e -> e.getIdDonacion().equals(destino.idDonacion()) && !e.fueResuelta())) {
+        throw new IllegalStateException("La donacion ya tiene una entrega pendiente");
+      }
+      var candidatas = asignaciones.stream().filter(a -> a.idDonacion().equals(destino.idDonacion())).toList();
+      if (candidatas.isEmpty()) return false;
+      if (candidatas.size() != 1) throw new IllegalStateException("La donacion tiene mas de una asignacion");
+      var asignacion = candidatas.get(0);
+      if (asignacion.idEntidad() == null || asignacion.idEntidad().isBlank()) {
+        throw new IllegalStateException("La asignacion no tiene entidad destinataria");
+      }
+      // Los datos de destino autoritativos provienen de Donaciones, no del request.
+      ruta.agregarEntrega(new Entrega(asignacion.idDonacion(), asignacion.idEntidad(),
+          asignacion.razonSocial(), asignacion.direccion(), asignacion.telefono(), destino.orden()));
+    }
+    registrarRuta(ruta);
+    camion.marcarNoDisponible();
+    return true;
+  }
+
 }

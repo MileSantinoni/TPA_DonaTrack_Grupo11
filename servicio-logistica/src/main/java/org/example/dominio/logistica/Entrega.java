@@ -14,6 +14,8 @@ public class Entrega {
   private final int orden;
   private EstadoEntrega estado = EstadoEntrega.PENDIENTE;
   private Camion camionResponsable;
+  private java.time.LocalDateTime fechaRecepcion;
+  private EventoLogistico eventoPendiente;
   private final List<String> fotosRecepcion = new ArrayList<>();
 
   public Entrega(String idDonacion, String idEntidad, String razonSocial,
@@ -26,14 +28,75 @@ public class Entrega {
     this.orden = orden;
   }
 
-  public void marcarEnTraslado() { estado = EstadoEntrega.EN_TRASLADO; }
-  public void marcarEntregada(Camion camion) {
+  public void validarInicioTraslado() {
+    exigirEstado(EstadoEntrega.PENDIENTE);
+    if (eventoPendiente != null) throw new IllegalStateException("Hay una operacion pendiente");
+  }
+
+  // Solo Ruta lo invoca luego de la confirmacion HTTP del lote completo.
+  void iniciarTraslado() { estado = EstadoEntrega.EN_TRASLADO; }
+
+  public synchronized void confirmarRecepcion(Camion camion, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
+    java.util.Objects.requireNonNull(camion, "El camion responsable es obligatorio");
+    exigirEstado(EstadoEntrega.EN_TRASLADO);
+    EventoLogistico evento = publicar(EventoLogistico.Tipo.RECEPCION,
+        "La entidad confirmo la recepcion", camion.getPatente(), donaciones);
     estado = EstadoEntrega.ENTREGADA;
     camionResponsable = camion;
+    fechaRecepcion = evento.fecha();
   }
-  public void marcarNoRecibida() { estado = EstadoEntrega.NO_RECIBIDA; }
-  public void volverAPendiente() { estado = EstadoEntrega.PENDIENTE; }
-  public void agregarFotoRecepcion(String foto) { fotosRecepcion.add(foto); }
+
+  public synchronized void marcarNoRecibida(String motivo, Camion camion, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
+    exigirEstado(EstadoEntrega.EN_TRASLADO);
+    publicar(EventoLogistico.Tipo.NO_RECIBIDA, motivo, camion.getPatente(), donaciones);
+    estado = EstadoEntrega.NO_RECIBIDA;
+  }
+
+  public synchronized void registrarRetornoADeposito(String motivo, Camion camion, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
+    exigirEstado(EstadoEntrega.NO_RECIBIDA);
+    publicar(EventoLogistico.Tipo.RETORNO_DEPOSITO, motivo, camion.getPatente(), donaciones);
+    estado = EstadoEntrega.PENDIENTE;
+  }
+
+  private EventoLogistico publicar(EventoLogistico.Tipo tipo, String motivo,
+                                    String patente, Donaciones donaciones)
+      throws java.io.IOException, InterruptedException {
+    java.util.Objects.requireNonNull(donaciones, "La conexion con Donaciones es obligatoria");
+    if (motivo == null || motivo.isBlank()) throw new IllegalArgumentException("El motivo es obligatorio");
+    if (eventoPendiente == null) {
+      eventoPendiente = new EventoLogistico(java.util.UUID.randomUUID().toString(), tipo,
+          List.of(new EventoLogistico.Referencia(idDonacion, idEntidad)), patente,
+          motivo, java.time.LocalDateTime.now());
+    } else if (eventoPendiente.tipo() != tipo || !eventoPendiente.motivo().equals(motivo)
+        || !eventoPendiente.patente().equals(patente)) {
+      throw new IllegalStateException("Reintente primero la operacion pendiente");
+    }
+    try {
+      donaciones.informar(eventoPendiente);
+    } catch (IllegalArgumentException | IllegalStateException rechazo) {
+      eventoPendiente = null; // Rechazo HTTP definitivo: no se aplico el evento.
+      throw rechazo;
+    }
+    EventoLogistico confirmado = eventoPendiente;
+    eventoPendiente = null;
+    return confirmado;
+  }
+
+  public void agregarFotoRecepcion(String foto) {
+    exigirEstado(EstadoEntrega.ENTREGADA);
+    if (foto == null || foto.isBlank()) throw new IllegalArgumentException("La foto es obligatoria");
+    fotosRecepcion.add(foto);
+  }
+
+  private void exigirEstado(EstadoEntrega esperado) {
+    if (estado != esperado) throw new IllegalStateException("La entrega debe estar " + esperado);
+  }
+
+  public java.time.LocalDateTime getFechaRecepcion() { return fechaRecepcion; }
+
   public boolean fueResuelta() {
     return estado == EstadoEntrega.ENTREGADA || estado == EstadoEntrega.NO_RECIBIDA;
   }

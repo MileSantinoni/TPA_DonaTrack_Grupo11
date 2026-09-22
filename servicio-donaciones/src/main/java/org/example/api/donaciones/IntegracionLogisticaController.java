@@ -13,6 +13,30 @@ public class IntegracionLogisticaController {
   private final RepositorioAsignacionesDonacion asignaciones = RepositorioAsignacionesDonacion.getInstance();
   private final RepositorioDonaciones donaciones = RepositorioDonaciones.getInstance();
 
+  private final org.example.dominio.donacion.SeguimientoLogistico seguimiento;
+
+  public IntegracionLogisticaController() {
+    this(new org.example.dominio.notificacion.Notificador(
+        new org.example.dominio.notificacion.Email(null),
+        new org.example.dominio.notificacion.SMS(), new org.example.dominio.notificacion.WhatsApp()));
+  }
+
+  public IntegracionLogisticaController(org.example.dominio.notificacion.Notificador notificador) {
+    seguimiento = new org.example.dominio.donacion.SeguimientoLogistico(asignaciones, notificador);
+  }
+
+  public void registrarEvento(Context ctx) {
+    var evento = ctx.bodyAsClass(org.example.dominio.donacion.EventoLogistico.class);
+    try {
+      seguimiento.registrar(evento);
+      ctx.status(HttpStatus.NO_CONTENT);
+    } catch (IllegalArgumentException e) {
+      ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
+    } catch (IllegalStateException e) {
+      ctx.status(HttpStatus.CONFLICT).result(e.getMessage());
+    }
+  }
+
   public void listarAsignaciones(Context ctx) {
     List<AsignacionLogisticaResponse> respuesta = asignaciones.buscarTodas().stream()
         .map(this::convertir).toList();

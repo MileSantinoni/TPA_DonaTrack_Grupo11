@@ -62,6 +62,7 @@ public class DonacionesApplication {
     app.post("/asignaciones/confirmar", asignaciones::confirmarAsignacion);
     app.post("/asignaciones/rechazar", asignaciones::rechazarAsignacion);
 
+    app.post("/interno/logistica/eventos", integracion::registrarEvento);
     app.get("/interno/asignaciones", integracion::listarAsignaciones);
     app.get("/interno/asignaciones/{id}", integracion::buscarAsignacion);
     app.get("/interno/donaciones/{id}/existe", integracion::existeDonacion);

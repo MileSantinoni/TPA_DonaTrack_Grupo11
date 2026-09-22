@@ -75,5 +75,16 @@ public abstract class Donante {
   public TipoDocumento getTipoDeDocumento() {
     return tipoDeDocumento;
   }
-}
+  public void notificarAusencia(
+      List<org.example.dominio.donacion.RegistroDonacion> registros,
+      java.time.LocalDate hoy, org.example.dominio.notificacion.Notificador notificador) {
+    registros.stream()
+        .filter(registro -> id.equals(registro.getDonante().getId()))
+        .map(org.example.dominio.donacion.RegistroDonacion::getFechaDeRegistro)
+        .max(java.time.LocalDate::compareTo)
+        .filter(fecha -> java.time.temporal.ChronoUnit.DAYS.between(fecha, hoy) == 21)
+        .ifPresent(fecha -> notificador.notificarDonante(this,
+            "Hola! Te extranamos. Notamos que hace mas de 20 dias no registras interaccion en nuestra plataforma. Te gustaria realizar una nueva donacion y seguir ayudando?"));
+  }
 
+}

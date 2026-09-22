@@ -1,0 +1,1882 @@
+diff --git a/docs/unificacion-logistica.md b/docs/unificacion-logistica.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..c30630aa918dd974d3bc882c1f3a96048c1915a5
+--- /dev/null
++++ b/docs/unificacion-logistica.md
+@@ -0,0 +1,77 @@
++# Unificación de Logística
++
++Base: `308e20a`, con `unificar-donaciones-v2.patch` ya aplicado.
++
++`servicio-logistica` recupera las reglas del `src` raíz y mantiene sus entidades
++independientes de Donaciones. Los controllers Javalin delegan en el dominio;
++`integracion` contiene los clientes HTTP Java 17. Se eliminan `RutaService` y
++`TrazabilidadEntregaService`; `ClienteGeneradorRutas` pasa a `integracion`, sin Spring.
++
++## Responsabilidades
++
++- `MonitorCamiones.registrarRuta`: resuelve las asignaciones por HTTP antes de
++  registrar la ruta y reservar el camión. Conserva el ID y los datos reales de la
++  entidad destinataria; utiliza las coordenadas del depósito recibidas.
++- `Ruta.iniciar`: valida las entregas y envía un único evento para todo el lote.
++  Cambia los estados locales después de la confirmación de Donaciones.
++- `Entrega`: valida recepción, fotos, entrega fallida y retorno. Conserva fecha
++  de recepción y camión responsable. Informa las transiciones por HTTP.
++- `SeguimientoLogistico`, dentro del dominio de Donaciones: valida el lote
++  completo, aplica las transiciones mediante el patrón State existente y pide
++  las notificaciones al `Notificador`. No importa entidades de Logística.
++- `ClienteGeneradorRutas`: mantiene el contrato JSON y la modalidad síncrona
++  existente; obtiene las asignaciones mediante `ClienteDonaciones`.
++
++## HTTP
++
++Se conservan los endpoints previos de ambos servicios. Se agregan:
++
++| Servicio | Método y ruta | JSON |
++| --- | --- | --- |
++| Logística | `POST /rutas/{patente}/entregas/{idDonacion}/recepcion` | `{"fotos":["foto.jpg"]}`; puede enviarse `{}` sin fotos |
++| Logística | `POST /rutas/{patente}/entregas/{idDonacion}/no-recibida` | `{"motivo":"Entidad cerrada"}` |
++| Logística | `POST /rutas/{patente}/entregas/{idDonacion}/retorno` | `{"motivo":"Regreso al depósito"}` |
++| Donaciones, interno | `POST /interno/logistica/eventos` | Evento con ID de operación, tipo, referencias de donación/entidad, patente, motivo y fecha |
++
++Los eventos son `INICIO_TRASLADO`, `RECEPCION`, `NO_RECIBIDA` y `RETORNO_DEPOSITO`.
++Donaciones responde 204 al aceptar, 400 si el evento es inválido y 409 si entra
++en conflicto con el dominio. Logística devuelve 502 ante fallos de comunicación.
++Para iniciar, las donaciones deben estar `LISTA_PARA_ENTREGAR`, como en el raíz.
++El registro de una ruta no cambia automáticamente el estado de una donación.
++
++Logística sigue en el puerto 8082; Donaciones en 8080.
++`DONACIONES_URL` configura su conexión (por defecto `http://localhost:8080`).
++`GENERADOR_RUTAS_URL` configura el cliente del generador (por defecto
++`http://localhost:8081/rutas/generar`).
++
++## Verificación
++
++Desde la raíz del repositorio:
++
++```powershell
++mvn -f pom-servicios.xml clean test
++```
++
++Este comando prueba los dos módulos. `mvn test` con el `pom.xml` raíz todavía
++prueba la aplicación anterior.
++
++Se migran/adaptan pruebas de camiones, GPS, registro de rutas, trazabilidad y
++contrato del generador. Se agregan pruebas HTTP, rechazo de transiciones,
++validación de un lote completo, notificaciones y reintentos sin duplicación.
++Las pruebas de proveedores reales de notificación existentes siguen omitidas.
++
++## Alcance y límites
++
++- El `src` raíz queda como referencia; este parche no lo elimina ni lo modifica.
++- Los repositorios y los IDs de eventos procesados siguen en memoria. Un reintento
++  conserva el evento pendiente mientras el proceso de Logística siga vivo;
++  Donaciones reconoce eventos repetidos mientras su proceso siga vivo. La entrega 3
++  deberá persistir esos datos y hacer transaccional la aplicación del lote.
++- La validación previa del lote evita cambios parciales por errores de estado
++  normales. No es una transacción distribuida ni garantiza recuperación tras caídas.
++- Las notificaciones usan los proveedores existentes de Donaciones. Las pruebas
++  verifican la invocación y el contenido; no acreditan envíos SMTP/Twilio reales.
++  Donaciones conserva sus dependencias previas de Spring Mail y su configuración
++  pendiente de proveedores. Logística no utiliza Spring.
++- No se incorpora generación asíncrona de rutas, autenticación ni persistencia
++  PostgreSQL en esta unificación. Se conserva el cliente síncrono existente.
+diff --git a/servicio-donaciones/src/main/java/org/example/DonacionesApplication.java b/servicio-donaciones/src/main/java/org/example/DonacionesApplication.java
+index 8144a4b58590651789e017081b45a61e079bfbd0..02840b51298d8ab60928e79ff933dcc2feea2966 100644
+--- a/servicio-donaciones/src/main/java/org/example/DonacionesApplication.java
++++ b/servicio-donaciones/src/main/java/org/example/DonacionesApplication.java
+@@ -62,6 +62,7 @@ public class DonacionesApplication {
+     app.post("/asignaciones/confirmar", asignaciones::confirmarAsignacion);
+     app.post("/asignaciones/rechazar", asignaciones::rechazarAsignacion);
+ 
++    app.post("/interno/logistica/eventos", integracion::registrarEvento);
+     app.get("/interno/asignaciones", integracion::listarAsignaciones);
+     app.get("/interno/asignaciones/{id}", integracion::buscarAsignacion);
+     app.get("/interno/donaciones/{id}/existe", integracion::existeDonacion);
+diff --git a/servicio-donaciones/src/main/java/org/example/api/donaciones/IntegracionLogisticaController.java b/servicio-donaciones/src/main/java/org/example/api/donaciones/IntegracionLogisticaController.java
+index a1862eb512fe3d392b78b9553ceb1066822e30b1..ec7c34cc9cf0d07b083ac77258615f01bf135bfe 100644
+--- a/servicio-donaciones/src/main/java/org/example/api/donaciones/IntegracionLogisticaController.java
++++ b/servicio-donaciones/src/main/java/org/example/api/donaciones/IntegracionLogisticaController.java
+@@ -13,6 +13,30 @@ public class IntegracionLogisticaController {
+   private final RepositorioAsignacionesDonacion asignaciones = RepositorioAsignacionesDonacion.getInstance();
+   private final RepositorioDonaciones donaciones = RepositorioDonaciones.getInstance();
+ 
++  private final org.example.dominio.donacion.SeguimientoLogistico seguimiento;
++
++  public IntegracionLogisticaController() {
++    this(new org.example.dominio.notificacion.Notificador(
++        new org.example.dominio.notificacion.Email(null),
++        new org.example.dominio.notificacion.SMS(), new org.example.dominio.notificacion.WhatsApp()));
++  }
++
++  public IntegracionLogisticaController(org.example.dominio.notificacion.Notificador notificador) {
++    seguimiento = new org.example.dominio.donacion.SeguimientoLogistico(asignaciones, notificador);
++  }
++
++  public void registrarEvento(Context ctx) {
++    var evento = ctx.bodyAsClass(org.example.dominio.donacion.EventoLogistico.class);
++    try {
++      seguimiento.registrar(evento);
++      ctx.status(HttpStatus.NO_CONTENT);
++    } catch (IllegalArgumentException e) {
++      ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
++    } catch (IllegalStateException e) {
++      ctx.status(HttpStatus.CONFLICT).result(e.getMessage());
++    }
++  }
++
+   public void listarAsignaciones(Context ctx) {
+     List<AsignacionLogisticaResponse> respuesta = asignaciones.buscarTodas().stream()
+         .map(this::convertir).toList();
+diff --git a/servicio-donaciones/src/main/java/org/example/dominio/donacion/EventoLogistico.java b/servicio-donaciones/src/main/java/org/example/dominio/donacion/EventoLogistico.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ee956f614b376f968b4873ac8abf7a872ed681a
+--- /dev/null
++++ b/servicio-donaciones/src/main/java/org/example/dominio/donacion/EventoLogistico.java
+@@ -0,0 +1,28 @@
++package org.example.dominio.donacion;
++
++import java.time.LocalDateTime;
++import java.util.List;
++
++/** Contrato JSON interno. Cada microservicio mantiene su propia representacion. */
++public record EventoLogistico(String idOperacion, Tipo tipo, List<Referencia> entregas,
++                              String patente, String motivo, LocalDateTime fecha) {
++  public EventoLogistico {
++    if (idOperacion == null || idOperacion.isBlank() || tipo == null
++        || entregas == null || entregas.isEmpty() || patente == null
++        || patente.isBlank() || motivo == null || motivo.isBlank() || fecha == null) {
++      throw new IllegalArgumentException("Evento logistico incompleto");
++    }
++    entregas = List.copyOf(entregas);
++    for (Referencia entrega : entregas) {
++      if (entrega.idDonacion() == null || entrega.idDonacion().isBlank()
++          || entrega.idEntidad() == null || entrega.idEntidad().isBlank()) {
++        throw new IllegalArgumentException("La donacion y la entidad son obligatorias");
++      }
++    }
++    if (tipo != Tipo.INICIO_TRASLADO && entregas.size() != 1) {
++      throw new IllegalArgumentException("La operacion corresponde a una sola entrega");
++    }
++  }
++  public enum Tipo { INICIO_TRASLADO, RECEPCION, NO_RECIBIDA, RETORNO_DEPOSITO }
++  public record Referencia(String idDonacion, String idEntidad) {}
++}
+diff --git a/servicio-donaciones/src/main/java/org/example/dominio/donacion/SeguimientoLogistico.java b/servicio-donaciones/src/main/java/org/example/dominio/donacion/SeguimientoLogistico.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1dff9e74a994744c71c49254d39d04c6e3ed42a
+--- /dev/null
++++ b/servicio-donaciones/src/main/java/org/example/dominio/donacion/SeguimientoLogistico.java
+@@ -0,0 +1,60 @@
++package org.example.dominio.donacion;
++
++import java.util.*;
++import org.example.Repositorios.RepositorioAsignacionesDonacion;
++import org.example.dominio.notificacion.Notificador;
++
++/** Aplica los eventos remotos sobre las donaciones y sus contactos locales. */
++public class SeguimientoLogistico {
++  private final RepositorioAsignacionesDonacion asignaciones;
++  private final Notificador notificador;
++  private final Map<String, EventoLogistico> procesados = new HashMap<>();
++
++  public SeguimientoLogistico(RepositorioAsignacionesDonacion asignaciones, Notificador notificador) {
++    this.asignaciones = Objects.requireNonNull(asignaciones);
++    this.notificador = Objects.requireNonNull(notificador);
++  }
++
++  public synchronized void registrar(EventoLogistico evento) {
++    EventoLogistico anterior = procesados.get(evento.idOperacion());
++    if (anterior != null) {
++      if (!anterior.equals(evento)) throw new IllegalStateException("El ID de operacion ya se uso con otros datos");
++      return;
++    }
++    EstadoDonacion esperado = switch (evento.tipo()) {
++      case INICIO_TRASLADO -> EstadoDonacion.LISTA_PARA_ENTREGAR;
++      case RECEPCION, NO_RECIBIDA -> EstadoDonacion.EN_TRASLADO;
++      case RETORNO_DEPOSITO -> EstadoDonacion.ENTREGA_FALLIDA;
++    };
++    EstadoDonacion siguiente = switch (evento.tipo()) {
++      case INICIO_TRASLADO -> EstadoDonacion.EN_TRASLADO;
++      case RECEPCION -> EstadoDonacion.ENTREGADA;
++      case NO_RECIBIDA -> EstadoDonacion.ENTREGA_FALLIDA;
++      case RETORNO_DEPOSITO -> EstadoDonacion.EN_DEPOSITO;
++    };
++    List<AsignacionDonacion> seleccionadas = new ArrayList<>();
++    Set<String> ids = new HashSet<>();
++    // Validar todo el lote antes de aplicar la primera transicion.
++    for (EventoLogistico.Referencia referencia : evento.entregas()) {
++      if (!ids.add(referencia.idDonacion())) throw new IllegalArgumentException("Donacion repetida en el evento");
++      var candidatas = asignaciones.buscarTodas().stream()
++          .filter(a -> a.getDonacion().getId().equals(referencia.idDonacion())).toList();
++      if (candidatas.size() != 1) throw new IllegalStateException("No existe una asignacion unica para la donacion");
++      AsignacionDonacion asignacion = candidatas.get(0);
++      if (!asignacion.getEntidad().getId().equals(referencia.idEntidad())) {
++        throw new IllegalStateException("La entidad destinataria no coincide con la asignacion");
++      }
++      if (asignacion.getDonacion().getEstadoActual() != esperado) {
++        throw new IllegalStateException("La donacion debe estar " + esperado);
++      }
++      seleccionadas.add(asignacion);
++    }
++    for (AsignacionDonacion asignacion : seleccionadas) {
++      asignacion.getDonacion().cambiarEstado(siguiente, evento.motivo());
++    }
++    procesados.put(evento.idOperacion(), evento);
++    for (AsignacionDonacion asignacion : seleccionadas) {
++      notificador.notificarEventoLogistico(asignacion, evento);
++    }
++  }
++}
+diff --git a/servicio-donaciones/src/main/java/org/example/dominio/notificacion/Notificador.java b/servicio-donaciones/src/main/java/org/example/dominio/notificacion/Notificador.java
+index 99d801fff91503d47309c100e794ca481e43b2b2..1102037bac2cbe924c5e1416239ff8b349262472 100644
+--- a/servicio-donaciones/src/main/java/org/example/dominio/notificacion/Notificador.java
++++ b/servicio-donaciones/src/main/java/org/example/dominio/notificacion/Notificador.java
+@@ -118,4 +118,28 @@ public class Notificador {
+     return notificarDonante(donante, mensaje);
+   }
+ 
++  public void notificarEventoLogistico(AsignacionDonacion asignacion,
++      org.example.dominio.donacion.EventoLogistico evento) {
++    String mensajeEntidad;
++    String mensajeDonante;
++    switch (evento.tipo()) {
++      case INICIO_TRASLADO -> {
++        mensajeEntidad = "Tu envio ya esta en camino. Podes seguirlo en el mapa interactivo.";
++        mensajeDonante = "Tu donacion ya esta en camino. Podes seguir el envio en el mapa interactivo.";
++      }
++      case RECEPCION -> {
++        mensajeEntidad = "Comprobante de entrega: " + evento.fecha() + ". Camion: " + evento.patente();
++        mensajeDonante = mensajeEntidad;
++      }
++      case NO_RECIBIDA -> {
++        mensajeEntidad = "No se pudo concretar la recepcion del envio. Motivo: " + evento.motivo();
++        mensajeDonante = "No se pudo concretar la entrega de tu donacion. Motivo: " + evento.motivo();
++      }
++      case RETORNO_DEPOSITO -> { return; }
++      default -> throw new IllegalArgumentException("Evento no soportado");
++    }
++    notificarEntidadBeneficiaria(asignacion.getEntidad(), mensajeEntidad);
++    notificarDonante(asignacion.getDonacion().getDonante(), mensajeDonante);
++  }
++
+ }
+diff --git a/servicio-donaciones/src/test/java/org/example/api/donaciones/EventosLogisticosHttpTest.java b/servicio-donaciones/src/test/java/org/example/api/donaciones/EventosLogisticosHttpTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..28bc9de826d362d12c6570db7663b92e4e1404e8
+--- /dev/null
++++ b/servicio-donaciones/src/test/java/org/example/api/donaciones/EventosLogisticosHttpTest.java
+@@ -0,0 +1,45 @@
++package org.example.api.donaciones;
++
++import io.javalin.Javalin;
++import io.javalin.json.JavalinJackson;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import java.net.URI;
++import java.net.http.*;
++import java.time.LocalDateTime;
++import java.util.*;
++import org.example.Repositorios.RepositorioAsignacionesDonacion;
++import org.example.dominio.beneficiario.EntidadBeneficiaria;
++import org.example.dominio.donacion.*;
++import org.example.dominio.notificacion.*;
++import org.junit.jupiter.api.Test;
++import static org.junit.jupiter.api.Assertions.*;
++
++class EventosLogisticosHttpTest {
++  @Test void contratoHttpAplicaEstadoRechazaConflictoYDeduplica() throws Exception {
++    var repo = RepositorioAsignacionesDonacion.getInstance(); repo.limpiar();
++    var donacion = new Donacion("Arroz", 1, "kg", null, null, null, null);
++    var asignacion = donacion.asignarA(new EntidadBeneficiaria("Comedor", "Calle", "123"));
++    repo.agregar(asignacion);
++    var notificador = new Notificador(new Email(null), new SMS(), new WhatsApp()) {
++      @Override public void notificarEventoLogistico(AsignacionDonacion a, EventoLogistico e) {}
++    };
++    var controller = new IntegracionLogisticaController(notificador);
++    ObjectMapper json = new ObjectMapper().findAndRegisterModules();
++    Javalin app = Javalin.create(c -> c.jsonMapper(new JavalinJackson(json)));
++    app.post("/interno/logistica/eventos", controller::registrarEvento); app.start(0);
++    try {
++      var evento = new EventoLogistico("op1", EventoLogistico.Tipo.INICIO_TRASLADO,
++          List.of(new EventoLogistico.Referencia(donacion.getId(), asignacion.getEntidad().getId())),
++          "ABC", "Inicio", LocalDateTime.now());
++      var request = HttpRequest.newBuilder(URI.create("http://localhost:" + app.port() + "/interno/logistica/eventos"))
++          .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(evento))).build();
++      HttpClient http = HttpClient.newHttpClient();
++      assertEquals(409, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
++      donacion.cambiarEstado(EstadoDonacion.LISTA_PARA_ENTREGAR, "Lista");
++      assertEquals(204, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
++      assertEquals(204, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
++      assertEquals(EstadoDonacion.EN_TRASLADO, donacion.getEstadoActual());
++      assertEquals(3, donacion.getHistorialEstados().size());
++    } finally { app.stop(); repo.limpiar(); }
++  }
++}
+diff --git a/servicio-donaciones/src/test/java/org/example/dominio/donacion/SeguimientoLogisticoTest.java b/servicio-donaciones/src/test/java/org/example/dominio/donacion/SeguimientoLogisticoTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..c63f0cf2c2161e96ee6e1122ca7c7fa9e8ad9159
+--- /dev/null
++++ b/servicio-donaciones/src/test/java/org/example/dominio/donacion/SeguimientoLogisticoTest.java
+@@ -0,0 +1,73 @@
++package org.example.dominio.donacion;
++
++import java.time.LocalDateTime;
++import java.util.*;
++import org.example.Repositorios.RepositorioAsignacionesDonacion;
++import org.example.dominio.beneficiario.EntidadBeneficiaria;
++import org.example.dominio.donante.*;
++import org.example.dominio.notificacion.*;
++import org.junit.jupiter.api.*;
++import static org.junit.jupiter.api.Assertions.*;
++
++class SeguimientoLogisticoTest {
++  RepositorioAsignacionesDonacion repo = RepositorioAsignacionesDonacion.getInstance();
++  List<String> mensajes = new ArrayList<>();
++  Notificador notificador = new Notificador(new Email(null), new SMS(), new WhatsApp()) {
++    @Override public Notificacion notificarDonante(Donante d, String m) { mensajes.add(m); return null; }
++    @Override public Notificacion notificarEntidadBeneficiaria(EntidadBeneficiaria e, String m) { mensajes.add(m); return null; }
++  };
++  SeguimientoLogistico seguimiento = new SeguimientoLogistico(repo, notificador);
++  @BeforeEach void preparar() { repo.limpiar(); }
++  @AfterEach void limpiar() { repo.limpiar(); }
++  AsignacionDonacion asignar(boolean lista) {
++    Donante donante = new Donante("test@example.org", "123", TipoDocumento.DNI) {};
++    Donacion donacion = new Donacion("Arroz", 10, "kg", null, null, null, donante);
++    var a = donacion.asignarA(new EntidadBeneficiaria("Comedor", "Calle 1", "123"));
++    repo.agregar(a);
++    if (lista) donacion.cambiarEstado(EstadoDonacion.LISTA_PARA_ENTREGAR, "Lista");
++    return a;
++  }
++  EventoLogistico evento(EventoLogistico.Tipo tipo, AsignacionDonacion... asignaciones) {
++    return new EventoLogistico(UUID.randomUUID().toString(), tipo,
++        Arrays.stream(asignaciones).map(a -> new EventoLogistico.Referencia(a.getDonacion().getId(), a.getEntidad().getId())).toList(),
++        "ABC", "Motivo", LocalDateTime.now());
++  }
++  @Test void inicioEnLoteValidaTodosAntesDeCambiarElPrimero() {
++    var a = asignar(true); var otra = asignar(false);
++    assertThrows(IllegalStateException.class, () -> seguimiento.registrar(evento(EventoLogistico.Tipo.INICIO_TRASLADO, a, otra)));
++    assertEquals(EstadoDonacion.LISTA_PARA_ENTREGAR, a.getDonacion().getEstadoActual());
++    assertTrue(mensajes.isEmpty());
++  }
++  @Test void inicioYRecepcionNotificanAmbasPartesYNoDuplicanEnReintentos() {
++    var a = asignar(true);
++    var inicio = evento(EventoLogistico.Tipo.INICIO_TRASLADO, a);
++    seguimiento.registrar(inicio); seguimiento.registrar(inicio);
++    assertEquals(EstadoDonacion.EN_TRASLADO, a.getDonacion().getEstadoActual());
++    assertEquals(2, mensajes.size());
++    var recepcion = evento(EventoLogistico.Tipo.RECEPCION, a);
++    seguimiento.registrar(recepcion); seguimiento.registrar(recepcion);
++    assertEquals(EstadoDonacion.ENTREGADA, a.getDonacion().getEstadoActual());
++    assertEquals(4, mensajes.size());
++    assertTrue(mensajes.get(2).contains("ABC"));
++    assertTrue(mensajes.get(2).contains(recepcion.fecha().toString()));
++    assertEquals(4, a.getDonacion().getHistorialEstados().size());
++  }
++  @Test void fallidaYRetornoRespetanStateYNotificaciones() {
++    var a = asignar(true);
++    seguimiento.registrar(evento(EventoLogistico.Tipo.INICIO_TRASLADO, a));
++    seguimiento.registrar(evento(EventoLogistico.Tipo.NO_RECIBIDA, a));
++    assertEquals(EstadoDonacion.ENTREGA_FALLIDA, a.getDonacion().getEstadoActual());
++    seguimiento.registrar(evento(EventoLogistico.Tipo.RETORNO_DEPOSITO, a));
++    assertEquals(EstadoDonacion.EN_DEPOSITO, a.getDonacion().getEstadoActual());
++    assertEquals(4, mensajes.size());
++  }
++  @Test void rechazaEntidadIncorrectaYNoReutilizaIdsConOtrosDatos() {
++    var a = asignar(true); var inicio = evento(EventoLogistico.Tipo.INICIO_TRASLADO, a);
++    var incorrecto = new EventoLogistico("otro", inicio.tipo(), List.of(new EventoLogistico.Referencia(a.getDonacion().getId(), "NO")), "ABC", "Motivo", inicio.fecha());
++    assertThrows(IllegalStateException.class, () -> seguimiento.registrar(incorrecto));
++    seguimiento.registrar(inicio);
++    var repetido = new EventoLogistico(inicio.idOperacion(), inicio.tipo(), inicio.entregas(), "OTRA", inicio.motivo(), inicio.fecha());
++    assertThrows(IllegalStateException.class, () -> seguimiento.registrar(repetido));
++    assertEquals(2, mensajes.size());
++  }
++}
+diff --git a/servicio-logistica/src/main/java/org/example/LogisticaApplication.java b/servicio-logistica/src/main/java/org/example/LogisticaApplication.java
+index f31e5799a7049b9ef6252c0199a209c95a5dcd96..4680b57e2c4de20ec314a7e06fe2fe87d2952043 100644
+--- a/servicio-logistica/src/main/java/org/example/LogisticaApplication.java
++++ b/servicio-logistica/src/main/java/org/example/LogisticaApplication.java
+@@ -29,12 +29,15 @@ public class LogisticaApplication {
+     RutaController rutaController = new RutaController(camiones, monitor, clienteDonaciones);
+ 
+     app.get("/health", ctx -> ctx.result("OK"));
+-    app.post("/camiones", camionController::registrarCamion);
+-    app.post("/camiones/ubicacion", camionController::recibirUbicacion);
+-    app.get("/camiones/{patente}/ubicacion", camionController::ubicacionActual);
+-    app.get("/camiones/{patente}/avance", camionController::avanceDeRuta);
+-    app.post("/rutas", rutaController::registrarRuta);
+-    app.post("/rutas/{patente}/iniciar", rutaController::iniciarRuta);
++    org.example.Routes.RoutesLogistica.registrar(app, camionController, rutaController,
++        new org.example.api.logistica.EntregaController(monitor, clienteDonaciones));
++    app.exception(IllegalArgumentException.class, (e, ctx) -> ctx.status(400).result(e.getMessage()));
++    app.exception(IllegalStateException.class, (e, ctx) -> ctx.status(409).result(e.getMessage()));
++    app.exception(java.io.IOException.class, (e, ctx) -> ctx.status(502).result("No se pudo comunicar con Donaciones"));
++    app.exception(InterruptedException.class, (e, ctx) -> {
++      Thread.currentThread().interrupt();
++      ctx.status(503).result("Comunicacion con Donaciones interrumpida");
++    });
+     return app;
+   }
+ 
+diff --git a/servicio-logistica/src/main/java/org/example/Routes/RoutesLogistica.java b/servicio-logistica/src/main/java/org/example/Routes/RoutesLogistica.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..77eabc8b0d3e1c164f038a7ee089a7845f209fb2
+--- /dev/null
++++ b/servicio-logistica/src/main/java/org/example/Routes/RoutesLogistica.java
+@@ -0,0 +1,23 @@
++package org.example.Routes;
++
++import io.javalin.Javalin;
++import org.example.api.logistica.CamionController;
++import org.example.api.logistica.RutaController;
++import org.example.api.logistica.EntregaController;
++
++public final class RoutesLogistica {
++  private RoutesLogistica() {}
++
++  public static void registrar(Javalin app, CamionController camiones,
++                               RutaController rutas, EntregaController entregas) {
++    app.post("/camiones", camiones::registrarCamion);
++    app.post("/camiones/ubicacion", camiones::recibirUbicacion);
++    app.get("/camiones/{patente}/ubicacion", camiones::ubicacionActual);
++    app.get("/camiones/{patente}/avance", camiones::avanceDeRuta);
++    app.post("/rutas", rutas::registrarRuta);
++    app.post("/rutas/{patente}/iniciar", rutas::iniciarRuta);
++    app.post("/rutas/{patente}/entregas/{idDonacion}/recepcion", entregas::confirmarRecepcion);
++    app.post("/rutas/{patente}/entregas/{idDonacion}/no-recibida", entregas::marcarNoRecibida);
++    app.post("/rutas/{patente}/entregas/{idDonacion}/retorno", entregas::registrarRetorno);
++  }
++}
+diff --git a/servicio-logistica/src/main/java/org/example/api/logistica/EntregaController.java b/servicio-logistica/src/main/java/org/example/api/logistica/EntregaController.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b29bfea7d83ca391cce3be25a153fd43571d7e9
+--- /dev/null
++++ b/servicio-logistica/src/main/java/org/example/api/logistica/EntregaController.java
+@@ -0,0 +1,57 @@
++package org.example.api.logistica;
++
++import io.javalin.http.Context;
++import io.javalin.http.NotFoundResponse;
++import java.util.List;
++import org.example.dominio.logistica.*;
++
++public class EntregaController {
++  private final MonitorCamiones monitor;
++  private final Donaciones donaciones;
++
++  public EntregaController(MonitorCamiones monitor, Donaciones donaciones) {
++    this.monitor = monitor;
++    this.donaciones = donaciones;
++  }
++
++  public void confirmarRecepcion(Context ctx) throws java.io.IOException, InterruptedException {
++    RecepcionRequest request = ctx.bodyAsClass(RecepcionRequest.class);
++    List<String> fotos = request.fotos() == null ? List.of() : request.fotos();
++    if (fotos.stream().anyMatch(f -> f == null || f.isBlank())) {
++      throw new IllegalArgumentException("Las fotos no pueden estar vacias");
++    }
++    Ruta ruta = ruta(ctx);
++    Entrega entrega = entrega(ctx, ruta);
++    entrega.confirmarRecepcion(ruta.getCamion(), donaciones);
++    fotos.forEach(entrega::agregarFotoRecepcion);
++    ctx.status(204);
++  }
++
++  public void marcarNoRecibida(Context ctx) throws java.io.IOException, InterruptedException {
++    MotivoRequest request = ctx.bodyAsClass(MotivoRequest.class);
++    Ruta ruta = ruta(ctx);
++    entrega(ctx, ruta).marcarNoRecibida(request.motivo(), ruta.getCamion(), donaciones);
++    ctx.status(204);
++  }
++
++  public void registrarRetorno(Context ctx) throws java.io.IOException, InterruptedException {
++    MotivoRequest request = ctx.bodyAsClass(MotivoRequest.class);
++    Ruta ruta = ruta(ctx);
++    entrega(ctx, ruta).registrarRetornoADeposito(request.motivo(), ruta.getCamion(), donaciones);
++    ctx.status(204);
++  }
++
++  private Ruta ruta(Context ctx) {
++    Ruta ruta = monitor.rutaDe(ctx.pathParam("patente"));
++    if (ruta == null) throw new NotFoundResponse("No hay ruta para el camion");
++    return ruta;
++  }
++
++  private Entrega entrega(Context ctx, Ruta ruta) {
++    return ruta.getEntregas().stream().filter(e -> e.getIdDonacion().equals(ctx.pathParam("idDonacion")))
++        .findFirst().orElseThrow(() -> new NotFoundResponse("No existe la entrega en esa ruta"));
++  }
++
++  public record RecepcionRequest(List<String> fotos) {}
++  public record MotivoRequest(String motivo) {}
++}
+diff --git a/servicio-logistica/src/main/java/org/example/api/logistica/RutaController.java b/servicio-logistica/src/main/java/org/example/api/logistica/RutaController.java
+index 311a782c49e1cf5f45e68078ce048f1084f7b202..29e665c5485c73348af04ed7732bc02af7011320 100644
+--- a/servicio-logistica/src/main/java/org/example/api/logistica/RutaController.java
++++ b/servicio-logistica/src/main/java/org/example/api/logistica/RutaController.java
+@@ -1,67 +1,36 @@
+ package org.example.api.logistica;
+ 
+ import io.javalin.http.Context;
+-import io.javalin.http.HttpStatus;
+-import java.io.IOException;
+ import org.example.Repositorios.RepositorioCamiones;
+ import org.example.api.logistica.dto.RutaRequest;
+-import org.example.dominio.logistica.Camion;
+-import org.example.dominio.logistica.Entrega;
++import org.example.dominio.logistica.Donaciones;
+ import org.example.dominio.logistica.MonitorCamiones;
+-import org.example.dominio.logistica.Ruta;
+-import org.example.integracion.ClienteDonaciones;
+ 
+ public class RutaController {
+   private final RepositorioCamiones camiones;
+   private final MonitorCamiones monitor;
+-  private final ClienteDonaciones donaciones;
++  private final Donaciones donaciones;
+ 
+-  public RutaController(RepositorioCamiones camiones, MonitorCamiones monitor,
+-                        ClienteDonaciones donaciones) {
++  public RutaController(RepositorioCamiones camiones, MonitorCamiones monitor, Donaciones donaciones) {
+     this.camiones = camiones;
+     this.monitor = monitor;
+     this.donaciones = donaciones;
+   }
+ 
+-  public void registrarRuta(Context ctx) {
++  public void registrarRuta(Context ctx) throws java.io.IOException, InterruptedException {
+     RutaRequest request = ctx.bodyAsClass(RutaRequest.class);
+-    Camion camion = camiones.buscarPorPatente(request.getPatente()).orElse(null);
+-    if (camion == null || !camion.estaDisponible()) {
+-      ctx.status(HttpStatus.NOT_FOUND).result("No se pudo registrar la ruta");
+-      return;
+-    }
+-
+-    Ruta ruta = new Ruta(camion);
+-    try {
+-      for (RutaRequest.EntregaRequest pedido : request.getEntregas()) {
+-        if (!donaciones.existeDonacion(pedido.getIdDonacion())) {
+-          ctx.status(HttpStatus.NOT_FOUND).result("No se pudo registrar la ruta");
+-          return;
+-        }
+-        ruta.agregarEntrega(new Entrega(pedido.getIdDonacion(), null,
+-            pedido.getRazonSocial(), pedido.getDireccion(), pedido.getTelefono(),
+-            pedido.getOrden()));
+-      }
+-    } catch (IOException e) {
+-      ctx.status(HttpStatus.BAD_GATEWAY).result("No se pudo consultar Donaciones");
+-      return;
+-    } catch (InterruptedException e) {
+-      Thread.currentThread().interrupt();
+-      ctx.status(HttpStatus.SERVICE_UNAVAILABLE).result("Consulta a Donaciones interrumpida");
+-      return;
++    if (monitor.registrarRuta(request.aPlan(), camiones, donaciones)) {
++      ctx.status(201).result("Ruta registrada");
++    } else {
++      ctx.status(404).result("No se encontro camion disponible o asignacion para la donacion");
+     }
+-
+-    monitor.registrarRuta(ruta);
+-    camion.marcarNoDisponible();
+-    ctx.status(HttpStatus.CREATED).result("Ruta registrada");
+   }
+ 
+-  public void iniciarRuta(Context ctx) {
+-    String patente = ctx.pathParam("patente");
+-    if (monitor.iniciarRuta(patente)) {
+-      ctx.status(HttpStatus.OK).result("Ruta iniciada");
++  public void iniciarRuta(Context ctx) throws java.io.IOException, InterruptedException {
++    if (monitor.iniciarRuta(ctx.pathParam("patente"), donaciones)) {
++      ctx.status(200).result("Ruta iniciada");
+     } else {
+-      ctx.status(HttpStatus.NOT_FOUND).result("No hay ruta para el camion: " + patente);
++      ctx.status(404).result("No hay ruta para el camion");
+     }
+   }
+ }
+diff --git a/servicio-logistica/src/main/java/org/example/api/logistica/dto/RutaRequest.java b/servicio-logistica/src/main/java/org/example/api/logistica/dto/RutaRequest.java
+index 801a991c12895bdc7bfae655956946ddb655280d..e131fee1f34835f87d2d78526cd2111cf5bb7637 100644
+--- a/servicio-logistica/src/main/java/org/example/api/logistica/dto/RutaRequest.java
++++ b/servicio-logistica/src/main/java/org/example/api/logistica/dto/RutaRequest.java
+@@ -90,4 +90,26 @@ public class RutaRequest {
+       this.orden = orden;
+     }
+   }
++  public org.example.dominio.logistica.PlanDeRuta aPlan() {
++    if (patente == null || patente.isBlank() || entregas == null || entregas.isEmpty()
++        || entregas.stream().anyMatch(e -> e == null || e.getIdDonacion() == null || e.getIdDonacion().isBlank())) {
++      throw new IllegalArgumentException("Patente y entregas son obligatorias");
++    }
++    if ((latitudDeposito == null) != (longitudDeposito == null)) {
++      throw new IllegalArgumentException("Debe informar ambas coordenadas del deposito");
++    }
++    if (latitudDeposito != null && (!Double.isFinite(latitudDeposito) || !Double.isFinite(longitudDeposito)
++        || Math.abs(latitudDeposito) > 90 || Math.abs(longitudDeposito) > 180)) {
++      throw new IllegalArgumentException("Coordenadas del deposito invalidas");
++    }
++
++    var deposito = latitudDeposito == null || longitudDeposito == null ? null
++        : new org.example.dominio.logistica.UbicacionCamion(
++            latitudDeposito, longitudDeposito, 0, java.time.LocalDateTime.now());
++    return new org.example.dominio.logistica.PlanDeRuta(patente,
++        entregas.stream().map(e -> new org.example.dominio.logistica.PlanDeRuta.Destino(
++            e.getIdDonacion(), e.getRazonSocial(), e.getDireccion(), e.getTelefono(), e.getOrden()))
++            .toList(), deposito);
++  }
++
+ }
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/Donaciones.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/Donaciones.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c4bf40251284f238ef878455894864e93577960
+--- /dev/null
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/Donaciones.java
+@@ -0,0 +1,13 @@
++package org.example.dominio.logistica;
++
++import java.io.IOException;
++import java.util.List;
++
++/** Contrato que necesita Logistica; la implementacion HTTP vive en integracion. */
++public interface Donaciones {
++  List<Asignacion> listarDestinos() throws IOException, InterruptedException;
++  void informar(EventoLogistico evento) throws IOException, InterruptedException;
++
++  record Asignacion(String idDonacion, String idEntidad, String razonSocial,
++                    String direccion, String telefono, String estadoDonacion) {}
++}
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/Entrega.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/Entrega.java
+index 909a682cdff0b2d13fef7954738a15daf091befc..437ceee50ce7ff57446ca18ad552fe511a881c1f 100644
+--- a/servicio-logistica/src/main/java/org/example/dominio/logistica/Entrega.java
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/Entrega.java
+@@ -14,6 +14,8 @@ public class Entrega {
+   private final int orden;
+   private EstadoEntrega estado = EstadoEntrega.PENDIENTE;
+   private Camion camionResponsable;
++  private java.time.LocalDateTime fechaRecepcion;
++  private EventoLogistico eventoPendiente;
+   private final List<String> fotosRecepcion = new ArrayList<>();
+ 
+   public Entrega(String idDonacion, String idEntidad, String razonSocial,
+@@ -26,14 +28,75 @@ public class Entrega {
+     this.orden = orden;
+   }
+ 
+-  public void marcarEnTraslado() { estado = EstadoEntrega.EN_TRASLADO; }
+-  public void marcarEntregada(Camion camion) {
++  public void validarInicioTraslado() {
++    exigirEstado(EstadoEntrega.PENDIENTE);
++    if (eventoPendiente != null) throw new IllegalStateException("Hay una operacion pendiente");
++  }
++
++  // Solo Ruta lo invoca luego de la confirmacion HTTP del lote completo.
++  void iniciarTraslado() { estado = EstadoEntrega.EN_TRASLADO; }
++
++  public synchronized void confirmarRecepcion(Camion camion, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    java.util.Objects.requireNonNull(camion, "El camion responsable es obligatorio");
++    exigirEstado(EstadoEntrega.EN_TRASLADO);
++    EventoLogistico evento = publicar(EventoLogistico.Tipo.RECEPCION,
++        "La entidad confirmo la recepcion", camion.getPatente(), donaciones);
+     estado = EstadoEntrega.ENTREGADA;
+     camionResponsable = camion;
++    fechaRecepcion = evento.fecha();
++  }
++
++  public synchronized void marcarNoRecibida(String motivo, Camion camion, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    exigirEstado(EstadoEntrega.EN_TRASLADO);
++    publicar(EventoLogistico.Tipo.NO_RECIBIDA, motivo, camion.getPatente(), donaciones);
++    estado = EstadoEntrega.NO_RECIBIDA;
++  }
++
++  public synchronized void registrarRetornoADeposito(String motivo, Camion camion, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    exigirEstado(EstadoEntrega.NO_RECIBIDA);
++    publicar(EventoLogistico.Tipo.RETORNO_DEPOSITO, motivo, camion.getPatente(), donaciones);
++    estado = EstadoEntrega.PENDIENTE;
+   }
+-  public void marcarNoRecibida() { estado = EstadoEntrega.NO_RECIBIDA; }
+-  public void volverAPendiente() { estado = EstadoEntrega.PENDIENTE; }
+-  public void agregarFotoRecepcion(String foto) { fotosRecepcion.add(foto); }
++
++  private EventoLogistico publicar(EventoLogistico.Tipo tipo, String motivo,
++                                    String patente, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    java.util.Objects.requireNonNull(donaciones, "La conexion con Donaciones es obligatoria");
++    if (motivo == null || motivo.isBlank()) throw new IllegalArgumentException("El motivo es obligatorio");
++    if (eventoPendiente == null) {
++      eventoPendiente = new EventoLogistico(java.util.UUID.randomUUID().toString(), tipo,
++          List.of(new EventoLogistico.Referencia(idDonacion, idEntidad)), patente,
++          motivo, java.time.LocalDateTime.now());
++    } else if (eventoPendiente.tipo() != tipo || !eventoPendiente.motivo().equals(motivo)
++        || !eventoPendiente.patente().equals(patente)) {
++      throw new IllegalStateException("Reintente primero la operacion pendiente");
++    }
++    try {
++      donaciones.informar(eventoPendiente);
++    } catch (IllegalArgumentException | IllegalStateException rechazo) {
++      eventoPendiente = null; // Rechazo HTTP definitivo: no se aplico el evento.
++      throw rechazo;
++    }
++    EventoLogistico confirmado = eventoPendiente;
++    eventoPendiente = null;
++    return confirmado;
++  }
++
++  public void agregarFotoRecepcion(String foto) {
++    exigirEstado(EstadoEntrega.ENTREGADA);
++    if (foto == null || foto.isBlank()) throw new IllegalArgumentException("La foto es obligatoria");
++    fotosRecepcion.add(foto);
++  }
++
++  private void exigirEstado(EstadoEntrega esperado) {
++    if (estado != esperado) throw new IllegalStateException("La entrega debe estar " + esperado);
++  }
++
++  public java.time.LocalDateTime getFechaRecepcion() { return fechaRecepcion; }
++
+   public boolean fueResuelta() {
+     return estado == EstadoEntrega.ENTREGADA || estado == EstadoEntrega.NO_RECIBIDA;
+   }
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/EventoLogistico.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/EventoLogistico.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1917b64a6199397a825acf2f16dbed475ab8805
+--- /dev/null
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/EventoLogistico.java
+@@ -0,0 +1,28 @@
++package org.example.dominio.logistica;
++
++import java.time.LocalDateTime;
++import java.util.List;
++
++/** Contrato JSON interno. Cada microservicio mantiene su propia representacion. */
++public record EventoLogistico(String idOperacion, Tipo tipo, List<Referencia> entregas,
++                              String patente, String motivo, LocalDateTime fecha) {
++  public EventoLogistico {
++    if (idOperacion == null || idOperacion.isBlank() || tipo == null
++        || entregas == null || entregas.isEmpty() || patente == null
++        || patente.isBlank() || motivo == null || motivo.isBlank() || fecha == null) {
++      throw new IllegalArgumentException("Evento logistico incompleto");
++    }
++    entregas = List.copyOf(entregas);
++    for (Referencia entrega : entregas) {
++      if (entrega.idDonacion() == null || entrega.idDonacion().isBlank()
++          || entrega.idEntidad() == null || entrega.idEntidad().isBlank()) {
++        throw new IllegalArgumentException("La donacion y la entidad son obligatorias");
++      }
++    }
++    if (tipo != Tipo.INICIO_TRASLADO && entregas.size() != 1) {
++      throw new IllegalArgumentException("La operacion corresponde a una sola entrega");
++    }
++  }
++  public enum Tipo { INICIO_TRASLADO, RECEPCION, NO_RECIBIDA, RETORNO_DEPOSITO }
++  public record Referencia(String idDonacion, String idEntidad) {}
++}
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/MonitorCamiones.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/MonitorCamiones.java
+index 5294ed7759c55e9f62259015f825505aa83c11d1..fa4e1ea0e5e3ffe3dfa59b9330d1a65d0abc4f45 100644
+--- a/servicio-logistica/src/main/java/org/example/dominio/logistica/MonitorCamiones.java
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/MonitorCamiones.java
+@@ -30,12 +30,13 @@ public class MonitorCamiones {
+     this.rutasEnSeguimiento.add(ruta);
+   }
+ 
+-  public boolean iniciarRuta(String patente) {
++  public boolean iniciarRuta(String patente, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
+     Ruta ruta = buscarRutaPorPatente(patente);
+     if (ruta == null) {
+       return false;
+     }
+-    ruta.iniciar();
++    ruta.iniciar(donaciones);
+     return true;
+   }
+ 
+@@ -118,4 +119,36 @@ public class MonitorCamiones {
+     }
+     return reporte.getFechaYHora().isBefore(ultima.getFechaYHora());
+   }
+-}
+\ No newline at end of file
++  public synchronized boolean registrarRuta(PlanDeRuta plan,
++      org.example.Repositorios.RepositorioCamiones camiones, Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    Camion camion = camiones.buscarPorPatente(plan.patente()).orElse(null);
++    if (camion == null || !camion.estaDisponible()) return false;
++    if (rutaDe(plan.patente()) != null) throw new IllegalStateException("El camion ya tiene una ruta registrada");
++    if (plan.destinos().isEmpty()) throw new IllegalArgumentException("La ruta no tiene entregas");
++    var asignaciones = donaciones.listarDestinos();
++    Ruta ruta = new Ruta(camion, plan.deposito());
++    var ids = new java.util.HashSet<String>();
++    for (PlanDeRuta.Destino destino : plan.destinos()) {
++      if (!ids.add(destino.idDonacion())) throw new IllegalStateException("La ruta contiene una donacion repetida");
++      if (rutasEnSeguimiento.stream().flatMap(r -> r.getEntregas().stream())
++          .anyMatch(e -> e.getIdDonacion().equals(destino.idDonacion()) && !e.fueResuelta())) {
++        throw new IllegalStateException("La donacion ya tiene una entrega pendiente");
++      }
++      var candidatas = asignaciones.stream().filter(a -> a.idDonacion().equals(destino.idDonacion())).toList();
++      if (candidatas.isEmpty()) return false;
++      if (candidatas.size() != 1) throw new IllegalStateException("La donacion tiene mas de una asignacion");
++      var asignacion = candidatas.get(0);
++      if (asignacion.idEntidad() == null || asignacion.idEntidad().isBlank()) {
++        throw new IllegalStateException("La asignacion no tiene entidad destinataria");
++      }
++      // Los datos de destino autoritativos provienen de Donaciones, no del request.
++      ruta.agregarEntrega(new Entrega(asignacion.idDonacion(), asignacion.idEntidad(),
++          asignacion.razonSocial(), asignacion.direccion(), asignacion.telefono(), destino.orden()));
++    }
++    registrarRuta(ruta);
++    camion.marcarNoDisponible();
++    return true;
++  }
++
++}
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/PlanDeRuta.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/PlanDeRuta.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..044b7712cd275ef786ce8f801f41fbb29d297dc0
+--- /dev/null
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/PlanDeRuta.java
+@@ -0,0 +1,12 @@
++package org.example.dominio.logistica;
++
++import java.util.List;
++
++public record PlanDeRuta(String patente, List<Destino> destinos, UbicacionCamion deposito) {
++  public PlanDeRuta {
++    destinos = List.copyOf(destinos);
++  }
++
++  public record Destino(String idDonacion, String razonSocial, String direccion,
++                        String telefono, int orden) {}
++}
+diff --git a/servicio-logistica/src/main/java/org/example/dominio/logistica/Ruta.java b/servicio-logistica/src/main/java/org/example/dominio/logistica/Ruta.java
+index bdb0ee0b06a85cc81ae2697e5cc530067a6bd73b..642b3d25fdc6f8d194d6cb2f39e7bc4bcfb60557 100644
+--- a/servicio-logistica/src/main/java/org/example/dominio/logistica/Ruta.java
++++ b/servicio-logistica/src/main/java/org/example/dominio/logistica/Ruta.java
+@@ -8,6 +8,7 @@ public class Ruta {
+   private Camion camion;
+   private List<Entrega> entregas;
+   private boolean activa;
++  private EventoLogistico inicioPendiente;
+   private UbicacionCamion ubicacionDeposito;
+ 
+   public Ruta(Camion camion) {
+@@ -22,15 +23,40 @@ public class Ruta {
+   }
+ 
+   public void agregarEntrega(Entrega entrega) {
++    if (activa || inicioPendiente != null) throw new IllegalStateException("La ruta ya fue iniciada o tiene un inicio pendiente");
+     this.entregas.add(entrega);
+   }
+ 
+   // El chofer da inicio a la ruta: pasa a activa y sus entregas quedan En Traslado
+-  public void iniciar() {
+-    this.activa = true;
+-    if (ubicacionDeposito != null) {
+-      camion.establecerUbicacionInicial(ubicacionDeposito);
++  public synchronized void iniciar(Donaciones donaciones)
++      throws java.io.IOException, InterruptedException {
++    java.util.Objects.requireNonNull(donaciones, "La conexion con Donaciones es obligatoria");
++    if (activa) return;
++    if (entregas.isEmpty()) throw new IllegalStateException("La ruta no tiene entregas");
++    var ids = new java.util.HashSet<String>();
++    for (Entrega entrega : entregas) {
++      entrega.validarInicioTraslado();
++      if (!ids.add(entrega.getIdDonacion())) {
++        throw new IllegalStateException("La ruta contiene una donacion repetida");
++      }
++    }
++    if (inicioPendiente == null) {
++      inicioPendiente = new EventoLogistico(java.util.UUID.randomUUID().toString(),
++          EventoLogistico.Tipo.INICIO_TRASLADO,
++          entregas.stream().map(e -> new EventoLogistico.Referencia(e.getIdDonacion(), e.getIdEntidad())).toList(),
++          camion.getPatente(), "El chofer inicio la ruta", java.time.LocalDateTime.now());
++    }
++    // Donaciones valida todo el lote antes de cambiar estados. Un reintento usa el mismo ID.
++    try {
++      donaciones.informar(inicioPendiente);
++    } catch (IllegalArgumentException | IllegalStateException rechazo) {
++      inicioPendiente = null;
++      throw rechazo;
+     }
++    entregas.forEach(Entrega::iniciarTraslado);
++    activa = true;
++    inicioPendiente = null;
++    if (ubicacionDeposito != null) camion.establecerUbicacionInicial(ubicacionDeposito);
+   }
+ 
+   public int cantidadEntregas() {
+@@ -62,7 +88,7 @@ public class Ruta {
+   }
+ 
+   public List<Entrega> getEntregas() {
+-    return entregas;
++    return List.copyOf(entregas);
+   }
+ 
+   public boolean estaActiva() {
+diff --git a/servicio-logistica/src/main/java/org/example/integracion/ClienteDonaciones.java b/servicio-logistica/src/main/java/org/example/integracion/ClienteDonaciones.java
+index e23ebc478cdcb5890809970bdbcabc744643d4d4..d54f2b14add8596c7839e118db2e97b0eee5c2dc 100644
+--- a/servicio-logistica/src/main/java/org/example/integracion/ClienteDonaciones.java
++++ b/servicio-logistica/src/main/java/org/example/integracion/ClienteDonaciones.java
+@@ -10,13 +10,13 @@ import java.util.Arrays;
+ import java.util.List;
+ import java.util.Optional;
+ 
+-public class ClienteDonaciones {
++public class ClienteDonaciones implements org.example.dominio.logistica.Donaciones {
+   private final HttpClient http;
+   private final ObjectMapper json;
+   private final String baseUrl;
+ 
+   public ClienteDonaciones(String baseUrl) {
+-    this(HttpClient.newHttpClient(), new ObjectMapper(), baseUrl);
++    this(HttpClient.newHttpClient(), new ObjectMapper().findAndRegisterModules(), baseUrl);
+   }
+ 
+   public ClienteDonaciones(HttpClient http, ObjectMapper json, String baseUrl) {
+@@ -28,7 +28,7 @@ public class ClienteDonaciones {
+   public Optional<AsignacionDisponible> buscarAsignacion(String idAsignacion)
+       throws IOException, InterruptedException {
+     HttpRequest request = HttpRequest.newBuilder(
+-        URI.create(baseUrl + "/interno/asignaciones/" + idAsignacion)).GET().build();
++        URI.create(baseUrl + "/interno/asignaciones/" + idAsignacion)).timeout(java.time.Duration.ofSeconds(10)).GET().build();
+     HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+     if (response.statusCode() == 404) return Optional.empty();
+     if (response.statusCode() != 200) {
+@@ -40,7 +40,7 @@ public class ClienteDonaciones {
+   public boolean existeDonacion(String idDonacion) throws IOException, InterruptedException {
+     HttpRequest request = HttpRequest.newBuilder(
+         URI.create(baseUrl + "/interno/donaciones/" + idDonacion + "/existe"))
+-        .GET().build();
++        .timeout(java.time.Duration.ofSeconds(10)).GET().build();
+     HttpResponse<Void> response = http.send(request, HttpResponse.BodyHandlers.discarding());
+     if (response.statusCode() == 204) return true;
+     if (response.statusCode() == 404) return false;
+@@ -50,7 +50,7 @@ public class ClienteDonaciones {
+   public List<AsignacionDisponible> listarAsignaciones()
+       throws IOException, InterruptedException {
+     HttpRequest request = HttpRequest.newBuilder(
+-        URI.create(baseUrl + "/interno/asignaciones")).GET().build();
++        URI.create(baseUrl + "/interno/asignaciones")).timeout(java.time.Duration.ofSeconds(10)).GET().build();
+     HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+     if (response.statusCode() != 200) {
+       throw new IOException("Donaciones respondio " + response.statusCode());
+@@ -58,4 +58,26 @@ public class ClienteDonaciones {
+     return Arrays.asList(json.readValue(response.body(), AsignacionDisponible[].class));
+   }
+ 
++  @Override
++  public List<org.example.dominio.logistica.Donaciones.Asignacion> listarDestinos()
++      throws IOException, InterruptedException {
++    return listarAsignaciones().stream().map(a -> new org.example.dominio.logistica.Donaciones.Asignacion(
++        a.idDonacion(), a.idEntidad(), a.razonSocial(), a.direccion(), a.telefono(), a.estadoDonacion())).toList();
++  }
++
++  @Override
++  public void informar(org.example.dominio.logistica.EventoLogistico evento)
++      throws IOException, InterruptedException {
++    HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/interno/logistica/eventos"))
++        .timeout(java.time.Duration.ofSeconds(10))
++        .header("Content-Type", "application/json")
++        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(evento))).build();
++    HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
++    if (response.statusCode() == 204) return;
++    if (response.statusCode() == 409 || response.statusCode() == 404) {
++      throw new IllegalStateException(response.body());
++    }
++    if (response.statusCode() == 400) throw new IllegalArgumentException(response.body());
++    throw new IOException("Donaciones respondio " + response.statusCode());
++  }
+ }
+diff --git a/servicio-logistica/src/main/java/org/example/service/ClienteGeneradorRutas.java b/servicio-logistica/src/main/java/org/example/integracion/ClienteGeneradorRutas.java
+similarity index 82%
+rename from servicio-logistica/src/main/java/org/example/service/ClienteGeneradorRutas.java
+rename to servicio-logistica/src/main/java/org/example/integracion/ClienteGeneradorRutas.java
+index 0bc4838c4a7cbc2bdf74dc05179d14b20443bad2..cc0ccd5e15d67cb243461a3cac0f80566067953b 100644
+--- a/servicio-logistica/src/main/java/org/example/service/ClienteGeneradorRutas.java
++++ b/servicio-logistica/src/main/java/org/example/integracion/ClienteGeneradorRutas.java
+@@ -1,61 +1,63 @@
+-package org.example.service;
++package org.example.integracion;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+-import org.example.Repositorios.RepositorioAsignacionesDonacion;
++import java.io.IOException;
++import java.net.URI;
++import java.net.http.*;
++import com.fasterxml.jackson.databind.ObjectMapper;
+ import org.example.Repositorios.RepositorioCamiones;
+ import org.example.api.logistica.dto.RutaRequest;
+-import org.example.dominio.donacion.AsignacionDonacion;
++
+ import org.example.dominio.logistica.Camion;
+ import org.example.dominio.logistica.UbicacionCamion;
+-import org.springframework.http.ResponseEntity;
+-import org.springframework.stereotype.Service;
+-import org.springframework.web.client.RestTemplate;
+ 
+-@Service
++
++
+ public class ClienteGeneradorRutas {
+ 
+   private static final String URL_GENERADOR_RUTAS = "http://localhost:8081/rutas/generar";
+ 
+-  private final RestTemplate restTemplate;
++  private final HttpClient http;
++  private final ObjectMapper json = new ObjectMapper();
+   private final String urlGeneradorRutas;
+   private final RepositorioCamiones repositorioCamiones;
+-  private final RepositorioAsignacionesDonacion repositorioAsignaciones;
++  private final ClienteDonaciones donaciones;
+ 
+   public ClienteGeneradorRutas() {
+     this(
+-        new RestTemplate(),
+-        URL_GENERADOR_RUTAS,
++        HttpClient.newHttpClient(),
++        System.getenv().getOrDefault("GENERADOR_RUTAS_URL", URL_GENERADOR_RUTAS),
+         RepositorioCamiones.getInstance(),
+-        RepositorioAsignacionesDonacion.getInstance()
++        new ClienteDonaciones(System.getenv().getOrDefault("DONACIONES_URL", "http://localhost:8080"))
+     );
+   }
+ 
+   public ClienteGeneradorRutas(
+-      RestTemplate restTemplate,
++      HttpClient http,
+       String urlGeneradorRutas,
+       RepositorioCamiones repositorioCamiones,
+-      RepositorioAsignacionesDonacion repositorioAsignaciones
++      ClienteDonaciones donaciones
+   ) {
+-    this.restTemplate = restTemplate;
++    this.http = http;
+     this.urlGeneradorRutas = urlGeneradorRutas;
+     this.repositorioCamiones = repositorioCamiones;
+-    this.repositorioAsignaciones = repositorioAsignaciones;
++    this.donaciones = donaciones;
+   }
+ 
+-  public List<RutaRequest> solicitarRutasDesdeRepositorios(UbicacionCamion ubicacionDeposito) {
++  public List<RutaRequest> solicitarRutasDesdeRepositorios(UbicacionCamion ubicacionDeposito) throws IOException, InterruptedException {
+     return solicitarRutas(
+         repositorioCamiones.buscarDisponibles(),
+-        repositorioAsignaciones.buscarTodas(),
++        donaciones.listarAsignaciones(),
+         ubicacionDeposito
+     );
+   }
+ 
+   public List<RutaRequest> solicitarRutas(
+       List<Camion> camionesDisponibles,
+-      List<AsignacionDonacion> asignaciones,
++      List<AsignacionDisponible> asignaciones,
+       UbicacionCamion ubicacionDeposito
+-  ) {
++  ) throws IOException, InterruptedException {
+     if (camionesDisponibles.isEmpty() || asignaciones.isEmpty()) {
+       return new ArrayList<>();
+     }
+@@ -63,18 +65,17 @@ public class ClienteGeneradorRutas {
+     GenerarRutasRequest request =
+         armarRequest(camionesDisponibles, asignaciones, ubicacionDeposito);
+ 
+-    ResponseEntity<RutaGeneradaResponse[]> response = restTemplate.postForEntity(
+-        urlGeneradorRutas,
+-        request,
+-        RutaGeneradaResponse[].class
+-    );
+-
+-    return convertirRespuesta(response.getBody());
++    HttpRequest httpRequest = HttpRequest.newBuilder(URI.create(urlGeneradorRutas))
++        .timeout(java.time.Duration.ofSeconds(30)).header("Content-Type", "application/json")
++        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(request))).build();
++    HttpResponse<String> response = http.send(httpRequest, HttpResponse.BodyHandlers.ofString());
++    if (response.statusCode() != 200) throw new IOException("Generador respondio " + response.statusCode());
++    return convertirRespuesta(json.readValue(response.body(), RutaGeneradaResponse[].class));
+   }
+ 
+   public GenerarRutasRequest armarRequest(
+       List<Camion> camionesDisponibles,
+-      List<AsignacionDonacion> asignaciones,
++      List<AsignacionDisponible> asignaciones,
+       UbicacionCamion ubicacionDeposito
+   ) {
+     GenerarRutasRequest request = new GenerarRutasRequest();
+@@ -158,17 +159,17 @@ public class ClienteGeneradorRutas {
+   }
+ 
+   private List<AsignacionRutaRequest> crearAsignacionesRequest(
+-      List<AsignacionDonacion> asignaciones
++      List<AsignacionDisponible> asignaciones
+   ) {
+     List<AsignacionRutaRequest> asignacionesRequest = new ArrayList<>();
+ 
+-    for (AsignacionDonacion asignacion : asignaciones) {
++    for (AsignacionDisponible asignacion : asignaciones) {
+       AsignacionRutaRequest asignacionRequest = new AsignacionRutaRequest();
+-      asignacionRequest.setIdDonacion(asignacion.getDonacion().getId());
+-      asignacionRequest.setEstadoDonacion(asignacion.getDonacion().getEstadoActual().name());
+-      asignacionRequest.setRazonSocialEntidad(asignacion.getEntidad().getRazonSocial());
+-      asignacionRequest.setDireccionEntidad(asignacion.getEntidad().getDireccion());
+-      asignacionRequest.setTelefonoEntidad(asignacion.getEntidad().getTelefono());
++      asignacionRequest.setIdDonacion(asignacion.idDonacion());
++      asignacionRequest.setEstadoDonacion(asignacion.estadoDonacion());
++      asignacionRequest.setRazonSocialEntidad(asignacion.razonSocial());
++      asignacionRequest.setDireccionEntidad(asignacion.direccion());
++      asignacionRequest.setTelefonoEntidad(asignacion.telefono());
+       asignacionesRequest.add(asignacionRequest);
+     }
+ 
+diff --git a/servicio-logistica/src/main/java/org/example/service/RutaService.java b/servicio-logistica/src/main/java/org/example/service/RutaService.java
+deleted file mode 100644
+index bd103ce0654afad2e9bcd5fe0c45237d37012db1..0000000000000000000000000000000000000000
+--- a/servicio-logistica/src/main/java/org/example/service/RutaService.java
++++ /dev/null
+@@ -1,69 +0,0 @@
+-package org.example.service;
+-
+-import org.example.Repositorios.RepositorioCamiones;
+-import org.example.Repositorios.RepositorioDonaciones;
+-import org.example.api.logistica.dto.RutaRequest;
+-import org.example.dominio.beneficiario.EntidadBeneficiaria;
+-import org.example.dominio.donacion.Donacion;
+-import org.example.dominio.logistica.Camion;
+-import org.example.dominio.logistica.Entrega;
+-import org.example.dominio.logistica.MonitorCamiones;
+-import org.example.dominio.logistica.Ruta;
+-
+-public class RutaService {
+-
+-  private final MonitorCamiones monitorCamiones;
+-  private final RepositorioCamiones repositorioCamiones;
+-  private final RepositorioDonaciones repositorioDonaciones;
+-
+-  public RutaService() {
+-    this(MonitorCamiones.getInstance());}
+-    public RutaService(MonitorCamiones monitorCamiones){
+-    this.monitorCamiones = monitorCamiones;
+-    this.repositorioCamiones = RepositorioCamiones.getInstance();
+-    this.repositorioDonaciones = RepositorioDonaciones.getInstance();
+-  }
+-
+-  public boolean registrarRuta(RutaRequest request) {
+-    Camion camion = repositorioCamiones
+-        .buscarPorPatente(request.getPatente())
+-        .orElse(null);
+-
+-    if (camion == null) {
+-      return false;
+-    }
+-
+-    if (!camion.estaDisponible()) {
+-      return false;
+-    }
+-
+-    Ruta ruta = new Ruta(camion);
+-
+-    for (RutaRequest.EntregaRequest entregaRequest : request.getEntregas()) {
+-      Donacion donacion = repositorioDonaciones
+-          .buscarPorId(entregaRequest.getIdDonacion())
+-          .orElse(null);
+-
+-      if (donacion == null) {
+-        return false;
+-      }
+-
+-      EntidadBeneficiaria destino = new EntidadBeneficiaria(
+-          entregaRequest.getRazonSocial(),
+-          entregaRequest.getDireccion(),
+-          entregaRequest.getTelefono()
+-      );
+-
+-      Entrega entrega = new Entrega(donacion, destino, entregaRequest.getOrden());
+-      ruta.agregarEntrega(entrega);
+-    }
+-
+-    monitorCamiones.registrarRuta(ruta);
+-    camion.marcarNoDisponible();
+-    return true;
+-  }
+-
+-  public boolean iniciarRuta(String patente) {
+-    return monitorCamiones.iniciarRuta(patente);
+-  }
+-}
+\ No newline at end of file
+diff --git a/servicio-logistica/src/main/java/org/example/service/TrazabilidadEntregaService.java b/servicio-logistica/src/main/java/org/example/service/TrazabilidadEntregaService.java
+deleted file mode 100644
+index 0c844b5bb5ae6a0bfad0f50cb91b676217087c46..0000000000000000000000000000000000000000
+--- a/servicio-logistica/src/main/java/org/example/service/TrazabilidadEntregaService.java
++++ /dev/null
+@@ -1,79 +0,0 @@
+-package org.example.service;
+-
+-import java.util.List;
+-import org.example.Repositorios.RepositorioDonaciones;
+-import org.example.dominio.donacion.EstadoDonacion;
+-import org.example.dominio.logistica.Camion;
+-import org.example.dominio.logistica.Entrega;
+-import org.example.dominio.logistica.EstadoEntrega;
+-import org.example.dominio.logistica.Ruta;
+-import org.example.service.NotificacionesService;
+-import org.springframework.stereotype.Service;
+-//este no tiene razon de ser
+-@Service
+-public class TrazabilidadEntregaService {
+-
+-  private final NotificacionesService notificacionesService;
+-
+-  public TrazabilidadEntregaService(NotificacionesService notificacionesService) {
+-    this.notificacionesService = notificacionesService;
+-  }
+-
+-  public void iniciarRuta(Ruta ruta) {
+-    ruta.iniciar();
+-    boolean seInicioAlgunaEntrega = false;
+-
+-    for (Entrega entrega : ruta.getEntregas()) {
+-      if (entrega.getEstado() == EstadoEntrega.PENDIENTE) {
+-        entrega.marcarEnTraslado();
+-
+-        entrega.getDonacion().cambiarEstado(
+-            EstadoDonacion.EN_TRASLADO,
+-            "El chofer inició la ruta"
+-        );
+-
+-        seInicioAlgunaEntrega = true;
+-
+-      }
+-    }
+-
+-    if (seInicioAlgunaEntrega) {
+-      notificacionesService.notificarInicioRuta(ruta);
+-    }
+-  }
+-
+-  public void confirmarRecepcion(Entrega entrega, Camion camion, List<String> fotos) {
+-    entrega.marcarEntregada(camion);
+-
+-    for (String foto : fotos) {
+-      entrega.agregarFotoRecepcion(foto);
+-    }
+-
+-    entrega.getDonacion().cambiarEstado(
+-        EstadoDonacion.ENTREGADA,
+-        "La entidad beneficiaria confirmó la recepción"
+-    );
+-
+-    notificacionesService.notificarEntregaExitosa(entrega);
+-  }
+-
+-  public void marcarNoRecibida(Entrega entrega, String motivo) {
+-    entrega.marcarNoRecibida();
+-
+-    entrega.getDonacion().cambiarEstado(
+-        EstadoDonacion.ENTREGA_FALLIDA,
+-        motivo
+-    );
+-
+-    notificacionesService.notificarEntregaNoRecibida(entrega, motivo);
+-  }
+-
+-  public void registrarRetornoADeposito(Entrega entrega, String motivo) {
+-    entrega.volverAPendiente();
+-
+-    entrega.getDonacion().cambiarEstado(
+-        EstadoDonacion.EN_DEPOSITO,
+-        motivo
+-    );
+-  }
+-}
+diff --git a/servicio-logistica/src/test/java/org/example/IntegracionDonacionesTest.java b/servicio-logistica/src/test/java/org/example/IntegracionDonacionesTest.java
+index f3deeb4fcd70de2ed9e099633ae7493f91f12d35..98e1ba8d6925de1ec3d7b2b4f090f867e8db751b 100644
+--- a/servicio-logistica/src/test/java/org/example/IntegracionDonacionesTest.java
++++ b/servicio-logistica/src/test/java/org/example/IntegracionDonacionesTest.java
+@@ -1,66 +1,94 @@
+ package org.example;
+ 
+-import static org.junit.jupiter.api.Assertions.assertEquals;
+-import static org.junit.jupiter.api.Assertions.assertNotNull;
+-import static org.junit.jupiter.api.Assertions.assertTrue;
+-
+ import io.javalin.Javalin;
++import io.javalin.json.JavalinJackson;
++import com.fasterxml.jackson.databind.ObjectMapper;
+ import java.net.URI;
+-import java.net.http.HttpClient;
+-import java.net.http.HttpRequest;
+-import java.net.http.HttpResponse;
++import java.net.http.*;
++import java.util.*;
+ import org.example.Repositorios.RepositorioCamiones;
+-import org.example.dominio.logistica.MonitorCamiones;
+-import org.example.dominio.logistica.EstadoEntrega;
+-import org.junit.jupiter.api.Test;
++import org.example.dominio.logistica.*;
++import org.example.integracion.AsignacionDisponible;
++import org.junit.jupiter.api.*;
++import static org.junit.jupiter.api.Assertions.*;
+ 
+-public class IntegracionDonacionesTest {
+-  @Test
+-  void registraEIniciaRutaSinCompartirObjetosDelDominioDonaciones() throws Exception {
+-    Javalin donaciones = Javalin.create();
+-    donaciones.get("/interno/donaciones/DON-1/existe", ctx -> ctx.status(204));
+-    donaciones.start(0);
++class IntegracionDonacionesTest {
++  Javalin remoto;
++  Javalin app;
++  HttpClient http = HttpClient.newHttpClient();
++  List<EventoLogistico> eventos = new ArrayList<>();
++  int respuesta = 204;
+ 
++  @BeforeEach void preparar() {
+     RepositorioCamiones.getInstance().limpiar();
+     MonitorCamiones.getInstance().limpiar();
+-    Javalin logistica = LogisticaApplication.crearApp("http://localhost:" + donaciones.port());
+-    logistica.start(0);
+-    try {
+-      HttpClient http = HttpClient.newHttpClient();
+-      String base = "http://localhost:" + logistica.port();
+-      HttpResponse<String> camion = http.send(HttpRequest.newBuilder(URI.create(base + "/camiones"))
+-          .header("Content-Type", "application/json")
+-          .POST(HttpRequest.BodyPublishers.ofString(
+-              "{\"patente\":\"AA100BB\",\"capacidadVolumen\":30,\"altura\":3,\"capacidadCarga\":5000}"))
+-          .build(), HttpResponse.BodyHandlers.ofString());
+-      assertEquals(201, camion.statusCode());
+-
+-      HttpResponse<String> ruta = http.send(HttpRequest.newBuilder(URI.create(base + "/rutas"))
+-          .header("Content-Type", "application/json")
+-          .POST(HttpRequest.BodyPublishers.ofString(
+-              "{\"patente\":\"AA100BB\",\"entregas\":[{\"idDonacion\":\"DON-1\","
+-                  + "\"razonSocial\":\"Comedor Sol\",\"direccion\":\"Av. Central 10\","
+-                  + "\"telefono\":\"1122334455\",\"orden\":1}]}"))
+-          .build(), HttpResponse.BodyHandlers.ofString());
+-      assertEquals(201, ruta.statusCode(), ruta.body());
+-      assertNotNull(MonitorCamiones.getInstance().rutaDe("AA100BB"));
+-      assertEquals("Comedor Sol", MonitorCamiones.getInstance().rutaDe("AA100BB")
+-          .getEntregas().get(0).getRazonSocial());
+-      assertEquals(EstadoEntrega.PENDIENTE, MonitorCamiones.getInstance().rutaDe("AA100BB")
+-          .getEntregas().get(0).getEstado());
++    remoto = Javalin.create(c -> c.jsonMapper(new JavalinJackson(new ObjectMapper().findAndRegisterModules())));
++    remoto.get("/interno/asignaciones", ctx -> ctx.json(List.of(
++        new AsignacionDisponible("D1", "E1", "Comedor Sol", "Calle real", "123", "LISTA_PARA_ENTREGAR"))));
++    remoto.post("/interno/logistica/eventos", ctx -> {
++      eventos.add(ctx.bodyAsClass(EventoLogistico.class));
++      ctx.status(respuesta).result(respuesta == 204 ? "" : "Rechazado");
++    });
++    remoto.start(0);
++    app = LogisticaApplication.crearApp("http://localhost:" + remoto.port()).start(0);
++  }
++  @AfterEach void cerrar() {
++    app.stop(); remoto.stop();
++    RepositorioCamiones.getInstance().limpiar(); MonitorCamiones.getInstance().limpiar();
++  }
++  HttpResponse<String> post(String path, String body) throws Exception {
++    return http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + app.port() + path))
++        .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build(),
++        HttpResponse.BodyHandlers.ofString());
++  }
++  void registrar() throws Exception {
++    assertEquals(201, post("/camiones", "{\"patente\":\"ABC\",\"capacidadVolumen\":30,\"altura\":3,\"capacidadCarga\":5000}").statusCode());
++    assertEquals(201, post("/rutas", "{\"patente\":\"ABC\",\"latitudDeposito\":-34.6,\"longitudDeposito\":-58.38,\"entregas\":[{\"idDonacion\":\"D1\",\"orden\":1}]}").statusCode());
++  }
++  Entrega entrega() { return MonitorCamiones.getInstance().rutaDe("ABC").getEntregas().get(0); }
+ 
+-      HttpResponse<String> inicio = http.send(HttpRequest.newBuilder(
+-          URI.create(base + "/rutas/AA100BB/iniciar"))
+-          .POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+-      assertEquals(200, inicio.statusCode(), inicio.body());
+-      assertTrue(MonitorCamiones.getInstance().rutaDe("AA100BB").estaActiva());
+-      assertEquals(EstadoEntrega.PENDIENTE, MonitorCamiones.getInstance().rutaDe("AA100BB")
+-          .getEntregas().get(0).getEstado());
+-    } finally {
+-      logistica.stop();
+-      donaciones.stop();
+-      RepositorioCamiones.getInstance().limpiar();
+-      MonitorCamiones.getInstance().limpiar();
+-    }
++  @Test void registraIniciaYConfirmaPorHttpSinCompartirEntidades() throws Exception {
++    registrar();
++    assertEquals("E1", entrega().getIdEntidad());
++    assertEquals("Calle real", entrega().getDireccion());
++    assertEquals(200, post("/rutas/ABC/iniciar", "").statusCode());
++    assertEquals(EstadoEntrega.EN_TRASLADO, entrega().getEstado());
++    assertEquals(-34.6, MonitorCamiones.getInstance().ubicacionActual("ABC").getLatitud());
++    assertEquals(204, post("/rutas/ABC/entregas/D1/recepcion", "{\"fotos\":[\"foto.jpg\"]}").statusCode());
++    assertEquals(EstadoEntrega.ENTREGADA, entrega().getEstado());
++    assertEquals(List.of("foto.jpg"), entrega().getFotosRecepcion());
++    assertEquals(100, MonitorCamiones.getInstance().avanceDeRuta("ABC"));
++    assertEquals(List.of(EventoLogistico.Tipo.INICIO_TRASLADO, EventoLogistico.Tipo.RECEPCION),
++        eventos.stream().map(EventoLogistico::tipo).toList());
++  }
++  @Test void informaEntregaFallidaYRetornoPorHttp() throws Exception {
++    registrar(); post("/rutas/ABC/iniciar", "");
++    assertEquals(204, post("/rutas/ABC/entregas/D1/no-recibida", "{\"motivo\":\"Cerrado\"}").statusCode());
++    assertEquals(EstadoEntrega.NO_RECIBIDA, entrega().getEstado());
++    assertEquals(204, post("/rutas/ABC/entregas/D1/retorno", "{\"motivo\":\"Regreso al deposito\"}").statusCode());
++    assertEquals(EstadoEntrega.PENDIENTE, entrega().getEstado());
++  }
++  @Test void conflictoRemotoNoCambiaElEstadoLocal() throws Exception {
++    registrar(); respuesta = 409;
++    assertEquals(409, post("/rutas/ABC/iniciar", "").statusCode());
++    assertFalse(MonitorCamiones.getInstance().rutaDe("ABC").estaActiva());
++    assertEquals(EstadoEntrega.PENDIENTE, entrega().getEstado());
++  }
++  @Test void errorRemotoSeReportaComo502YPermiteReintentar() throws Exception {
++    registrar(); respuesta = 500;
++    assertEquals(502, post("/rutas/ABC/iniciar", "").statusCode());
++    respuesta = 204;
++    assertEquals(200, post("/rutas/ABC/iniciar", "").statusCode());
++    assertEquals(eventos.get(0), eventos.get(1));
++  }
++  @Test void fotosInvalidasNoConfirmanRecepcion() throws Exception {
++    registrar(); post("/rutas/ABC/iniciar", "");
++    assertEquals(400, post("/rutas/ABC/entregas/D1/recepcion", "{\"fotos\":[\"\"]}").statusCode());
++    assertEquals(EstadoEntrega.EN_TRASLADO, entrega().getEstado());
++    assertEquals(1, eventos.size());
++  }
++  @Test void validaRutaIncompleta() throws Exception {
++    assertEquals(400, post("/rutas", "{\"patente\":\"ABC\"}").statusCode());
++    assertEquals(404, post("/rutas/INEXISTENTE/iniciar", "").statusCode());
+   }
+ }
+diff --git a/servicio-logistica/src/test/java/org/example/dominio/logistica/DonacionesDePrueba.java b/servicio-logistica/src/test/java/org/example/dominio/logistica/DonacionesDePrueba.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..26b13380538b1e951c546ccf1f57e55ecc5cefb2
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/dominio/logistica/DonacionesDePrueba.java
+@@ -0,0 +1,18 @@
++package org.example.dominio.logistica;
++import java.util.*;
++import java.io.IOException;
++
++public class DonacionesDePrueba implements Donaciones {
++  public final List<EventoLogistico> eventos = new ArrayList<>();
++  public List<Asignacion> asignaciones = List.of(
++      new Asignacion("D1", "E1", "Comedor", "Calle 1", "123", "LISTA_PARA_ENTREGAR"),
++      new Asignacion("D2", "E2", "Hogar", "Calle 2", "456", "LISTA_PARA_ENTREGAR"));
++  public boolean rechazar;
++  public boolean perderRespuesta;
++  public List<Asignacion> listarDestinos() { return asignaciones; }
++  public void informar(EventoLogistico evento) throws IOException {
++    if (rechazar) throw new IllegalStateException("La donacion no esta lista");
++    eventos.add(evento);
++    if (perderRespuesta) throw new IOException("Respuesta perdida");
++  }
++}
+diff --git a/servicio-logistica/src/test/java/org/example/dominio/logistica/MonitoreoCamionesTest.java b/servicio-logistica/src/test/java/org/example/dominio/logistica/MonitoreoCamionesTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..cca338c6accfe2ed90dc55abcd20861553ba886d
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/dominio/logistica/MonitoreoCamionesTest.java
+@@ -0,0 +1,101 @@
++package org.example.dominio.logistica;
++
++import java.util.UUID;
++
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++
++import java.time.LocalDateTime;
++
++import static org.junit.jupiter.api.Assertions.*;
++
++public class MonitoreoCamionesTest {
++
++  private MonitorCamiones monitor;
++  private Camion camion;
++  private Ruta ruta;
++
++  private final DonacionesDePrueba donaciones = new DonacionesDePrueba();
++
++  @BeforeEach
++  public void setUp() throws Exception {
++    monitor = new MonitorCamiones();
++    camion = new Camion("AB123CD", 20.0, 2.5, 3500.0);
++    ruta = new Ruta(camion);
++
++    ruta.agregarEntrega(new Entrega("D1", "E1", "Comedor", "Calle 1", "123", 1));
++    ruta.agregarEntrega(new Entrega("D2", "E2", "Hogar", "Calle 2", "456", 2));
++
++    monitor.registrarRuta(ruta);
++  }
++
++  @Test
++  public void alIniciarLaRutaLasEntregasPasanAEnTraslado() throws Exception {
++    ruta.iniciar(donaciones);
++
++    for (Entrega entrega : ruta.getEntregas()) {
++      assertEquals(EstadoEntrega.EN_TRASLADO, entrega.getEstado());
++    }
++  }
++
++  @Test
++  public void alIniciarRutaConUbicacionDepositoElCamionParteDesdeDeposito() throws Exception {
++    Camion camionConDeposito = new Camion("CD456EF", 20.0, 2.5, 3500.0);
++    UbicacionCamion ubicacionDeposito = new UbicacionCamion(
++        -34.60,
++        -58.38,
++        0.0,
++        LocalDateTime.now()
++    );
++    Ruta rutaConDeposito = new Ruta(camionConDeposito, ubicacionDeposito);
++
++    rutaConDeposito.agregarEntrega(new Entrega("D1", "E1", "Comedor", "Calle 1", "123", 1));
++    monitor.registrarRuta(rutaConDeposito);
++    rutaConDeposito.iniciar(donaciones);
++
++    UbicacionCamion ubicacionActual = monitor.ubicacionActual("CD456EF");
++
++    assertEquals(-34.60, ubicacionActual.getLatitud());
++    assertEquals(-58.38, ubicacionActual.getLongitud());
++    assertEquals(0.0, ubicacionActual.getVelocidad());
++  }
++
++  @Test
++  public void elAvanceReflejaLasEntregasCompletadas() throws Exception {
++    ruta.iniciar(donaciones);
++    ruta.getEntregas().get(0).confirmarRecepcion(camion, donaciones);
++    assertEquals(50.0, ruta.porcentajeAvance());
++  }
++
++  @Test
++  public void unReporteValidoActualizaLaUbicacionDelCamion() throws Exception {
++    ruta.iniciar(donaciones);
++    ReporteUbicacion reporte = new ReporteUbicacion("AB123CD", -34.60, -58.38, 45.0, LocalDateTime.now());
++
++    boolean procesado = monitor.recibirReporte(reporte);
++
++    assertTrue(procesado);
++    assertEquals(-34.60, monitor.ubicacionActual("AB123CD").getLatitud());
++  }
++
++  @Test
++  public void seRechazaElReporteDeUnaPatenteDesconocida() throws Exception {
++    ruta.iniciar(donaciones);
++    ReporteUbicacion reporte = new ReporteUbicacion("XX999XX", -34.60, -58.38, 45.0, LocalDateTime.now());
++    assertFalse(monitor.recibirReporte(reporte));
++  }
++
++  @Test
++  public void seRechazaElReporteSiLaRutaNoEstaActiva() throws Exception {
++    // La ruta no se inició, por lo que no debe aceptar ubicaciones
++    ReporteUbicacion reporte = new ReporteUbicacion("AB123CD", -34.60, -58.38, 45.0, LocalDateTime.now());
++    assertFalse(monitor.recibirReporte(reporte));
++  }
++
++  @Test
++  public void seRechazaElReporteConCoordenadasInvalidas() throws Exception {
++    ruta.iniciar(donaciones);
++    ReporteUbicacion reporte = new ReporteUbicacion("AB123CD", 200.0, -58.38, 45.0, LocalDateTime.now());
++    assertFalse(monitor.recibirReporte(reporte));
++  }
++}
+diff --git a/servicio-logistica/src/test/java/org/example/dominio/logistica/RegistroRutaTest.java b/servicio-logistica/src/test/java/org/example/dominio/logistica/RegistroRutaTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3b2eb0106c7ad24e6123a9358e468070b9f1ee01
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/dominio/logistica/RegistroRutaTest.java
+@@ -0,0 +1,41 @@
++package org.example.dominio.logistica;
++
++import org.junit.jupiter.api.*;
++import org.example.Repositorios.RepositorioCamiones;
++import java.util.List;
++import static org.junit.jupiter.api.Assertions.*;
++
++class RegistroRutaTest {
++  RepositorioCamiones camiones = RepositorioCamiones.getInstance();
++  MonitorCamiones monitor = new MonitorCamiones();
++  DonacionesDePrueba donaciones = new DonacionesDePrueba();
++  Camion camion = new Camion("ABC", 20, 3, 1000);
++  PlanDeRuta plan(String... ids) {
++    return new PlanDeRuta("ABC", java.util.Arrays.stream(ids)
++        .map(id -> new PlanDeRuta.Destino(id, "No confiar", "Direccion falsa", "000", 1)).toList(), null);
++  }
++  @BeforeEach void preparar() { camiones.limpiar(); camiones.agregar(camion); }
++  @AfterEach void limpiar() { camiones.limpiar(); }
++
++  @Test void registraConDatosRemotosYReservaCamion() throws Exception {
++    assertTrue(monitor.registrarRuta(plan("D1"), camiones, donaciones));
++    assertFalse(camion.estaDisponible());
++    Entrega entrega = monitor.rutaDe("ABC").getEntregas().get(0);
++    assertEquals("E1", entrega.getIdEntidad());
++    assertEquals("Calle 1", entrega.getDireccion());
++  }
++  @Test void noRegistraCamionNoDisponible() throws Exception {
++    camion.marcarNoDisponible();
++    assertFalse(monitor.registrarRuta(plan("D1"), camiones, donaciones));
++  }
++  @Test void noReservaCamionSiFaltaUnaAsignacion() throws Exception {
++    assertFalse(monitor.registrarRuta(plan("D1", "INEXISTENTE"), camiones, donaciones));
++    assertNull(monitor.rutaDe("ABC"));
++    assertTrue(camion.estaDisponible());
++  }
++  @Test void rechazaDonacionesRepetidasSinEfectosParciales() {
++    assertThrows(IllegalStateException.class, () -> monitor.registrarRuta(plan("D1", "D1"), camiones, donaciones));
++    assertNull(monitor.rutaDe("ABC"));
++    assertTrue(camion.estaDisponible());
++  }
++}
+diff --git a/servicio-logistica/src/test/java/org/example/dominio/logistica/RepositorioCamionesTest.java b/servicio-logistica/src/test/java/org/example/dominio/logistica/RepositorioCamionesTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3e90a762670aef3bb5df26157af6dbebb2b04d15
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/dominio/logistica/RepositorioCamionesTest.java
+@@ -0,0 +1,60 @@
++package org.example.dominio.logistica;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertFalse;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import org.example.Repositorios.RepositorioCamiones;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++
++public class RepositorioCamionesTest {
++
++  private RepositorioCamiones repositorio;
++
++  @BeforeEach
++  public void setUp() {
++    repositorio = RepositorioCamiones.getInstance();
++    repositorio.limpiar();
++  }
++
++  @Test
++  public void puedeGuardarYBuscarCamionPorPatente() {
++    Camion camion = new Camion("AB123CD", 20.0, 2.5, 3500.0);
++
++    repositorio.agregar(camion);
++
++    assertTrue(repositorio.buscarPorPatente("AB123CD").isPresent());
++    assertEquals(camion, repositorio.buscarPorPatente("AB123CD").get());
++  }
++
++  @Test
++  public void buscarTodosDevuelveLosCamionesRegistrados() {
++    Camion camion = new Camion("AB123CD", 20.0, 2.5, 3500.0);
++
++    repositorio.agregar(camion);
++
++    assertEquals(1, repositorio.buscarTodos().size());
++  }
++
++  @Test
++  public void unCamionNuevoEstaDisponible() {
++    Camion camion = new Camion("AB123CD", 20.0, 2.5, 3500.0);
++
++    assertTrue(camion.estaDisponible());
++  }
++
++  @Test
++  public void buscarDisponiblesDevuelveSoloCamionesDisponibles() {
++    Camion disponible = new Camion("AB123CD", 20.0, 2.5, 3500.0);
++    Camion noDisponible = new Camion("CD456EF", 20.0, 2.5, 3500.0);
++    noDisponible.marcarNoDisponible();
++
++    repositorio.agregar(disponible);
++    repositorio.agregar(noDisponible);
++
++    assertEquals(1, repositorio.buscarDisponibles().size());
++    assertEquals(disponible, repositorio.buscarDisponibles().get(0));
++    assertFalse(noDisponible.estaDisponible());
++  }
++}
+diff --git a/servicio-logistica/src/test/java/org/example/dominio/logistica/TrazabilidadEntregaTest.java b/servicio-logistica/src/test/java/org/example/dominio/logistica/TrazabilidadEntregaTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4cfcbd25dbbcc0a78d5206b735752a485bb0a4ea
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/dominio/logistica/TrazabilidadEntregaTest.java
+@@ -0,0 +1,76 @@
++package org.example.dominio.logistica;
++
++import org.junit.jupiter.api.Test;
++import java.io.IOException;
++import static org.junit.jupiter.api.Assertions.*;
++
++class TrazabilidadEntregaTest {
++  DonacionesDePrueba donaciones = new DonacionesDePrueba();
++  Camion camion = new Camion("ABC", 20, 3, 1000);
++  Entrega entrega = new Entrega("D1", "E1", "Comedor", "Calle 1", "123", 1);
++  Ruta ruta() { Ruta ruta = new Ruta(camion); ruta.agregarEntrega(entrega); return ruta; }
++
++  @Test void confirmaRecepcionYRegistraFechaCamionYFotos() throws Exception {
++    Ruta ruta = ruta(); ruta.iniciar(donaciones);
++    entrega.confirmarRecepcion(camion, donaciones);
++    entrega.agregarFotoRecepcion("foto.jpg");
++    assertEquals(EstadoEntrega.ENTREGADA, entrega.getEstado());
++    assertNotNull(entrega.getFechaRecepcion());
++    assertSame(camion, entrega.getCamionResponsable());
++    assertEquals(1, entrega.getFotosRecepcion().size());
++    assertEquals(100, ruta.porcentajeAvance());
++    assertEquals(EventoLogistico.Tipo.RECEPCION, donaciones.eventos.get(1).tipo());
++    assertEquals(entrega.getFechaRecepcion(), donaciones.eventos.get(1).fecha());
++  }
++  @Test void validaEstadosYFotos() throws Exception {
++    assertThrows(IllegalStateException.class, () -> entrega.confirmarRecepcion(camion, donaciones));
++    assertThrows(IllegalStateException.class, () -> entrega.agregarFotoRecepcion("foto"));
++    ruta().iniciar(donaciones);
++    entrega.confirmarRecepcion(camion, donaciones);
++    assertThrows(IllegalArgumentException.class, () -> entrega.agregarFotoRecepcion(" "));
++    assertThrows(IllegalStateException.class, () -> entrega.marcarNoRecibida("Cerrado", camion, donaciones));
++  }
++  @Test void entregaFallidaPuedeRetornarSoloConMotivo() throws Exception {
++    ruta().iniciar(donaciones);
++    assertThrows(IllegalArgumentException.class, () -> entrega.marcarNoRecibida(" ", camion, donaciones));
++    entrega.marcarNoRecibida("Cerrado", camion, donaciones);
++    assertEquals(EstadoEntrega.NO_RECIBIDA, entrega.getEstado());
++    assertTrue(entrega.fueResuelta());
++    assertThrows(IllegalArgumentException.class, () -> entrega.registrarRetornoADeposito(null, camion, donaciones));
++    entrega.registrarRetornoADeposito("Retorno al deposito", camion, donaciones);
++    assertEquals(EstadoEntrega.PENDIENTE, entrega.getEstado());
++    assertEquals(EventoLogistico.Tipo.RETORNO_DEPOSITO, donaciones.eventos.get(2).tipo());
++  }
++  @Test void rechazoRemotoNoIniciaLaRutaNiMutaEntregas() {
++    donaciones.rechazar = true;
++    Ruta ruta = ruta();
++    assertThrows(IllegalStateException.class, () -> ruta.iniciar(donaciones));
++    assertFalse(ruta.estaActiva());
++    assertEquals(EstadoEntrega.PENDIENTE, entrega.getEstado());
++  }
++  @Test void inicioReintentadoUsaElMismoEventoYNoSeRepiteSiYaEstaActiva() throws Exception {
++    Ruta ruta = ruta(); donaciones.perderRespuesta = true;
++    assertThrows(IOException.class, () -> ruta.iniciar(donaciones));
++    assertFalse(ruta.estaActiva());
++    donaciones.perderRespuesta = false;
++    ruta.iniciar(donaciones); ruta.iniciar(donaciones);
++    assertEquals(2, donaciones.eventos.size());
++    assertEquals(donaciones.eventos.get(0), donaciones.eventos.get(1));
++    assertEquals(EstadoEntrega.EN_TRASLADO, entrega.getEstado());
++  }
++  @Test void recepcionReintentadaConservaIdYFechaYNoPermiteOtraOperacionPendiente() throws Exception {
++    ruta().iniciar(donaciones); donaciones.perderRespuesta = true;
++    assertThrows(IOException.class, () -> entrega.confirmarRecepcion(camion, donaciones));
++    assertEquals(EstadoEntrega.EN_TRASLADO, entrega.getEstado());
++    assertThrows(IllegalStateException.class, () -> entrega.marcarNoRecibida("Cerrado", camion, donaciones));
++    donaciones.perderRespuesta = false;
++    entrega.confirmarRecepcion(camion, donaciones);
++    assertEquals(donaciones.eventos.get(1), donaciones.eventos.get(2));
++  }
++  @Test void noIniciaRutaConDonacionRepetida() {
++    Ruta ruta = ruta(); ruta.agregarEntrega(entrega);
++    assertThrows(IllegalStateException.class, () -> ruta.iniciar(donaciones));
++    assertTrue(donaciones.eventos.isEmpty());
++    assertFalse(ruta.estaActiva());
++  }
++}
+diff --git a/servicio-logistica/src/test/java/org/example/integracion/ClienteGeneradorRutasTest.java b/servicio-logistica/src/test/java/org/example/integracion/ClienteGeneradorRutasTest.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..09a1511010974c7e54640bc3cc81ea93f057f5e1
+--- /dev/null
++++ b/servicio-logistica/src/test/java/org/example/integracion/ClienteGeneradorRutasTest.java
+@@ -0,0 +1,104 @@
++package org.example.integracion;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++
++import java.time.LocalDate;
++import java.time.LocalDateTime;
++import java.util.List;
++import org.example.api.logistica.dto.RutaRequest;
++import org.example.dominio.logistica.Camion;
++import org.example.dominio.logistica.UbicacionCamion;
++import org.junit.jupiter.api.Test;
++
++public class ClienteGeneradorRutasTest {
++
++  private final ClienteGeneradorRutas cliente = new ClienteGeneradorRutas();
++
++  @Test
++  public void armaRequestParaElMicroservicioConCamionesYAsignacionesRecibidas() {
++    Camion camion = new Camion("AB123CD", 20.0, 2.5, 1200.0);
++    AsignacionDisponible asignacion = new AsignacionDisponible("DON-1", "ENT-1",
++        "Comedor Sol", "Av. Siempre Viva 742", "1140001111", "LISTA_PARA_ENTREGAR");
++    UbicacionCamion deposito = new UbicacionCamion(
++        -34.60,
++        -58.38,
++        0.0,
++        LocalDateTime.now()
++    );
++
++    ClienteGeneradorRutas.GenerarRutasRequest request = cliente.armarRequest(
++        List.of(camion),
++        List.of(asignacion),
++        deposito
++    );
++
++    assertEquals(-34.60, request.getUbicacionDeposito().getLatitud());
++    assertEquals(-58.38, request.getUbicacionDeposito().getLongitud());
++    assertEquals("AB123CD", request.getCamiones().get(0).getPatente());
++    assertEquals(asignacion.idDonacion(), request.getAsignaciones().get(0).getIdDonacion());
++    assertEquals("Comedor Sol", request.getAsignaciones().get(0).getRazonSocialEntidad());
++    assertEquals("Av. Siempre Viva 742", request.getAsignaciones().get(0).getDireccionEntidad());
++  }
++
++  @Test
++  public void convierteRespuestaDelMicroservicioEnRutaRequestDelTp() {
++    ClienteGeneradorRutas.UbicacionRequest ubicacion =
++        new ClienteGeneradorRutas.UbicacionRequest();
++    ubicacion.setLatitud(-34.60);
++    ubicacion.setLongitud(-58.38);
++
++    ClienteGeneradorRutas.EntregaGeneradaResponse entrega =
++        new ClienteGeneradorRutas.EntregaGeneradaResponse();
++    entrega.setIdDonacion("DON-1");
++    entrega.setRazonSocialEntidad("Comedor Sol");
++    entrega.setDireccionEntidad("Av. Siempre Viva 742");
++    entrega.setTelefonoEntidad("1140001111");
++    entrega.setOrden(1);
++
++    ClienteGeneradorRutas.RutaGeneradaResponse rutaGenerada =
++        new ClienteGeneradorRutas.RutaGeneradaResponse();
++    rutaGenerada.setPatenteCamion("AB123CD");
++    rutaGenerada.setUbicacionDeposito(ubicacion);
++    rutaGenerada.setEntregas(List.of(entrega));
++
++    List<RutaRequest> rutas = cliente.convertirRespuesta(
++        new ClienteGeneradorRutas.RutaGeneradaResponse[] {rutaGenerada}
++    );
++
++    assertEquals(1, rutas.size());
++    assertEquals("AB123CD", rutas.get(0).getPatente());
++    assertEquals(-34.60, rutas.get(0).getLatitudDeposito());
++    assertEquals(-58.38, rutas.get(0).getLongitudDeposito());
++    assertEquals("DON-1", rutas.get(0).getEntregas().get(0).getIdDonacion());
++    assertEquals("Comedor Sol", rutas.get(0).getEntregas().get(0).getRazonSocial());
++    assertEquals(1, rutas.get(0).getEntregas().get(0).getOrden());
++  }
++
++  @Test
++  void solicitaPorHttpManteniendoElContratoDelGenerador() throws Exception {
++    io.javalin.Javalin generador = io.javalin.Javalin.create();
++    java.util.List<com.fasterxml.jackson.databind.JsonNode> recibidos = new java.util.ArrayList<>();
++    generador.post("/rutas/generar", ctx -> {
++      recibidos.add(new com.fasterxml.jackson.databind.ObjectMapper().readTree(ctx.body()));
++      ctx.json(java.util.List.of(java.util.Map.of(
++          "patenteCamion", "ABC", "ubicacionDeposito", java.util.Map.of("latitud", -34.6, "longitud", -58.38),
++          "entregas", java.util.List.of(java.util.Map.of("idDonacion", "D1", "razonSocialEntidad", "Comedor",
++              "direccionEntidad", "Calle", "telefonoEntidad", "123", "orden", 1)))));
++    });
++    generador.start(0);
++    try {
++      var clienteHttp = new ClienteGeneradorRutas(java.net.http.HttpClient.newHttpClient(),
++          "http://localhost:" + generador.port() + "/rutas/generar",
++          org.example.Repositorios.RepositorioCamiones.getInstance(), new ClienteDonaciones("http://localhost:1"));
++      var resultado = clienteHttp.solicitarRutas(
++          java.util.List.of(new Camion("ABC", 20, 3, 1000)),
++          java.util.List.of(new AsignacionDisponible("D1", "E1", "Comedor", "Calle", "123", "LISTA_PARA_ENTREGAR")),
++          new UbicacionCamion(-34.6, -58.38, 0, java.time.LocalDateTime.now()));
++      assertEquals("D1", recibidos.get(0).get("asignaciones").get(0).get("idDonacion").asText());
++      assertEquals("LISTA_PARA_ENTREGAR", recibidos.get(0).get("asignaciones").get(0).get("estadoDonacion").asText());
++      assertEquals("ABC", resultado.get(0).getPatente());
++      assertEquals("D1", resultado.get(0).getEntregas().get(0).getIdDonacion());
++      assertEquals(-34.6, resultado.get(0).getLatitudDeposito());
++    } finally { generador.stop(); }
++  }
++}

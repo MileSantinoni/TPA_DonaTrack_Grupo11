@@ -18,7 +18,6 @@ import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
-import org.example.service.NotificacionesService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,7 +31,7 @@ public class AsignacionController {
     private final RepositorioResultadosAlgoritmos repoResultados;
     private final RepositorioAsignacionesDonacion repoAsignaciones;
     private final AlgoritmoMadre algoritmoMadre;
-    private final NotificacionesService notificacionesService;
+    private final Notificador notificador;
 
     public AsignacionController() {
         this(
@@ -41,7 +40,7 @@ public class AsignacionController {
             RepositorioResultadosAlgoritmos.getInstance(),
             RepositorioAsignacionesDonacion.getInstance(),
             new AlgoritmoMadre(),
-            new NotificacionesService(new Notificador(new Email(null), new SMS(), new WhatsApp()))
+            new Notificador(new Email(null), new SMS(), new WhatsApp())
         );
     }
 
@@ -50,13 +49,13 @@ public class AsignacionController {
                                 RepositorioResultadosAlgoritmos repoResultados,
                                 RepositorioAsignacionesDonacion repoAsignaciones,
                                 AlgoritmoMadre algoritmoMadre,
-                                NotificacionesService notificacionesService) {
+                                Notificador notificador) {
         this.repoDonaciones = repoDonaciones;
         this.repoEntidades = repoEntidades;
         this.repoResultados = repoResultados;
         this.repoAsignaciones = repoAsignaciones;
         this.algoritmoMadre = algoritmoMadre;
-        this.notificacionesService = notificacionesService;
+        this.notificador = notificador;
     }
 
     // Ejecuta los algoritmos a demanda para una donación y devuelve el ranking.
@@ -117,11 +116,9 @@ public class AsignacionController {
         EntidadBeneficiaria entidad = entidadOpt.get();
 
         try {
-            AsignacionDonacion asignacion = donacion.asignarA(entidad);
+            AsignacionDonacion asignacion = donacion.asignarA(entidad, notificador);
             repoAsignaciones.agregar(asignacion);
 
-            notificacionesService.notificarDonacionAsignadaBeneficiario(asignacion);
-            notificacionesService.notificarDonacionAsignadaDonante(asignacion);
 
             AsignacionResponse response = new AsignacionResponse(
                 asignacion.getId(),
