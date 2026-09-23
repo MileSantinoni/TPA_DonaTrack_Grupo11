@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SeguimientoLogisticoTest {
   RepositorioAsignacionesDonacion repo = RepositorioAsignacionesDonacion.getInstance();
   List<String> mensajes = new ArrayList<>();
-  Notificador notificador = new Notificador(new Email(null), new SMS(), new WhatsApp()) {
+  Notificador notificador = new Notificador(new Email(), new SMS(), new WhatsApp()) {
     @Override public Notificacion notificarDonante(Donante d, String m) { mensajes.add(m); return null; }
     @Override public Notificacion notificarEntidadBeneficiaria(EntidadBeneficiaria e, String m) { mensajes.add(m); return null; }
   };
@@ -29,7 +29,7 @@ class SeguimientoLogisticoTest {
   }
   EventoLogistico evento(EventoLogistico.Tipo tipo, AsignacionDonacion... asignaciones) {
     return new EventoLogistico(UUID.randomUUID().toString(), tipo,
-        Arrays.stream(asignaciones).map(a -> new EventoLogistico.Referencia(a.getDonacion().getId(), a.getEntidad().getId())).toList(),
+        Arrays.stream(asignaciones).map(a -> new EventoLogistico.Referencia(a.getDonacion().getId(), a.getEntidad().getIdAsString())).toList(),
         "ABC", "Motivo", LocalDateTime.now());
   }
   @Test void inicioEnLoteValidaTodosAntesDeCambiarElPrimero() {

@@ -113,6 +113,21 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.flbulgarelli</groupId>
+            <artifactId>jpa-extras</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>6.2.7.Final</version> <!-- Requerido por JPA Extras para funcionar -->
+        </dependency>
     </dependencies>
 
     <build>

@@ -123,7 +123,7 @@ public class AsignacionController {
             AsignacionResponse response = new AsignacionResponse(
                 asignacion.getId(),
                 asignacion.getDonacion().getId(),
-                asignacion.getEntidad().getId(),
+                asignacion.getEntidad().getIdAsString(),
                 asignacion.getEntidad().getRazonSocial(),
                 asignacion.getDonacion().getEstadoActual().name()
             );

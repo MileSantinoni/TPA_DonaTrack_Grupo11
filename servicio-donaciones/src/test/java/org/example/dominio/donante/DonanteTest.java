@@ -11,9 +11,9 @@ import org.example.dominio.notificacion.Notificador;
 public class DonanteTest {
 
   public Notificador notificadorMock() {
-    Email emailFake = new Email(null) {
+    Email emailFake = new Email() {
       @Override
-      public void enviar(String destinatario, String mensaje) {
+      public Notificacion enviar(String destinatario, String mensaje) {
         Notificacion notificacion = new Notificacion(destinatario, mensaje);
         notificacion.marcarComoCompletada();
         return notificacion;

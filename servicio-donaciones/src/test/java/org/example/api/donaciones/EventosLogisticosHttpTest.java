@@ -20,7 +20,7 @@ class EventosLogisticosHttpTest {
     var donacion = new Donacion("Arroz", 1, "kg", null, null, null, null);
     var asignacion = donacion.asignarA(new EntidadBeneficiaria("Comedor", "Calle", "123"));
     repo.agregar(asignacion);
-    var notificador = new Notificador(new Email(null), new SMS(), new WhatsApp()) {
+    var notificador = new Notificador(new Email(), new SMS(), new WhatsApp()) {
       @Override public void notificarEventoLogistico(AsignacionDonacion a, EventoLogistico e) {}
     };
     var controller = new IntegracionLogisticaController(notificador);
@@ -29,7 +29,7 @@ class EventosLogisticosHttpTest {
     app.post("/interno/logistica/eventos", controller::registrarEvento); app.start(0);
     try {
       var evento = new EventoLogistico("op1", EventoLogistico.Tipo.INICIO_TRASLADO,
-          List.of(new EventoLogistico.Referencia(donacion.getId(), asignacion.getEntidad().getId())),
+          List.of(new EventoLogistico.Referencia(donacion.getId(), asignacion.getEntidad().getIdAsString())),
           "ABC", "Inicio", LocalDateTime.now());
       var request = HttpRequest.newBuilder(URI.create("http://localhost:" + app.port() + "/interno/logistica/eventos"))
           .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(evento))).build();
