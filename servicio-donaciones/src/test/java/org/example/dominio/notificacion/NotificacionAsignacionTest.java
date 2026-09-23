@@ -6,12 +6,6 @@ import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.TipoDocumento;
-import org.example.dominio.notificacion.Email;
-import org.example.dominio.notificacion.EstadoNotificacion;
-import org.example.dominio.notificacion.Notificacion;
-import org.example.dominio.notificacion.Notificador;
-import org.example.dominio.notificacion.SMS;
-import org.example.dominio.notificacion.WhatsApp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +27,7 @@ public class NotificacionAsignacionTest {
     @BeforeEach
     public void setUp() {
         Notificador notificador = new Notificador(
-                new Email(null) {
+                new Email() {
                     @Override
                     public Notificacion enviar(String destinatario, String mensaje) {
                         Notificacion notificacion = new Notificacion(destinatario, mensaje);

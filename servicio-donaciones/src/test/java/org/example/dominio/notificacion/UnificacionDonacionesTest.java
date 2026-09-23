@@ -27,7 +27,7 @@ class UnificacionDonacionesTest {
     var entidad = new EntidadBeneficiaria("Comedor", "Calle 1", "123");
     var beneficiarios = new ArrayList<AsignacionDonacion>();
     var donantes = new ArrayList<AsignacionDonacion>();
-    var notificador = new Notificador(new Email(null), new SMS(), new WhatsApp()) {
+    var notificador = new Notificador(new Email(), new SMS(), new WhatsApp()) {
       @Override public Notificacion notificarDonacionAsignadaBeneficiario(AsignacionDonacion a) {
         beneficiarios.add(a); return null;
       }
@@ -50,7 +50,7 @@ class UnificacionDonacionesTest {
     entidad.agregarRepresentante(new Representante("B", "B", "valido@example.org"));
     var donacion = new Donacion("Arroz", 10, "kg", null, null, null, donante());
     var destinatarios = new ArrayList<String>();
-    var email = new Email(null) {
+    var email = new Email() {
       @Override public Notificacion enviar(String destinatario, String mensaje) {
         destinatarios.add(destinatario); return new Notificacion(destinatario, mensaje);
       }
@@ -64,7 +64,7 @@ class UnificacionDonacionesTest {
   void elSchedulerDelegaAlDominioSinCapaService() {
     var repo = RepositorioDonantes.getInstance();
     repo.limpiar();
-    var notificador = new Notificador(new Email(null), new SMS(), new WhatsApp());
+    var notificador = new Notificador(new Email(), new SMS(), new WhatsApp());
     var llamadas = new ArrayList<LocalDate>();
     var donante = new Donante("donante@example.org", "123", TipoDocumento.DNI) {
       @Override public void notificarAusencia(List<RegistroDonacion> registros,

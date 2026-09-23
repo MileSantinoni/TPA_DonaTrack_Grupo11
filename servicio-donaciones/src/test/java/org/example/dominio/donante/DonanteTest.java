@@ -13,7 +13,7 @@ public class DonanteTest {
   public Notificador notificadorMock() {
     Email emailFake = new Email(null) {
       @Override
-      public Notificacion enviar(String destinatario, String mensaje) {
+      public void enviar(String destinatario, String mensaje) {
         Notificacion notificacion = new Notificacion(destinatario, mensaje);
         notificacion.marcarComoCompletada();
         return notificacion;

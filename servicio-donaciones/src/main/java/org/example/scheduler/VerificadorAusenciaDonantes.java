@@ -44,7 +44,7 @@ public class VerificadorAusenciaDonantes {
   public static void main(String[] args) {
     // instancia del notificador
     Notificador notificador = new Notificador(
-        new Email(null),
+        new Email(),
         new SMS(),
         new WhatsApp()
     );

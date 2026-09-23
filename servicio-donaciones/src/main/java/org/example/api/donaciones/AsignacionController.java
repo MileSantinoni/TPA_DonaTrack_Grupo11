@@ -40,7 +40,7 @@ public class AsignacionController {
             RepositorioResultadosAlgoritmos.getInstance(),
             RepositorioAsignacionesDonacion.getInstance(),
             new AlgoritmoMadre(),
-            new Notificador(new Email(null), new SMS(), new WhatsApp())
+            new Notificador(new Email(), new SMS(), new WhatsApp())
         );
     }
 

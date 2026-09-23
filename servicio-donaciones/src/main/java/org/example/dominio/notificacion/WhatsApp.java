@@ -2,36 +2,29 @@ package org.example.dominio.notificacion;
 
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-@Component
 public class WhatsApp implements TipoNotificacion {
 
-  @Value("${twilio.whatsappFrom}")
-  private String remitente;
+  private final String fromNumber = System.getenv("TWILIO_WHATSAPP_NUMBER");
 
   @Override
   public Notificacion enviar(String destinatario, String mensaje) {
     Notificacion notificacion = new Notificacion(destinatario, mensaje);
-
     try {
-      String destinoWhatsApp = destinatario.startsWith("whatsapp:")
-          ? destinatario
-          : "whatsapp:" + destinatario;
-
-      Message.creator(
-          new PhoneNumber(destinoWhatsApp),
-          new PhoneNumber(remitente),
+      // Twilio suele requerir el prefijo "whatsapp:" para este canal
+      Message twilioMessage = Message.creator(
+          new PhoneNumber("whatsapp:" + destinatario),
+          new PhoneNumber("whatsapp:" + fromNumber),
           mensaje
       ).create();
 
       notificacion.marcarComoCompletada();
+      System.out.println("WhatsApp enviado con éxito a: " + destinatario);
     } catch (Exception e) {
-      e.printStackTrace();
       notificacion.marcarComoFallida();
+      System.err.println("Error al enviar WhatsApp a: " + destinatario);
+      e.printStackTrace();
     }
-
     return notificacion;
   }
 }

@@ -13,7 +13,7 @@ import org.example.integracion.ClienteDonaciones;
 
 public class LogisticaApplication {
   public static Javalin crearApp() {
-    String urlDonaciones = System.getenv().getOrDefault("DONACIONES_URL", "http://localhost:8080");
+    String urlDonaciones = System.getenv().getOrDefault("DONACIONES_URL", "http://localhost:8083");
     return crearApp(urlDonaciones);
   }
 

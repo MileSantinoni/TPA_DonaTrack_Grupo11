@@ -17,7 +17,7 @@ public class IntegracionLogisticaController {
 
   public IntegracionLogisticaController() {
     this(new org.example.dominio.notificacion.Notificador(
-        new org.example.dominio.notificacion.Email(null),
+        new org.example.dominio.notificacion.Email(),
         new org.example.dominio.notificacion.SMS(), new org.example.dominio.notificacion.WhatsApp()));
   }
 

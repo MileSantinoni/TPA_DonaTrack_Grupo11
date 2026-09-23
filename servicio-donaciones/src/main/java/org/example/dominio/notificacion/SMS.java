@@ -2,32 +2,28 @@ package org.example.dominio.notificacion;
 
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-@Component
 public class SMS implements TipoNotificacion {
 
-  @Value("${twilio.smsFrom}")
-  private String remitente;
+  private final String fromNumber = System.getenv("TWILIO_PHONE_NUMBER");
 
   @Override
   public Notificacion enviar(String destinatario, String mensaje) {
     Notificacion notificacion = new Notificacion(destinatario, mensaje);
-
     try {
-      Message.creator(
+      Message twilioMessage = Message.creator(
           new PhoneNumber(destinatario),
-          new PhoneNumber(remitente),
+          new PhoneNumber(fromNumber),
           mensaje
       ).create();
 
       notificacion.marcarComoCompletada();
+      System.out.println("SMS enviado con éxito a: " + destinatario);
     } catch (Exception e) {
-      e.printStackTrace();
       notificacion.marcarComoFallida();
+      System.err.println("Error al enviar SMS a: " + destinatario);
+      e.printStackTrace();
     }
-
     return notificacion;
   }
 }

@@ -45,7 +45,7 @@ public class NotificacionTest {
     };
 
     notificador = new Notificador(
-        new Email(null) {
+        new Email() {
           @Override
           public Notificacion enviar(String destinatario, String mensaje) {
             Notificacion notificacion = new Notificacion(destinatario, mensaje);
@@ -96,7 +96,7 @@ public class NotificacionTest {
   @Test
   public void elEmailEnviaYMarcaLaNotificacionComoCompletada() {
 
-    TipoNotificacion email = new Email(null) {
+    TipoNotificacion email = new Email() {
       @Override
       public Notificacion enviar(String destinatario, String mensaje) {
         Notificacion notificacion = new Notificacion(destinatario, mensaje);

@@ -1,0 +1,81 @@
+### Prueba 1: Verificar que Logística está vivo (GET)
+GET http://localhost:8082/camiones/ABC-123/ubicacion
+
+### Prueba 2: Registrar un camión en Logística (POST)
+POST http://localhost:8082/camiones
+Content-Type: application/json
+
+{
+  "patente": "ABC-123",
+  "capacidadVolumen": 25.5,
+  "altura": 2.8,
+  "capacidadCarga": 1500.0
+}
+
+### Prueba 2.5: Registrar un donante (Persona Humana) en Donaciones (POST)
+# Ajusta la URL si en tu RoutesDonaciones.java es distinta (ej. /donantes/humana)
+POST http://localhost:8083/donantes/humanas
+Content-Type: application/json
+
+{
+  "mail": "juan.perez@email.com",
+  "numeroDocumento": "35123456",
+  "tipoDeDocumento": "DNI",
+  "nombre": "Juan",
+  "apellido": "Perez",
+  "edad": 35,
+  "genero": "MASCULINO",
+  "direccion": "Avenida Siempre Viva 742"
+}
+
+### Prueba 2.6: Obtener todos los donantes para buscar el UUID
+GET http://localhost:8083/donantes
+
+### Prueba 3: Crear donación en Donaciones (POST)
+POST http://localhost:8083/donaciones
+Content-Type: application/json
+
+{
+  "descripcionGeneral": "Ropa de invierno",
+  "unidadMedida": "KILOS",
+  "cantidad": 15.5,
+  "estadoBien": "NUEVO",
+  "idSubcategoria": "1",
+  "idDonante": "64ab4d06-bc7f-47e9-87b9-dbbb5b0bb283"
+}
+
+### Prueba 4: Disparar integración desde Logística (POST)
+# Ejecutar la acción que hace que Logística se comunique con Donaciones
+POST http://localhost:8082/rutas/ABC-123/iniciar
+Content-Type: application/json
+
+{}
+
+
+### Prueba 3.1: (Opcional) Obtener todas las donaciones para buscar su ID
+GET http://localhost:8083/donaciones
+
+### Prueba 3.1:
+GET http://localhost:8082/camiones/ABC-123/ubicacion
+
+
+### Prueba 3.5: Registrar una ruta para el camión en Logística (POST)
+POST http://localhost:8082/rutas
+Content-Type: application/json
+
+{
+  "patente": "ABC-123",
+  "latitudDeposito": -34.6037,
+  "longitudDeposito": -58.3816,
+  "entregas": [
+    {
+      "idDonacion": "20694865-c0f9-4c7b-913d-587e8acb7e22",
+      "razonSocial": "Comedor Esperanza",
+      "direccion": "Calle Solidaridad 456",
+      "telefono": "1122334455",
+      "orden": 1
+    }
+  ]
+}
+
+
