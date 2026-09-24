@@ -2,21 +2,51 @@ package org.example.dominio.logistica;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.*;
+import java.util.UUID;
+import org.example.persistencia.EventoLogisticoConverter;
 
-// Logistica conserva una referencia y los datos de destino recibidos por HTTP.
-// Donacion y EntidadBeneficiaria pertenecen al otro microservicio.
+@Entity
+@Table(name = "entregas")
 public class Entrega {
-  private final String idDonacion;
-  private final String idEntidad;
-  private final String razonSocial;
-  private final String direccion;
-  private final String telefono;
-  private final int orden;
+
+  @Id
+  private String id = UUID.randomUUID().toString();
+
+  @Column(name = "id_donacion", nullable = false)
+  private String idDonacion;
+
+  @Column(name = "id_entidad_destino", nullable = false)
+  private String idEntidad;
+
+  private String razonSocial;
+  private String direccion;
+  private String telefono;
+  private int orden;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private EstadoEntrega estado = EstadoEntrega.PENDIENTE;
+
+  @ManyToOne
+  @JoinColumn(name = "patente_camion_responsable")
   private Camion camionResponsable;
+
   private java.time.LocalDateTime fechaRecepcion;
+
+  // Provisorio: todavía no persistimos los eventos pendientes.
+  @Convert(converter = EventoLogisticoConverter.class)
+  @Column(name = "evento_pendiente", length = 100000)
   private EventoLogistico eventoPendiente;
-  private final List<String> fotosRecepcion = new ArrayList<>();
+
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinColumn(name = "entrega_id", nullable = false)
+  @OrderColumn(name = "orden_foto")
+  private List<FotoRecepcion> fotosRecepcion = new ArrayList<>();
+
+  protected Entrega() {
+    // Utilizado por JPA.
+  }
 
   public Entrega(String idDonacion, String idEntidad, String razonSocial,
                  String direccion, String telefono, int orden) {
@@ -61,34 +91,35 @@ public class Entrega {
     estado = EstadoEntrega.PENDIENTE;
   }
 
-  private EventoLogistico publicar(EventoLogistico.Tipo tipo, String motivo,
-                                    String patente, Donaciones donaciones)
-      throws java.io.IOException, InterruptedException {
-    java.util.Objects.requireNonNull(donaciones, "La conexion con Donaciones es obligatoria");
-    if (motivo == null || motivo.isBlank()) throw new IllegalArgumentException("El motivo es obligatorio");
-    if (eventoPendiente == null) {
-      eventoPendiente = new EventoLogistico(java.util.UUID.randomUUID().toString(), tipo,
-          List.of(new EventoLogistico.Referencia(idDonacion, idEntidad)), patente,
-          motivo, java.time.LocalDateTime.now());
-    } else if (eventoPendiente.tipo() != tipo || !eventoPendiente.motivo().equals(motivo)
-        || !eventoPendiente.patente().equals(patente)) {
-      throw new IllegalStateException("Reintente primero la operacion pendiente");
-    }
+  private EventoLogistico publicar(
+      EventoLogistico.Tipo tipo,
+      String motivo,
+      String patente,
+      Donaciones donaciones
+  ) throws java.io.IOException, InterruptedException {
+
+    java.util.Objects.requireNonNull(
+        donaciones, "La conexion con Donaciones es obligatoria"
+    );
+
+    EventoLogistico evento = prepararEvento(tipo, motivo, patente);
+
     try {
-      donaciones.informar(eventoPendiente);
+      donaciones.informar(evento);
     } catch (IllegalArgumentException | IllegalStateException rechazo) {
-      eventoPendiente = null; // Rechazo HTTP definitivo: no se aplico el evento.
+      eventoPendiente = null;
       throw rechazo;
     }
-    EventoLogistico confirmado = eventoPendiente;
+
+    // Ante IOException o InterruptedException, queda pendiente.
     eventoPendiente = null;
-    return confirmado;
+    return evento;
   }
 
   public void agregarFotoRecepcion(String foto) {
     exigirEstado(EstadoEntrega.ENTREGADA);
     if (foto == null || foto.isBlank()) throw new IllegalArgumentException("La foto es obligatoria");
-    fotosRecepcion.add(foto);
+    fotosRecepcion.add(new FotoRecepcion(foto));
   }
 
   private void exigirEstado(EstadoEntrega esperado) {
@@ -109,5 +140,90 @@ public class Entrega {
   public int getOrden() { return orden; }
   public EstadoEntrega getEstado() { return estado; }
   public Camion getCamionResponsable() { return camionResponsable; }
-  public List<String> getFotosRecepcion() { return List.copyOf(fotosRecepcion); }
+  public List<String> getFotosRecepcion() {
+    return fotosRecepcion.stream()
+        .map(FotoRecepcion::getUrl)
+        .toList();
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public synchronized EventoLogistico prepararRecepcion(Camion camion) {
+    exigirEstado(EstadoEntrega.EN_TRASLADO);
+
+    return prepararEvento(
+        EventoLogistico.Tipo.RECEPCION,
+        "La entidad confirmo la recepcion",
+        camion
+    );
+  }
+
+  public synchronized EventoLogistico prepararNoRecibida(
+      String motivo,
+      Camion camion
+  ) {
+    exigirEstado(EstadoEntrega.EN_TRASLADO);
+
+    return prepararEvento(
+        EventoLogistico.Tipo.NO_RECIBIDA,
+        motivo,
+        camion
+    );
+  }
+
+  public synchronized EventoLogistico prepararRetorno(
+      String motivo,
+      Camion camion
+  ) {
+    exigirEstado(EstadoEntrega.NO_RECIBIDA);
+
+    return prepararEvento(
+        EventoLogistico.Tipo.RETORNO_DEPOSITO,
+        motivo,
+        camion
+    );
+  }
+
+  private EventoLogistico prepararEvento(
+      EventoLogistico.Tipo tipo,
+      String motivo,
+      Camion camion
+  ) {
+    java.util.Objects.requireNonNull(
+        camion, "El camion responsable es obligatorio"
+    );
+
+    return prepararEvento(tipo, motivo, camion.getPatente());
+  }
+
+  private EventoLogistico prepararEvento(
+      EventoLogistico.Tipo tipo,
+      String motivo,
+      String patente
+  ) {
+    if (motivo == null || motivo.isBlank()) {
+      throw new IllegalArgumentException("El motivo es obligatorio");
+    }
+
+    if (eventoPendiente == null) {
+      eventoPendiente = new EventoLogistico(
+          java.util.UUID.randomUUID().toString(),
+          tipo,
+          List.of(new EventoLogistico.Referencia(idDonacion, idEntidad)),
+          patente,
+          motivo,
+          java.time.LocalDateTime.now()
+      );
+    } else if (eventoPendiente.tipo() != tipo
+        || !eventoPendiente.motivo().equals(motivo)
+        || !eventoPendiente.patente().equals(patente)) {
+      throw new IllegalStateException(
+          "Reintente primero la operacion pendiente"
+      );
+    }
+
+    return eventoPendiente;
+  }
 }

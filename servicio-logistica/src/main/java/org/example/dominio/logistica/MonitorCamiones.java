@@ -2,73 +2,118 @@ package org.example.dominio.logistica;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.example.Repositorios.RepositorioCamiones;
+import org.example.Repositorios.RepositorioRutas;
 
 // Recibe los reportes de ubicación de la app móvil, los valida y los procesa
 // para reflejar la posición y el avance de cada camión en el dashboard.
 public class MonitorCamiones {
 
-  private static MonitorCamiones instancia;
-  private List<Ruta> rutasEnSeguimiento;
+  private final RepositorioRutas rutas;
 
-  public MonitorCamiones() {
-    this.rutasEnSeguimiento = new ArrayList<>();
-  }
-
-  public static MonitorCamiones getInstance() {
-    if (instancia == null) {
-      instancia = new MonitorCamiones();
-    }
-    return instancia;
-  }
-
-  public void limpiar() {
-    this.rutasEnSeguimiento.clear();
+  public MonitorCamiones(RepositorioRutas rutas) {
+    this.rutas = java.util.Objects.requireNonNull(rutas);
   }
 
   // Se registra una ruta para poder monitorearla (el camión ya salió del depósito)
   public void registrarRuta(Ruta ruta) {
-    this.rutasEnSeguimiento.add(ruta);
+    rutas.agregar(ruta);
   }
 
-  public boolean iniciarRuta(String patente, Donaciones donaciones)
-      throws java.io.IOException, InterruptedException {
+  public synchronized boolean iniciarRuta(
+      String patente,
+      Donaciones donaciones,
+      RepositorioCamiones camiones
+  ) throws java.io.IOException, InterruptedException {
+
+    java.util.Objects.requireNonNull(
+        donaciones, "La conexion con Donaciones es obligatoria"
+    );
+
     Ruta ruta = buscarRutaPorPatente(patente);
+
     if (ruta == null) {
       return false;
     }
-    ruta.iniciar(donaciones);
+
+    // Preparar y confirmar en la BD el evento antes de enviarlo.
+    rutas.enTransaccion(() -> {
+      ruta.prepararInicio();
+      rutas.actualizar(ruta);
+    });
+
+    // Devuelve el evento ya preparado, o null si la ruta estaba activa.
+    EventoLogistico evento = ruta.prepararInicio();
+
+    if (evento == null) {
+      return true;
+    }
+
+    // La llamada HTTP se realiza fuera de la transacción de base de datos.
+    try {
+      donaciones.informar(evento);
+    } catch (IllegalArgumentException | IllegalStateException rechazo) {
+      rutas.enTransaccion(() -> {
+        ruta.rechazarInicio(evento.idOperacion());
+        rutas.actualizar(ruta);
+      });
+
+      throw rechazo;
+    }
+
+    // Si hubo IOException o InterruptedException, no llegamos acá:
+    // el evento queda guardado para reintentar con el mismo ID.
+
+    rutas.enTransaccion(() -> {
+      ruta.confirmarInicio(evento.idOperacion());
+      rutas.actualizar(ruta);
+      camiones.actualizar(ruta.getCamion());
+    });
+
     return true;
   }
 
   // Punto de entrada: recibe un reporte, lo valida y, si es válido, actualiza
   // la última ubicación del camión. Devuelve true si fue procesado.
-  public boolean recibirReporte(ReporteUbicacion reporte) {
+  public synchronized boolean recibirReporte(
+      ReporteUbicacion reporte,
+      RepositorioCamiones camiones
+  ) {
     Ruta ruta = buscarRutaPorPatente(reporte.getPatente());
 
-    if (ruta == null) {
-      return false; // no hay ruta en seguimiento para esa patente
-    }
-    if (!ruta.estaActiva()) {
-      return false; // solo se acepta ubicación mientras la ruta está activa
-    }
-    if (!coordenadasValidas(reporte)) {
+    if (ruta == null || !ruta.estaActiva()) {
       return false;
     }
-    if (reporte.getVelocidad() < 0) {
+
+    if (!coordenadasValidas(reporte)
+        || !Double.isFinite(reporte.getVelocidad())
+        || reporte.getVelocidad() < 0
+        || reporte.getFechaYHora() == null) {
       return false;
     }
-    if (esReporteAtrasado(ruta.getCamion(), reporte)) {
-      return false; // llegó un reporte anterior al último registrado
+
+    // Consultar el estado persistido, no la copia guardada en la ruta.
+    Camion camion = camiones
+        .buscarPorPatente(reporte.getPatente())
+        .orElse(null);
+
+    if (camion == null || esReporteAtrasado(camion, reporte)) {
+      return false;
     }
 
     UbicacionCamion ubicacion = new UbicacionCamion(
         reporte.getLatitud(),
         reporte.getLongitud(),
         reporte.getVelocidad(),
-        reporte.getFechaYHora());
-    ruta.getCamion().actualizarUbicacion(ubicacion);
+        reporte.getFechaYHora()
+    );
+
+    camion.actualizarUbicacion(ubicacion);
+    camiones.actualizar(camion);
+
     return true;
   }
+
 
   // Consulta para el dashboard: última posición conocida de un camión
   public UbicacionCamion ubicacionActual(String patente) {
@@ -94,22 +139,24 @@ public class MonitorCamiones {
   }
 
   private Ruta buscarRutaPorPatente(String patente) {
-    for (Ruta ruta : rutasEnSeguimiento) {
-      if (ruta.getCamion().getPatente().equals(patente)) {
-        return ruta;
-      }
+    var encontradas = rutas.buscarPorPatente(patente);
+
+    if (encontradas.size() > 1) {
+      throw new IllegalStateException(
+          "Hay varias rutas para el camion; falta identificar la ruta en seguimiento"
+      );
     }
-    return null;
+
+    return encontradas.isEmpty() ? null : encontradas.get(0);
   }
 
   private boolean coordenadasValidas(ReporteUbicacion reporte) {
-    if (reporte.getLatitud() < -90 || reporte.getLatitud() > 90) {
-      return false;
-    }
-    if (reporte.getLongitud() < -180 || reporte.getLongitud() > 180) {
-      return false;
-    }
-    return true;
+      return Double.isFinite(reporte.getLatitud())
+          && Double.isFinite(reporte.getLongitud())
+          && reporte.getLatitud() >= -90
+          && reporte.getLatitud() <= 90
+          && reporte.getLongitud() >= -180
+          && reporte.getLongitud() <= 180;
   }
 
   private boolean esReporteAtrasado(Camion camion, ReporteUbicacion reporte) {
@@ -119,6 +166,7 @@ public class MonitorCamiones {
     }
     return reporte.getFechaYHora().isBefore(ultima.getFechaYHora());
   }
+
   public synchronized boolean registrarRuta(PlanDeRuta plan,
       org.example.Repositorios.RepositorioCamiones camiones, Donaciones donaciones)
       throws java.io.IOException, InterruptedException {
@@ -131,7 +179,7 @@ public class MonitorCamiones {
     var ids = new java.util.HashSet<String>();
     for (PlanDeRuta.Destino destino : plan.destinos()) {
       if (!ids.add(destino.idDonacion())) throw new IllegalStateException("La ruta contiene una donacion repetida");
-      if (rutasEnSeguimiento.stream().flatMap(r -> r.getEntregas().stream())
+      if (rutas.buscarTodos().stream().flatMap(r -> r.getEntregas().stream())
           .anyMatch(e -> e.getIdDonacion().equals(destino.idDonacion()) && !e.fueResuelta())) {
         throw new IllegalStateException("La donacion ya tiene una entrega pendiente");
       }
@@ -146,8 +194,14 @@ public class MonitorCamiones {
       ruta.agregarEntrega(new Entrega(asignacion.idDonacion(), asignacion.idEntidad(),
           asignacion.razonSocial(), asignacion.direccion(), asignacion.telefono(), destino.orden()));
     }
-    registrarRuta(ruta);
     camion.marcarNoDisponible();
+
+    rutas.enTransaccion(() -> {
+      camion.marcarNoDisponible();
+      rutas.agregar(ruta);
+      camiones.actualizar(camion);
+    });
+
     return true;
   }
 

@@ -19,10 +19,6 @@ public class CamionController {
   private final MonitorCamiones monitorCamiones;
   private final RepositorioCamiones repositorioCamiones;
 
-  public CamionController() {
-    this(MonitorCamiones.getInstance(), RepositorioCamiones.getInstance());
-  }
-
   public CamionController(MonitorCamiones monitorCamiones, RepositorioCamiones repositorioCamiones) {
     this.monitorCamiones = monitorCamiones;
     this.repositorioCamiones = repositorioCamiones;
@@ -55,7 +51,9 @@ public class CamionController {
         request.getVelocidad(),
         fecha);
 
-    boolean procesado = monitorCamiones.recibirReporte(reporte);
+    boolean procesado = monitorCamiones.recibirReporte(
+        reporte, repositorioCamiones
+    );
     if (procesado) {
       ctx.status(HttpStatus.OK).result("Ubicacion registrada");
     } else {
@@ -66,7 +64,10 @@ public class CamionController {
   // Dashboard: última ubicación conocida del camión
   public void ubicacionActual(Context ctx) {
     String patente = ctx.pathParam("patente");
-    UbicacionCamion ubicacion = monitorCamiones.ubicacionActual(patente);
+    UbicacionCamion ubicacion = repositorioCamiones
+        .buscarPorPatente(patente)
+        .map(Camion::getUltimaUbicacion)
+        .orElse(null);
     if (ubicacion == null) {
       ctx.status(HttpStatus.NOT_FOUND);
       return;

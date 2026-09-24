@@ -27,7 +27,7 @@ public class RutaController {
   }
 
   public void iniciarRuta(Context ctx) throws java.io.IOException, InterruptedException {
-    if (monitor.iniciarRuta(ctx.pathParam("patente"), donaciones)) {
+    if (monitor.iniciarRuta(ctx.pathParam("patente"), donaciones, camiones)) {
       ctx.status(200).result("Ruta iniciada");
     } else {
       ctx.status(404).result("No hay ruta para el camion");
