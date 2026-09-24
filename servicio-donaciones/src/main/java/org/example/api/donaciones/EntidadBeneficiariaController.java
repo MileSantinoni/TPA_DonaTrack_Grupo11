@@ -67,6 +67,8 @@ public class EntidadBeneficiariaController {
     entidad.setDireccion(request.getDireccion());
     entidad.setTelefono(request.getTelefono());
 
+    repositorio.actualizar(entidad);
+
     ctx.status(HttpStatus.OK).result("Entidad Beneficiaria actualizada exitosamente.");
   }
 

@@ -1,56 +1,146 @@
 package org.example.Repositorios;
 
 import io.github.flbulgarelli.jpa.extras.simple.WithSimplePersistenceUnit;
-import org.example.dominio.beneficiario.EntidadBeneficiaria;
-
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
+import org.example.dominio.beneficiario.EntidadBeneficiaria;
 
-public class RepositorioEntidadesBeneficiarias implements WithSimplePersistenceUnit {
+public class RepositorioEntidadesBeneficiarias
+    implements WithSimplePersistenceUnit {
 
-  private static final RepositorioEntidadesBeneficiarias INSTANCE = new RepositorioEntidadesBeneficiarias();
+  private static final RepositorioEntidadesBeneficiarias INSTANCE =
+      new RepositorioEntidadesBeneficiarias();
+
+  private final Supplier<EntityManager> proveedor;
+
+  public RepositorioEntidadesBeneficiarias() {
+    this.proveedor = this::entityManager;
+  }
+
+  public RepositorioEntidadesBeneficiarias(EntityManager em) {
+    Objects.requireNonNull(em);
+    this.proveedor = () -> em;
+  }
+
+  public RepositorioEntidadesBeneficiarias(
+      Supplier<EntityManager> proveedor
+  ) {
+    this.proveedor = Objects.requireNonNull(proveedor);
+  }
 
   public static RepositorioEntidadesBeneficiarias getInstance() {
     return INSTANCE;
   }
 
+  private EntityManager em() {
+    EntityManager actual = proveedor.get();
+
+    if (actual == null || !actual.isOpen()) {
+      throw new IllegalStateException(
+          "No hay un EntityManager abierto para esta operacion"
+      );
+    }
+
+    return actual;
+  }
+
   public void agregar(EntidadBeneficiaria entidad) {
-    entityManager().getTransaction().begin();
-    entityManager().persist(entidad);
-    entityManager().getTransaction().commit();
+    EntityManager em = em();
+    enTransaccion(em, () -> em.persist(entidad));
+  }
+
+  public void actualizar(EntidadBeneficiaria entidad) {
+    EntityManager em = em();
+    enTransaccion(em, () -> em.merge(entidad));
   }
 
   public List<EntidadBeneficiaria> buscarTodos() {
-    return entityManager()
-        .createQuery("from EntidadBeneficiaria", EntidadBeneficiaria.class)
-        .getResultList();
+    return em().createQuery(
+        "SELECT e FROM EntidadBeneficiaria e",
+        EntidadBeneficiaria.class
+    ).getResultList();
   }
 
   public List<EntidadBeneficiaria> buscarTodas() {
     return buscarTodos();
   }
 
-  public Optional<EntidadBeneficiaria> buscarPorId(String idStr) {
+  public Optional<EntidadBeneficiaria> buscarPorId(String idTexto) {
+    if (idTexto == null || idTexto.isBlank()) {
+      return Optional.empty();
+    }
+
+    UUID id;
     try {
-      UUID id = UUID.fromString(idStr);
-      return Optional.ofNullable(entityManager().find(EntidadBeneficiaria.class, id));
+      id = UUID.fromString(idTexto);
     } catch (IllegalArgumentException e) {
       return Optional.empty();
     }
+
+    return Optional.ofNullable(
+        em().find(EntidadBeneficiaria.class, id)
+    );
   }
 
   public void eliminar(EntidadBeneficiaria entidad) {
-    entityManager().getTransaction().begin();
-    // Aseguramos que la entidad esté asociada al EntityManager antes de borrarla
-    EntidadBeneficiaria aBorrar = entityManager().contains(entidad) ? entidad : entityManager().merge(entidad);
-    entityManager().remove(aBorrar);
-    entityManager().getTransaction().commit();
+    if (entidad.getId() == null) {
+      return;
+    }
+
+    EntityManager em = em();
+
+    enTransaccion(em, () -> {
+      EntidadBeneficiaria encontrada =
+          em.find(EntidadBeneficiaria.class, entidad.getId());
+
+      if (encontrada != null) {
+        em.remove(encontrada);
+      }
+    });
   }
 
+  // Utilizar únicamente sobre la base de pruebas.
   public void limpiar() {
-    entityManager().getTransaction().begin();
-    entityManager().createQuery("DELETE FROM EntidadBeneficiaria").executeUpdate();
-    entityManager().getTransaction().commit();
+    EntityManager em = em();
+
+    enTransaccion(em, () -> {
+      List<EntidadBeneficiaria> entidades = em.createQuery(
+          "SELECT e FROM EntidadBeneficiaria e",
+          EntidadBeneficiaria.class
+      ).getResultList();
+
+      entidades.forEach(em::remove);
+    });
+  }
+
+  private void enTransaccion(EntityManager em, Runnable operacion) {
+    EntityTransaction tx = em.getTransaction();
+    boolean propia = !tx.isActive();
+
+    try {
+      if (propia) {
+        tx.begin();
+      }
+
+      operacion.run();
+
+      if (propia) {
+        tx.commit();
+      }
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        if (propia) {
+          tx.rollback();
+        } else {
+          tx.setRollbackOnly();
+        }
+      }
+      throw e;
+    }
   }
 }
