@@ -10,7 +10,8 @@ public class DonacionesDePrueba implements Donaciones {
   public boolean rechazar;
   public boolean perderRespuesta;
   public List<Asignacion> listarDestinos() { return asignaciones; }
-  public void informar(EventoLogistico evento) throws IOException {
+  public void informar(EventoLogistico evento)
+      throws java.io.IOException, InterruptedException {
     if (rechazar) throw new IllegalStateException("La donacion no esta lista");
     eventos.add(evento);
     if (perderRespuesta) throw new IOException("Respuesta perdida");
