@@ -35,7 +35,7 @@ public class RepositorioDonaciones {
 
   public Optional<Donacion> buscarPorId(String id) {
     return donaciones.stream()
-        .filter(d -> d.getId().equals(id))
+        .filter(d -> d.getIdAsString().equals(id))
         .findFirst();
   }
 

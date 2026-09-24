@@ -8,20 +8,51 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.example.dominio.donante.Donante;
+import javax.persistence.*;
 
-
+@Entity
+@Table(name = "donaciones")
 public class Donacion {
 
-  private String id; //le agregue un id para la exposicion en apissss
+  @Id
+  @GeneratedValue
+  private UUID id; //le agregue un id para la exposicion en apissss
+
+  @Column(name = "descripcion_general")
   private String descripcionGeneral;
+
   private int cantidad;
+
+  @Column(name = "unidad_medida")
   private String unidadMedida;
+
+  @ManyToOne
+  @JoinColumn(name = "subcategoria_id")
   private Subcategoria subcategoria;
+
+  @Column(name = "fecha_de_registro")
   private LocalDate fechaDeRegistro;
+
+  @Column(name = "fecha_vencimiento")
   private LocalDate fechaVencimiento;
+
+//  @Enumerated(EnumType.STRING)
+  @Column(name = "estado_bien")
   private Estado estadoBien;
+
+  @Column(name = "estado_actual")
+  private String estadoActualTexto;
+
+//  @Enumerated(EnumType.STRING)
+  @Transient
   private EstadoDonacionState estadoActual;
+
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinColumn(name = "donacion_id")
   private List<RegistroCambioEstado> historialEstados;
+
+  @ManyToOne
+  @JoinColumn(name = "donante_id")
   private Donante donante;
 
   public Donacion(
@@ -55,7 +86,7 @@ public class Donacion {
       Estado estadoBien,
       Donante donante
   ) {
-    this.id = UUID.randomUUID().toString();
+//    this.id = id;
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
@@ -63,6 +94,7 @@ public class Donacion {
     this.fechaDeRegistro = fechaDeRegistro;
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
+    this.estadoActualTexto = "EN_DEPOSITO";
     this.estadoActual = new EstadoDonacionEnDeposito();
     this.historialEstados = new ArrayList<>();
     this.donante = donante;
@@ -112,8 +144,8 @@ public class Donacion {
   }
 
 
-  public String getId() {
-    return id;
+  public String getIdAsString() {
+    return id != null ? id.toString() : null;
   }
 
   public Donante getDonante() {

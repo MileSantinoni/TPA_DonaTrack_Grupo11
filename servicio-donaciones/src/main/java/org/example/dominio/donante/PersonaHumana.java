@@ -1,13 +1,20 @@
 package org.example.dominio.donante;
 
+import javax.persistence.*;
+
+@Entity
+@Table(name = "personas_humanas")
 public class PersonaHumana extends Donante {
 
   private String nombre;
   private String apellido;
   private int edad;
+
+  @Enumerated(EnumType.STRING)
   private Genero genero;
   private String direccion;
 
+  protected PersonaHumana() {}
   public PersonaHumana(
       String mail,
       String numeroDocumento,

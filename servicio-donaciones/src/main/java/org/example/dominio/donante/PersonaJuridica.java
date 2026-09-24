@@ -2,12 +2,21 @@ package org.example.dominio.donante;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.*;
 
+@Entity
+@Table(name = "personas_juridicas")
 public class PersonaJuridica extends Donante {
 
+  @Column(name = "razon_social")
   private String razonSocial;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "tipo_organizacion")
   private TipoOrganizacion tipo;
   private String rubro;
+
+  @Transient
   private List<Representante> representantes;
 
   public PersonaJuridica(

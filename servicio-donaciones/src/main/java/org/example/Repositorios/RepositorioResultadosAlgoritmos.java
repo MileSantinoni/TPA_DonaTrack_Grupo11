@@ -37,12 +37,12 @@ public class RepositorioResultadosAlgoritmos {
 
   public List<ResultadoEjecucionAlgoritmos> buscarPorDonacion(String idDonacion) {
     return resultados.stream()
-        .filter(resultado -> resultado.getDonacion().getId().equals(idDonacion))
+        .filter(resultado -> resultado.getDonacion().getIdAsString().equals(idDonacion))
         .toList();
   }
 
   public void eliminarPorDonacion(String idDonacion) {
-    this.resultados.removeIf(resultado -> resultado.getDonacion().getId().equals(idDonacion));
+    this.resultados.removeIf(resultado -> resultado.getDonacion().getIdAsString().equals(idDonacion));
   }
   public void seleccionarEntidad(String idDonacion, int posicionLista){
 

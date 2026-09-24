@@ -38,7 +38,7 @@ public class SeguimientoLogistico {
     for (EventoLogistico.Referencia referencia : evento.entregas()) {
       if (!ids.add(referencia.idDonacion())) throw new IllegalArgumentException("Donacion repetida en el evento");
       var candidatas = asignaciones.buscarTodas().stream()
-          .filter(a -> a.getDonacion().getId().equals(referencia.idDonacion())).toList();
+          .filter(a -> a.getDonacion().getIdAsString().equals(referencia.idDonacion())).toList();
       if (candidatas.size() != 1) throw new IllegalStateException("No existe una asignacion unica para la donacion");
       AsignacionDonacion asignacion = candidatas.get(0);
       if (!asignacion.getEntidad().getId().equals(referencia.idEntidad())) {

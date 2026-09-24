@@ -29,7 +29,7 @@ class SeguimientoLogisticoTest {
   }
   EventoLogistico evento(EventoLogistico.Tipo tipo, AsignacionDonacion... asignaciones) {
     return new EventoLogistico(UUID.randomUUID().toString(), tipo,
-        Arrays.stream(asignaciones).map(a -> new EventoLogistico.Referencia(a.getDonacion().getId(), a.getEntidad().getIdAsString())).toList(),
+        Arrays.stream(asignaciones).map(a -> new EventoLogistico.Referencia(a.getDonacion().getIdAsString(), a.getEntidad().getIdAsString())).toList(),
         "ABC", "Motivo", LocalDateTime.now());
   }
   @Test void inicioEnLoteValidaTodosAntesDeCambiarElPrimero() {
@@ -63,7 +63,7 @@ class SeguimientoLogisticoTest {
   }
   @Test void rechazaEntidadIncorrectaYNoReutilizaIdsConOtrosDatos() {
     var a = asignar(true); var inicio = evento(EventoLogistico.Tipo.INICIO_TRASLADO, a);
-    var incorrecto = new EventoLogistico("otro", inicio.tipo(), List.of(new EventoLogistico.Referencia(a.getDonacion().getId(), "NO")), "ABC", "Motivo", inicio.fecha());
+    var incorrecto = new EventoLogistico("otro", inicio.tipo(), List.of(new EventoLogistico.Referencia(a.getDonacion().getIdAsString(), "NO")), "ABC", "Motivo", inicio.fecha());
     assertThrows(IllegalStateException.class, () -> seguimiento.registrar(incorrecto));
     seguimiento.registrar(inicio);
     var repetido = new EventoLogistico(inicio.idOperacion(), inicio.tipo(), inicio.entregas(), "OTRA", inicio.motivo(), inicio.fecha());

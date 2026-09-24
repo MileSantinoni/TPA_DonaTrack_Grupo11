@@ -29,7 +29,7 @@ class EventosLogisticosHttpTest {
     app.post("/interno/logistica/eventos", controller::registrarEvento); app.start(0);
     try {
       var evento = new EventoLogistico("op1", EventoLogistico.Tipo.INICIO_TRASLADO,
-          List.of(new EventoLogistico.Referencia(donacion.getId(), asignacion.getEntidad().getIdAsString())),
+          List.of(new EventoLogistico.Referencia(donacion.getIdAsString(), asignacion.getEntidad().getIdAsString())),
           "ABC", "Inicio", LocalDateTime.now());
       var request = HttpRequest.newBuilder(URI.create("http://localhost:" + app.port() + "/interno/logistica/eventos"))
           .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(evento))).build();

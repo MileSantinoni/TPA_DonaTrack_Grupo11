@@ -82,9 +82,9 @@ public class EjecucionAlgoritmosTest {
     ejecutor.ejecutarAlgoritmosEnHorarioBajaCarga();
 
     assertEquals(1, repositorioResultados.buscarTodos().size());
-    assertEquals(1, repositorioResultados.buscarPorDonacion(donacionDeAyer.getId()).size());
-    assertEquals(0, repositorioResultados.buscarPorDonacion(donacionDeHoy.getId()).size());
-    assertEquals(0, repositorioResultados.buscarPorDonacion(donacionYaAsignada.getId()).size());
+    assertEquals(1, repositorioResultados.buscarPorDonacion(donacionDeAyer.getIdAsString()).size());
+    assertEquals(0, repositorioResultados.buscarPorDonacion(donacionDeHoy.getIdAsString()).size());
+    assertEquals(0, repositorioResultados.buscarPorDonacion(donacionYaAsignada.getIdAsString()).size());
   }
 
   @Test

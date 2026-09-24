@@ -5,13 +5,26 @@ import org.example.dominio.donante.Donante;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import javax.persistence.*;
 
+@Entity
+@Table(name = "registros_donacion")
 public class RegistroDonacion {
+  @Id
   private String id;
   private String descripcionGeneral;
+  @ManyToOne
+  @JoinColumn(name = "donante_id")
   private Donante donante;
+
+  @Column(name = "fecha_de_registro")
   private LocalDate fechaDeRegistro;
-  private List<Bien> listaBienes;
+
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinColumn(name = "registro_donacion_id")
+  private List<Bien> listaBienes = new ArrayList<>();
+
+  protected RegistroDonacion() {}
 
   public RegistroDonacion(String id, String descripcionGeneral, Donante donante){
     this.id = id;

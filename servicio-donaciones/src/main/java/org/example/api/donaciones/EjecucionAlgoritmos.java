@@ -44,7 +44,7 @@ public class EjecucionAlgoritmos {
     for (Donacion donacion : donacionesPendientes) {
       List<EntidadBeneficiaria> entidadesPropuestas = algoritmoMadre.proponer(donacion, entidades);
 
-      repositorioResultados.eliminarPorDonacion(donacion.getId());
+      repositorioResultados.eliminarPorDonacion(donacion.getIdAsString());
       repositorioResultados.agregar(new ResultadoEjecucionAlgoritmos(donacion, entidadesPropuestas));
     }
   }

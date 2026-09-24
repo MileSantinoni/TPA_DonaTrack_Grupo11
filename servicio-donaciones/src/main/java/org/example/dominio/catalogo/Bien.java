@@ -1,16 +1,31 @@
 package org.example.dominio.catalogo;
 
 import java.time.LocalDate;
+import javax.persistence.*;
 
+@Entity
+@Table(name = "bienes")
 public class Bien {
+    @Id
     private String id;
     private String descripcion;
     private String foto; // Ruta, URL
     private int cantidad;
+
+    @Column(name = "unidad_medida")
     private String unidadMedida;
+
+    @ManyToOne
+    @JoinColumn(name = "subcategoria_id")
     private Subcategoria subcategoria;
+
+    @Column(name = "fecha_vencimiento")
     private LocalDate fechaVencimiento;
+
+    @Enumerated(EnumType.STRING)
     private Estado Estado;
+
+    protected Bien() {}
 
     public Bien(String id, String descripcion, int cantidad, String unidadMedida,
                 Subcategoria subcategoria, LocalDate fechaVencimiento, Estado estado) {
@@ -38,7 +53,7 @@ public class Bien {
         this.Estado = estado;
     }
 
-
+    public String getId() { return id; }
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 

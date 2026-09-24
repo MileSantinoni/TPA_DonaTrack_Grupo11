@@ -50,7 +50,7 @@ public class ContratoLogisticaTest {
       assertEquals("ASIGNACION_REALIZADA", contrato.get("estadoDonacion").asText());
 
       HttpResponse<Void> existencia = http.send(HttpRequest.newBuilder(URI.create(
-          base + "/interno/donaciones/" + donacion.getId() + "/existe"))
+          base + "/interno/donaciones/" + donacion.getIdAsString() + "/existe"))
           .GET().build(), HttpResponse.BodyHandlers.discarding());
       assertEquals(204, existencia.statusCode());
       HttpResponse<Void> ausente = http.send(HttpRequest.newBuilder(URI.create(

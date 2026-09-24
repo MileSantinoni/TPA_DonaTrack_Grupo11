@@ -1,19 +1,39 @@
 package org.example.dominio.donante;
-
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
+
+
+@Entity
+@Table(name = "donantes")
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Donante {
 
-  protected String id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
   protected String mail;
-  protected EstadoRegistro estadoRegistro;
-  protected List<MedioContacto> mediosDeContacto;
-  protected TipoContactoPredeterminado contactoPredeterminado;
+
+  @Column(name = "numero_documento")
   protected String numeroDocumento;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "tipo_documento")
   protected TipoDocumento tipoDeDocumento;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "estado_registro")
+  private EstadoRegistro estadoRegistro;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "contacto_predeterminado")
+  private TipoContactoPredeterminado contactoPredeterminado;
+
+  @OneToMany(mappedBy = "donante", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<MedioContacto> mediosDeContacto = new ArrayList<>();
+
+  protected Donante() {}
   public Donante(String mail, String numeroDocumento, TipoDocumento tipoDeDocumento) {
 
     if(mail == null || mail.isBlank()) {
@@ -21,7 +41,7 @@ public abstract class Donante {
           "El mail es obligatorio"
       );
     }
-    this.id = UUID.randomUUID().toString();
+
     this.mail = mail;
     this.numeroDocumento = numeroDocumento;
     this.tipoDeDocumento = tipoDeDocumento;
@@ -34,8 +54,8 @@ public abstract class Donante {
     this.estadoRegistro = EstadoRegistro.ACTIVO;
   }
 
-  public void agregarMedioContacto(MedioContacto medioContacto) {
-    this.mediosDeContacto.add(medioContacto);
+  public void agregarMedioContacto(MedioContacto medio) {
+    this.mediosDeContacto.add(medio);
   }
 
   public void actualizarDatos(String mail, String numeroDocumento, TipoDocumento tipoDeDocumento) {
@@ -52,7 +72,7 @@ public abstract class Donante {
     return contactoPredeterminado;
   }
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

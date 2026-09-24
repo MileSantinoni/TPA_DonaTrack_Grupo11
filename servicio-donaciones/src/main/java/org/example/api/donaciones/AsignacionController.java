@@ -70,7 +70,7 @@ public class AsignacionController {
 
         Donacion donacion = donacionOpt.get();
         List<EntidadBeneficiaria> propuestas = algoritmoMadre.proponer(donacion, repoEntidades.buscarTodas());
-        repoResultados.eliminarPorDonacion(donacion.getId());
+        repoResultados.eliminarPorDonacion(donacion.getIdAsString());
         repoResultados.agregar(new ResultadoEjecucionAlgoritmos(donacion, propuestas));
 
         ctx.status(HttpStatus.OK).json(propuestas);
@@ -87,7 +87,7 @@ public class AsignacionController {
         }
 
         List<ResultadoEjecucionAlgoritmos> resultados =
-            repoResultados.buscarPorDonacion(donacionOpt.get().getId());
+            repoResultados.buscarPorDonacion(donacionOpt.get().getIdAsString());
 
         if (resultados.isEmpty()) {
             ctx.status(HttpStatus.OK).json(new ArrayList<>());
@@ -122,7 +122,7 @@ public class AsignacionController {
 
             AsignacionResponse response = new AsignacionResponse(
                 asignacion.getId(),
-                asignacion.getDonacion().getId(),
+                asignacion.getDonacion().getIdAsString(),
                 asignacion.getEntidad().getIdAsString(),
                 asignacion.getEntidad().getRazonSocial(),
                 asignacion.getDonacion().getEstadoActual().name()
@@ -144,7 +144,7 @@ public class AsignacionController {
             return;
         }
 
-        repoResultados.eliminarPorDonacion(donacionOpt.get().getId());
+        repoResultados.eliminarPorDonacion(donacionOpt.get().getIdAsString());
         ctx.status(HttpStatus.OK).result("Asignacion rechazada");
     }
 }

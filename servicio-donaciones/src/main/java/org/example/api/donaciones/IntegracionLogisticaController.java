@@ -63,7 +63,7 @@ public class IntegracionLogisticaController {
   private AsignacionLogisticaResponse convertir(AsignacionDonacion asignacion) {
     var entidad = asignacion.getEntidad();
     var donacion = asignacion.getDonacion();
-    return new AsignacionLogisticaResponse(donacion.getId(), entidad.getIdAsString(),
+    return new AsignacionLogisticaResponse(donacion.getIdAsString(), entidad.getIdAsString(),
         entidad.getRazonSocial(), entidad.getDireccion(), entidad.getTelefono(),
         donacion.getEstadoActual().name());
   }
