@@ -26,20 +26,17 @@ public class DonacionController {
   private final RepositorioDonantes repositorioDonantes;
   private final RepositorioCatalogo repositorioCatalogo;
   private final RepositorioRegistroDonacion repositorioRegistros;
-  private final RepositorioAsignacionesDonacion repositorioAsignacionesDonacion;
 
   public DonacionController(
       RepositorioDonaciones repositorioDonaciones,
       RepositorioDonantes repositorioDonantes,
       RepositorioCatalogo repositorioCatalogo,
-      RepositorioRegistroDonacion repositorioRegistros,
-      RepositorioAsignacionesDonacion repositorioAsignacionesDonacion
+      RepositorioRegistroDonacion repositorioRegistros
   ) {
     this.repositorioDonaciones = repositorioDonaciones;
     this.repositorioDonantes = repositorioDonantes;
     this.repositorioCatalogo = repositorioCatalogo;
     this.repositorioRegistros = repositorioRegistros;
-    this.repositorioAsignacionesDonacion = repositorioAsignacionesDonacion;
   }
 
 

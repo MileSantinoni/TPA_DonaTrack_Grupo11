@@ -133,6 +133,57 @@ class PersistenciaAsignacionTest {
     );
   }
 
+  @Test
+  void recuperaLasRelacionesDeLaEntidadBeneficiaria() {
+    Categoria categoria = new Categoria("Ropa");
+
+    Subcategoria subcategoria = new Subcategoria(
+        "ABRIGO", "Abrigo", TipoAtributo.NO_PERECEDERO
+    );
+    categoria.agregarSubcategoria(subcategoria);
+
+    EntidadBeneficiaria entidad = new EntidadBeneficiaria(
+        "Hogar de prueba", "Calle 3", "12345678"
+    );
+
+    entidad.registrarNecesidad(new NecesidadExtraordinaria(
+        "Camperas", 10, subcategoria, "Invierno"
+    ));
+
+    entidad.agregarRepresentante(
+        new org.example.dominio.donante.Representante(
+            "Ana", "Perez", "ana@example.org"
+        )
+    );
+
+    em.getTransaction().begin();
+    em.persist(categoria);
+    em.persist(entidad);
+    em.getTransaction().commit();
+
+    UUID idEntidad = entidad.getId();
+
+    abrirNuevoContexto();
+
+    EntidadBeneficiaria recuperada =
+        em.find(EntidadBeneficiaria.class, idEntidad);
+
+    assertNotNull(recuperada);
+    assertEquals(1, recuperada.getNecesidades().size());
+    assertEquals(
+        "Camperas",
+        recuperada.getNecesidades().get(0).getDescripcion()
+    );
+    assertNotNull(recuperada.getNecesidades().get(0).getId());
+
+    assertEquals(1, recuperada.getRepresentantes().size());
+    assertEquals(
+        "ana@example.org",
+        recuperada.getRepresentantes().get(0).getEmail()
+    );
+    assertNotNull(recuperada.getRepresentantes().get(0).getId());
+  }
+
   @AfterEach
   void cerrar() {
     try {

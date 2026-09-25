@@ -43,6 +43,42 @@ public class Representante {
 //    this.entidadBeneficiaria = entidadBeneficiaria;
 //  }
 
+  public void asociarAEntidad(EntidadBeneficiaria entidad) {
+    java.util.Objects.requireNonNull(entidad);
+
+    if (personaJuridica != null) {
+      throw new IllegalStateException(
+          "El representante ya pertenece a una persona juridica"
+      );
+    }
+
+    if (entidadBeneficiaria != null && entidadBeneficiaria != entidad) {
+      throw new IllegalStateException(
+          "El representante ya pertenece a otra entidad"
+      );
+    }
+
+    this.entidadBeneficiaria = entidad;
+  }
+
+  public void asociarAPersonaJuridica(PersonaJuridica persona) {
+    java.util.Objects.requireNonNull(persona);
+
+    if (entidadBeneficiaria != null) {
+      throw new IllegalStateException(
+          "El representante ya pertenece a una entidad beneficiaria"
+      );
+    }
+
+    if (personaJuridica != null && personaJuridica != persona) {
+      throw new IllegalStateException(
+          "El representante ya pertenece a otra persona juridica"
+      );
+    }
+
+    this.personaJuridica = persona;
+  }
+
   public String getNombre() {
     return nombre;
   }

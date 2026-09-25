@@ -103,35 +103,69 @@ public class AsignacionController {
 
     // Confirma (acepta) la entidad beneficiaria final para una donación.
     public void confirmarAsignacion(Context ctx) {
-        ConfirmarAsignacionRequest request = ctx.bodyAsClass(ConfirmarAsignacionRequest.class);
-        Optional<Donacion> donacionOpt = repoDonaciones.buscarPorId(request.getIdDonacion());
-        Optional<EntidadBeneficiaria> entidadOpt = repoEntidades.buscarPorId(request.getIdEntidad());
+      ConfirmarAsignacionRequest request =
+          ctx.bodyAsClass(ConfirmarAsignacionRequest.class);
 
-        if (donacionOpt.isEmpty() || entidadOpt.isEmpty()) {
-            ctx.status(HttpStatus.NOT_FOUND);
-            return;
-        }
+      AsignacionDonacion asignacion;
 
-        Donacion donacion = donacionOpt.get();
-        EntidadBeneficiaria entidad = entidadOpt.get();
+      try {
+        asignacion = repoAsignaciones.ejecutarEnTransaccion(() -> {
+          Donacion donacion = repoDonaciones
+              .buscarPorId(request.getIdDonacion())
+              .orElseThrow(() ->
+                  new io.javalin.http.NotFoundResponse(
+                      "No existe la donacion"
+                  )
+              );
 
-        try {
-            AsignacionDonacion asignacion = donacion.asignarA(entidad, notificador);
-            repoAsignaciones.agregar(asignacion);
+          EntidadBeneficiaria entidad = repoEntidades
+              .buscarPorId(request.getIdEntidad())
+              .orElseThrow(() ->
+                  new io.javalin.http.NotFoundResponse(
+                      "No existe la entidad beneficiaria"
+                  )
+              );
 
+          // Cambia el estado y crea la asignación sin enviar avisos.
+          AsignacionDonacion nueva = donacion.asignarA(entidad);
 
-            AsignacionResponse response = new AsignacionResponse(
-                asignacion.getIdAsString(),
-                asignacion.getDonacion().getIdAsString(),
-                asignacion.getEntidad().getIdAsString(),
-                asignacion.getEntidad().getRazonSocial(),
-                asignacion.getDonacion().getEstadoActual().name()
-            );
+          repoAsignaciones.agregar(nueva);
 
-            ctx.status(HttpStatus.CREATED).json(response);
-        } catch (IllegalStateException e) {
-            ctx.status(HttpStatus.CONFLICT).result(e.getMessage());
-        }
+          return nueva;
+        });
+      } catch (IllegalStateException e) {
+        ctx.status(HttpStatus.CONFLICT).result(e.getMessage());
+        return;
+      }
+
+      // La asignación y el cambio de estado ya quedaron confirmados.
+      try {
+        notificador.notificarDonacionAsignadaBeneficiario(asignacion);
+      } catch (RuntimeException e) {
+        System.err.println(
+            "Asignacion guardada, pero fallo el aviso al beneficiario"
+        );
+        e.printStackTrace();
+      }
+
+      try {
+        notificador.notificarDonacionAsignadaDonante(asignacion);
+      } catch (RuntimeException e) {
+        System.err.println(
+            "Asignacion guardada, pero fallo el aviso al donante"
+        );
+        e.printStackTrace();
+      }
+
+      AsignacionResponse response = new AsignacionResponse(
+          asignacion.getIdAsString(),
+          asignacion.getDonacion().getIdAsString(),
+          asignacion.getEntidad().getIdAsString(),
+          asignacion.getEntidad().getRazonSocial(),
+          asignacion.getDonacion().getEstadoActual().name()
+      );
+
+      ctx.status(HttpStatus.CREATED).json(response);
     }
 
     // Rechaza la propuesta de asignación sugerida para una donación.

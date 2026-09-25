@@ -18,8 +18,12 @@ public class EntidadBeneficiaria {
 
 
   private String telefono;
-  @OneToMany(mappedBy = "entidadBeneficiaria", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Representante> representantes;
+  @OneToMany(
+      mappedBy = "entidadBeneficiaria",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true
+  )
+  private List<Representante> representantes = new ArrayList<>();
 
   @OneToMany(mappedBy = "entidadBeneficiaria", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Necesidad> necesidades = new ArrayList<>();
@@ -37,11 +41,23 @@ public class EntidadBeneficiaria {
   }
 
   public void agregarRepresentante(Representante representante) {
-    this.representantes.add(representante);
+    java.util.Objects.requireNonNull(representante);
+
+    representante.asociarAEntidad(this);
+
+    if (!representantes.contains(representante)) {
+      representantes.add(representante);
+    }
   }
 
   public void registrarNecesidad(Necesidad necesidad) {
-    this.necesidades.add(necesidad);
+    java.util.Objects.requireNonNull(necesidad);
+
+    necesidad.asociarA(this);
+
+    if (!necesidades.contains(necesidad)) {
+      necesidades.add(necesidad);
+    }
   }
 
   //getters y settersssss -.-

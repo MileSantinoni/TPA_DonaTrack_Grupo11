@@ -42,6 +42,18 @@ public abstract class Necesidad {
     this.cantidadCubierta = 0; // Inicia en 0
   }
 
+  void asociarA(EntidadBeneficiaria entidad) {
+    java.util.Objects.requireNonNull(entidad);
+
+    if (this.entidadBeneficiaria != null
+        && this.entidadBeneficiaria != entidad) {
+      throw new IllegalStateException(
+          "La necesidad ya pertenece a otra entidad"
+      );
+    }
+
+    this.entidadBeneficiaria = entidad;
+  }
 
   public void registrarDonacion(int cantidad) {
     this.cantidadCubierta += cantidad;

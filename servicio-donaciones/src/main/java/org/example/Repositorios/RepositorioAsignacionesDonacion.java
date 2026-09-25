@@ -195,4 +195,29 @@ public class RepositorioAsignacionesDonacion
       throw e;
     }
   }
+
+  public <T> T ejecutarEnTransaccion(Supplier<T> operacion) {
+    Objects.requireNonNull(operacion);
+
+    EntityManager em = em();
+    EntityTransaction tx = em.getTransaction();
+
+    if (tx.isActive()) {
+      throw new IllegalStateException(
+          "Esta operacion requiere administrar su propia transaccion"
+      );
+    }
+
+    try {
+      tx.begin();
+      T resultado = operacion.get();
+      tx.commit();
+      return resultado;
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+      throw e;
+    }
+  }
 }
