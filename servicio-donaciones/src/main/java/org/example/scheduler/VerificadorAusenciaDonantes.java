@@ -83,54 +83,6 @@ public class VerificadorAusenciaDonantes {
     }
   }
 
-  private void ejecutarProgramado() {
-    try {
-      ejecutar();
-      System.out.println("Verificacion de ausencia finalizada");
-    } catch (RuntimeException e) {
-      // Evita que una excepción cancele las siguientes ejecuciones.
-      System.err.println("Fallo la verificacion de ausencia:");
-      e.printStackTrace();
-    }
-  }
-
-  // Ejecuta inmediatamente y luego cada 24 horas.
-  public synchronized void iniciarScheduler() {
-    if (scheduler != null) {
-      throw new IllegalStateException("El scheduler ya fue iniciado");
-    }
-
-    scheduler = Executors.newSingleThreadScheduledExecutor();
-
-    scheduler.scheduleAtFixedRate(
-        this::ejecutarProgramado,
-        0,
-        1,
-        TimeUnit.DAYS
-    );
-  }
-
-  public synchronized boolean detenerScheduler() {
-    if (scheduler == null) {
-      return true;
-    }
-
-    scheduler.shutdown();
-
-    try {
-      if (scheduler.awaitTermination(30, TimeUnit.SECONDS)) {
-        return true;
-      }
-
-      scheduler.shutdownNow();
-      return scheduler.awaitTermination(30, TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
-      scheduler.shutdownNow();
-      Thread.currentThread().interrupt();
-      return false;
-    }
-  }
-
   public static void main(String[] args) {
     String password = System.getenv("DONACIONES_DB_PASSWORD");
 
@@ -146,37 +98,21 @@ public class VerificadorAusenciaDonantes {
             Map.of("javax.persistence.jdbc.password", password)
         );
 
-    Notificador notificador = new Notificador(
-        new Email(),
-        new SMS(),
-        new WhatsApp()
-    );
-
-    VerificadorAusenciaDonantes verificador =
-        new VerificadorAusenciaDonantes(notificador, factory);
-
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      if (verificador.detenerScheduler()) {
-        factory.close();
-      } else {
-        // No cerrar la conexión mientras la tarea todavía la utiliza.
-        System.err.println(
-            "La tarea no termino dentro del tiempo de espera"
-        );
-      }
-    }));
-
     try {
-      verificador.iniciarScheduler();
-    } catch (RuntimeException e) {
-      if (verificador.detenerScheduler() && factory.isOpen()) {
-        factory.close();
-      }
-      throw e;
-    }
+      Notificador notificador = new Notificador(
+          new Email(),
+          new SMS(),
+          new WhatsApp()
+      );
 
-    System.out.println(
-        "Verificador iniciado: ejecucion inmediata y luego cada 24 horas"
-    );
+      VerificadorAusenciaDonantes verificador =
+          new VerificadorAusenciaDonantes(notificador, factory);
+
+      verificador.ejecutar();
+
+      System.out.println("Verificacion de ausencia finalizada");
+    } finally {
+      factory.close();
+    }
   }
 }

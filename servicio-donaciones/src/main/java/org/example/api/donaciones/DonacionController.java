@@ -2,6 +2,7 @@ package org.example.api.donaciones;
 
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+import org.example.Repositorios.RepositorioAsignacionesDonacion;
 import org.example.Repositorios.RepositorioDonaciones;
 import org.example.Repositorios.RepositorioDonantes;
 import org.example.api.donaciones.dto.CambioEstadoRequest;
@@ -25,17 +26,20 @@ public class DonacionController {
   private final RepositorioDonantes repositorioDonantes;
   private final RepositorioCatalogo repositorioCatalogo;
   private final RepositorioRegistroDonacion repositorioRegistros;
+  private final RepositorioAsignacionesDonacion repositorioAsignacionesDonacion;
 
   public DonacionController(
       RepositorioDonaciones repositorioDonaciones,
       RepositorioDonantes repositorioDonantes,
       RepositorioCatalogo repositorioCatalogo,
-      RepositorioRegistroDonacion repositorioRegistros
+      RepositorioRegistroDonacion repositorioRegistros,
+      RepositorioAsignacionesDonacion repositorioAsignacionesDonacion
   ) {
     this.repositorioDonaciones = repositorioDonaciones;
     this.repositorioDonantes = repositorioDonantes;
     this.repositorioCatalogo = repositorioCatalogo;
     this.repositorioRegistros = repositorioRegistros;
+    this.repositorioAsignacionesDonacion = repositorioAsignacionesDonacion;
   }
 
 
