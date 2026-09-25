@@ -1,10 +1,23 @@
 package org.example.dominio.donante;
 
+import javax.persistence.*;
+
+@Entity(name = "RepresentanteDonante")
+@Table(name = "representantes_donantes")
 public class Representante {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   private String nombre;
   private String apellido;
   private String email;
+
+  protected Representante() {
+  }
+
+  // Conservá debajo el constructor público, getters y setters actuales.
 
   public Representante(String nombre, String apellido, String email) {
     this.nombre = nombre;
@@ -34,5 +47,9 @@ public class Representante {
 
   public void setEmail(String email) {
     this.email = email;
+  }
+
+  public Long getId() {
+    return id;
   }
 }

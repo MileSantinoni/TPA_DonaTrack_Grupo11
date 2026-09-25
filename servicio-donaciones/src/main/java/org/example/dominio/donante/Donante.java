@@ -55,7 +55,13 @@ public abstract class Donante {
   }
 
   public void agregarMedioContacto(MedioContacto medio) {
-    this.mediosDeContacto.add(medio);
+    java.util.Objects.requireNonNull(medio);
+
+    medio.setDonante(this);
+
+    if (!mediosDeContacto.contains(medio)) {
+      mediosDeContacto.add(medio);
+    }
   }
 
   public void actualizarDatos(String mail, String numeroDocumento, TipoDocumento tipoDeDocumento) {

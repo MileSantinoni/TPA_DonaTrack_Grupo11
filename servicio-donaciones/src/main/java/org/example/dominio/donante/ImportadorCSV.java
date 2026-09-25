@@ -19,7 +19,11 @@ public class ImportadorCSV {
   private int donantesActualizados;
 
   public ImportadorCSV() {
-    this.repositorio = RepositorioDonantes.getInstance();
+    this(RepositorioDonantes.getInstance());
+  }
+
+  public ImportadorCSV(RepositorioDonantes repositorio) {
+    this.repositorio = java.util.Objects.requireNonNull(repositorio);
     this.donantesCreados = 0;
     this.donantesActualizados = 0;
   }
@@ -50,8 +54,13 @@ public class ImportadorCSV {
 
       if (existente.isPresent()) {
         Donante donante = existente.get();
+
         donante.actualizarDatos(email, documento, tipoDocumento);
-        donante.agregarMedioContacto(new MedioContacto(TipoMedioContacto.TELEFONO, telefono));
+        donante.agregarMedioContacto(
+            new MedioContacto(TipoMedioContacto.TELEFONO, telefono)
+        );
+
+        repositorio.actualizar(donante);
         donantesActualizados++;
       } else {
         Donante nuevoDonante;
@@ -84,6 +93,15 @@ public class ImportadorCSV {
 
         repositorio.agregar(nuevoDonante);
         donantesCreados++;
+      }
+      int procesados = donantesCreados + donantesActualizados;
+
+      if (procesados % 250 == 0) {
+        repositorio.sincronizarYLiberarContexto();
+      }
+
+      if (procesados % 1000 == 0) {
+        System.out.println("Filas procesadas: " + procesados);
       }
     }
 

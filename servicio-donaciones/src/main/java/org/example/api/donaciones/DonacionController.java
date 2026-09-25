@@ -10,6 +10,7 @@ import org.example.dominio.donacion.Donacion;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Donante;
+import org.example.Repositorios.RepositorioCatalogo;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,10 +19,16 @@ public class DonacionController {
 
   private final RepositorioDonaciones repositorioDonaciones;
   private final RepositorioDonantes repositorioDonantes;
+  private final RepositorioCatalogo repositorioCatalogo;
 
-  public DonacionController(RepositorioDonaciones repositorioDonaciones, RepositorioDonantes repositorioDonantes) {
+  public DonacionController(
+      RepositorioDonaciones repositorioDonaciones,
+      RepositorioDonantes repositorioDonantes,
+      RepositorioCatalogo repositorioCatalogo
+  ) {
     this.repositorioDonaciones = repositorioDonaciones;
     this.repositorioDonantes = repositorioDonantes;
+    this.repositorioCatalogo = repositorioCatalogo;
   }
 
 
@@ -46,14 +53,8 @@ public class DonacionController {
   public void crearDonacion(Context ctx) {
     DonacionRequest request = ctx.bodyAsClass(DonacionRequest.class);
 
-    // simulacionnnnnnnnn
-    Subcategoria subcategoriaMock = new Subcategoria(
-        request.getIdSubcategoria(),
-        "Mock",
-        TipoAtributo.NO_PERECEDERO
-    );
-
-    Optional<Donante> donanteOpt = repositorioDonantes.buscarPorId(request.getIdDonante());
+    Optional<Donante> donanteOpt =
+        repositorioDonantes.buscarPorId(request.getIdDonante());
 
     if (donanteOpt.isEmpty()) {
       ctx.status(HttpStatus.NOT_FOUND)
@@ -61,18 +62,40 @@ public class DonacionController {
       return;
     }
 
+    String idSubcategoria = request.getIdSubcategoria();
+
+    if (idSubcategoria == null || idSubcategoria.isBlank()) {
+      ctx.status(HttpStatus.BAD_REQUEST)
+          .result("La subcategoria es obligatoria");
+      return;
+    }
+
+    Optional<Subcategoria> subcategoriaOpt =
+        repositorioCatalogo.buscarSubcategoria(idSubcategoria);
+
+    if (subcategoriaOpt.isEmpty()) {
+      ctx.status(HttpStatus.NOT_FOUND)
+          .result("No existe la subcategoria: " + idSubcategoria);
+      return;
+    }
+
     Donacion nuevaDonacion = new Donacion(
         request.getDescripcionGeneral(),
         request.getCantidad(),
         request.getUnidadMedida(),
-        subcategoriaMock,
+        subcategoriaOpt.get(),
         request.getFechaVencimiento(),
         request.getEstadoBien(),
         donanteOpt.get()
     );
 
     repositorioDonaciones.agregar(nuevaDonacion);
-    ctx.status(HttpStatus.CREATED).result("Donación creada exitosamente.");
+
+    ctx.status(HttpStatus.CREATED)
+        .json(java.util.Map.of(
+            "id", nuevaDonacion.getIdAsString(),
+            "mensaje", "Donacion creada exitosamente"
+        ));
   }
 
   // DELETE /donaciones/{id}
@@ -102,6 +125,8 @@ public class DonacionController {
 
     Donacion donacion = donacionOpt.get();
     donacion.cambiarEstado(request.getNuevoEstado(), request.getJustificativo());
+
+    repositorioDonaciones.actualizar(donacion);
 
     ctx.status(HttpStatus.OK)
         .result("Estado de la donación actualizado a: " + request.getNuevoEstado());

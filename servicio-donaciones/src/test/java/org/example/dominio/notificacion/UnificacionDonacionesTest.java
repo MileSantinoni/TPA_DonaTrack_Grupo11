@@ -62,23 +62,38 @@ class UnificacionDonacionesTest {
 
   @Test
   void elSchedulerDelegaAlDominioSinCapaService() {
-    var repo = RepositorioDonantes.getInstance();
-    repo.limpiar();
     var notificador = new Notificador(new Email(), new SMS(), new WhatsApp());
     var llamadas = new ArrayList<LocalDate>();
-    var donante = new Donante("donante@example.org", "123", TipoDocumento.DNI) {
-      @Override public void notificarAusencia(List<RegistroDonacion> registros,
-                                             LocalDate hoy, Notificador recibido) {
+    List<RegistroDonacion> registros = new ArrayList<>();
+
+    var donante = new Donante(
+        "donante@example.org", "123", TipoDocumento.DNI
+    ) {
+      @Override
+      public void notificarAusencia(
+          List<RegistroDonacion> recibidos,
+          LocalDate hoy,
+          Notificador recibido
+      ) {
+        assertSame(registros, recibidos);
         assertSame(notificador, recibido);
         llamadas.add(hoy);
       }
     };
-    repo.agregar(donante);
-    try {
-      new VerificadorAusenciaDonantes(notificador).ejecutar();
-      assertEquals(List.of(LocalDate.now()), llamadas);
-    } finally {
-      repo.limpiar();
-    }
+
+    var verificador = new VerificadorAusenciaDonantes(
+        notificador,
+        () -> List.of(donante),
+        () -> registros
+    );
+
+    LocalDate antes = LocalDate.now();
+    verificador.ejecutar();
+    LocalDate despues = LocalDate.now();
+
+    assertEquals(1, llamadas.size());
+    assertTrue(
+        llamadas.get(0).equals(antes) || llamadas.get(0).equals(despues)
+    );
   }
 }

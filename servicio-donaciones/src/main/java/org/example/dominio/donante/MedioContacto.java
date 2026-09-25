@@ -28,6 +28,14 @@ public class MedioContacto {
   }
 
   public void setDonante(Donante donante) {
+    java.util.Objects.requireNonNull(donante);
+
+    if (this.donante != null && this.donante != donante) {
+      throw new IllegalStateException(
+          "El medio de contacto ya pertenece a otro donante"
+      );
+    }
+
     this.donante = donante;
   }
 

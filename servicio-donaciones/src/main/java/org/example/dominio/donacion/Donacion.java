@@ -49,11 +49,15 @@ public class Donacion {
 
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "donacion_id")
-  private List<RegistroCambioEstado> historialEstados;
+  @OrderBy("fechaYHora ASC")
+  private List<RegistroCambioEstado> historialEstados = new ArrayList<>();
 
   @ManyToOne
   @JoinColumn(name = "donante_id")
   private Donante donante;
+
+  protected Donacion() {
+  }
 
   public Donacion(
       String descripcionGeneral,
@@ -94,8 +98,8 @@ public class Donacion {
     this.fechaDeRegistro = fechaDeRegistro;
     this.fechaVencimiento = fechaVencimiento;
     this.estadoBien = estadoBien;
-    this.estadoActualTexto = "EN_DEPOSITO";
     this.estadoActual = new EstadoDonacionEnDeposito();
+    this.estadoActualTexto = this.estadoActual.getNombre().name();
     this.historialEstados = new ArrayList<>();
     this.donante = donante;
   }
@@ -105,10 +109,19 @@ public class Donacion {
     this.estadoActual.cambiarA(this, nuevoEstado, justificativo);
   }
 
-  void aplicarCambioEstado(EstadoDonacionState nuevoEstado, String justificativo) {
-    RegistroCambioEstado registro = new RegistroCambioEstado(this.estadoActual.getNombre(), nuevoEstado.getNombre(), justificativo);
+  void aplicarCambioEstado(
+      EstadoDonacionState nuevoEstado,
+      String justificativo
+  ) {
+    RegistroCambioEstado registro = new RegistroCambioEstado(
+        this.estadoActual.getNombre(),
+        nuevoEstado.getNombre(),
+        justificativo
+    );
+
     this.historialEstados.add(registro);
     this.estadoActual = nuevoEstado;
+    this.estadoActualTexto = nuevoEstado.getNombre().name();
   }
 
   public EstadoDonacion getEstadoActual() {
@@ -175,6 +188,18 @@ public class Donacion {
     notificador.notificarDonacionAsignadaBeneficiario(asignacion);
     notificador.notificarDonacionAsignadaDonante(asignacion);
     return asignacion;
+  }
+
+  @PostLoad
+  private void reconstruirEstadoActual() {
+    if (estadoActualTexto == null || estadoActualTexto.isBlank()) {
+      throw new IllegalStateException(
+          "La donacion persistida no tiene estado: " + id
+      );
+    }
+
+    EstadoDonacion estado = EstadoDonacion.valueOf(estadoActualTexto);
+    this.estadoActual = EstadoDonacionFactory.crear(estado);
   }
 
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
+import org.example.Repositorios.RepositorioCatalogo;
 import org.example.api.donaciones.AsignacionController;
 import org.example.api.donaciones.DonacionController;
 import org.example.api.donaciones.DonanteController;
@@ -93,12 +94,22 @@ public class DonacionesApplication {
     RepositorioEntidadesBeneficiarias repoEntidades =
         new RepositorioEntidadesBeneficiarias(entityManagerActual::get);
 
+    RepositorioDonantes repoDonantes =
+        new RepositorioDonantes(entityManagerActual::get);
+
+    RepositorioDonaciones repoDonaciones =
+        new RepositorioDonaciones(entityManagerActual::get);
+
+    RepositorioCatalogo repoCatalogo =
+        new RepositorioCatalogo(entityManagerActual::get);
+
     DonanteController donantes =
-        new DonanteController(RepositorioDonantes.getInstance());
+        new DonanteController(repoDonantes);
 
     DonacionController donaciones = new DonacionController(
-        RepositorioDonaciones.getInstance(),
-        RepositorioDonantes.getInstance()
+        repoDonaciones,
+        repoDonantes,
+        repoCatalogo
     );
 
     EntidadBeneficiariaController entidades =
@@ -108,7 +119,7 @@ public class DonacionesApplication {
         new NecesidadController(repoEntidades);
 
     AsignacionController asignaciones = new AsignacionController(
-        RepositorioDonaciones.getInstance(),
+        repoDonaciones,
         repoEntidades,
         RepositorioResultadosAlgoritmos.getInstance(),
         RepositorioAsignacionesDonacion.getInstance(),

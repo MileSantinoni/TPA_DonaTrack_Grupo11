@@ -103,6 +103,8 @@ public class DonanteController {
     persona.setGenero(request.getGenero());
     persona.setDireccion(request.getDireccion());
 
+    repositorio.actualizar(persona);
+
     ctx.status(HttpStatus.OK).result("Persona Humana actualizada exitosamente.");
   }
 
@@ -153,6 +155,8 @@ public class DonanteController {
     persona.setRazonSocial(request.getRazonSocial());
     persona.setTipo(request.getTipo());
     persona.setRubro(request.getRubro());
+
+    repositorio.actualizar(persona);
 
     ctx.status(HttpStatus.OK).result("Persona Jurídica actualizada exitosamente.");
   }

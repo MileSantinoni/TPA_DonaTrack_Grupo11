@@ -16,8 +16,9 @@ public class PersonaJuridica extends Donante {
   private TipoOrganizacion tipo;
   private String rubro;
 
-  @Transient
-  private List<Representante> representantes;
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+  @JoinColumn(name = "persona_juridica_id", nullable = false)
+  private List<Representante> representantes = new ArrayList<>();
 
   public PersonaJuridica(
       String mail,
@@ -35,8 +36,15 @@ public class PersonaJuridica extends Donante {
     this.representantes = new ArrayList<>();
   }
 
+  protected PersonaJuridica() {
+  }
+
   public void agregarRepresentante(Representante representante) {
-    this.representantes.add(representante);
+    java.util.Objects.requireNonNull(representante);
+
+    if (!representantes.contains(representante)) {
+      representantes.add(representante);
+    }
   }
 
   public String getRazonSocial() {

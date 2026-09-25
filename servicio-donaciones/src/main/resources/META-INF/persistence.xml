@@ -12,6 +12,7 @@
         <class>org.example.dominio.catalogo.Subcategoria</class>
         <class>org.example.dominio.catalogo.Bien</class>
         <class>org.example.dominio.donante.Donante</class>
+        <class>org.example.dominio.donante.Representante</class>
         <class>org.example.dominio.donante.PersonaHumana</class>
         <class>org.example.dominio.donante.PersonaJuridica</class>
         <class>org.example.dominio.donante.MedioContacto</class>
