@@ -11,6 +11,10 @@ import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Donante;
 import org.example.Repositorios.RepositorioCatalogo;
+import java.util.UUID;
+import org.example.Repositorios.RepositorioRegistroDonacion;
+import org.example.dominio.catalogo.Bien;
+import org.example.dominio.donacion.RegistroDonacion;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,15 +24,18 @@ public class DonacionController {
   private final RepositorioDonaciones repositorioDonaciones;
   private final RepositorioDonantes repositorioDonantes;
   private final RepositorioCatalogo repositorioCatalogo;
+  private final RepositorioRegistroDonacion repositorioRegistros;
 
   public DonacionController(
       RepositorioDonaciones repositorioDonaciones,
       RepositorioDonantes repositorioDonantes,
-      RepositorioCatalogo repositorioCatalogo
+      RepositorioCatalogo repositorioCatalogo,
+      RepositorioRegistroDonacion repositorioRegistros
   ) {
     this.repositorioDonaciones = repositorioDonaciones;
     this.repositorioDonantes = repositorioDonantes;
     this.repositorioCatalogo = repositorioCatalogo;
+    this.repositorioRegistros = repositorioRegistros;
   }
 
 
@@ -89,11 +96,53 @@ public class DonacionController {
         donanteOpt.get()
     );
 
-    repositorioDonaciones.agregar(nuevaDonacion);
+    if (request.getDescripcionGeneral() == null
+        || request.getDescripcionGeneral().isBlank()
+        || request.getUnidadMedida() == null
+        || request.getUnidadMedida().isBlank()
+        || request.getCantidad() <= 0) {
+
+      ctx.status(HttpStatus.BAD_REQUEST)
+          .result("La descripcion y unidad son obligatorias; la cantidad debe ser positiva");
+      return;
+    }
+
+    Bien bien;
+
+    try {
+      bien = new Bien(
+          UUID.randomUUID().toString(),
+          request.getDescripcionGeneral(),
+          request.getCantidad(),
+          request.getUnidadMedida(),
+          subcategoriaOpt.get(),
+          request.getFechaVencimiento(),
+          request.getEstadoBien()
+      );
+    } catch (IllegalArgumentException e) {
+      ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
+      return;
+    }
+
+    RegistroDonacion registro = new RegistroDonacion(
+        UUID.randomUUID().toString(),
+        request.getDescripcionGeneral(),
+        donanteOpt.get()
+    );
+
+    registro.agregarBien(bien);
+
+    List<Donacion> generadas = registro.segmentar();
+
+    repositorioRegistros.agregarRegistroConDonaciones(
+        registro,
+        generadas
+    );
 
     ctx.status(HttpStatus.CREATED)
         .json(java.util.Map.of(
-            "id", nuevaDonacion.getIdAsString(),
+            "id", generadas.get(0).getIdAsString(),
+            "idRegistro", registro.getId(),
             "mensaje", "Donacion creada exitosamente"
         ));
   }

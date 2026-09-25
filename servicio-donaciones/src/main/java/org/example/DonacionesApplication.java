@@ -26,6 +26,7 @@ import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
+import org.example.Repositorios.RepositorioRegistroDonacion;
 
 public class DonacionesApplication {
   public static Javalin crearApp() {
@@ -103,13 +104,17 @@ public class DonacionesApplication {
     RepositorioCatalogo repoCatalogo =
         new RepositorioCatalogo(entityManagerActual::get);
 
+    RepositorioRegistroDonacion repoRegistros =
+        new RepositorioRegistroDonacion(entityManagerActual::get);
+
     DonanteController donantes =
         new DonanteController(repoDonantes);
 
     DonacionController donaciones = new DonacionController(
         repoDonaciones,
         repoDonantes,
-        repoCatalogo
+        repoCatalogo,
+        repoRegistros
     );
 
     EntidadBeneficiariaController entidades =
