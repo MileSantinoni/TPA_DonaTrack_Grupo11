@@ -1,6 +1,9 @@
 package org.example.dominio.catalogo;
 
 import javax.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+
 @Entity
 @Table(name = "subcategorias")
 public class Subcategoria {
@@ -47,5 +50,9 @@ public class Subcategoria {
   public String getId() { return id; }
   public String getNombre() { return nombre; }
   public TipoAtributo getTipo() { return tipo; }
-  public Categoria getCategoria() { return categoria; }
+  @JsonIgnore
+  public Categoria getCategoria() {
+    return categoria;
+  }
+
 }

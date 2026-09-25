@@ -110,6 +110,9 @@
         <class>org.example.dominio.donacion.Donacion</class>
         <class>org.example.dominio.donacion.RegistroCambioEstado</class>
 
+        <class>org.example.dominio.catalogo.Bien</class>
+        <class>org.example.dominio.donacion.RegistroDonacion</class>
+
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
