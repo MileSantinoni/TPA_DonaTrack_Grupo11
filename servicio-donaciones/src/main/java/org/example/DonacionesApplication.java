@@ -110,11 +110,15 @@ public class DonacionesApplication {
     DonanteController donantes =
         new DonanteController(repoDonantes);
 
+    RepositorioAsignacionesDonacion repoAsignaciones =
+        new RepositorioAsignacionesDonacion(entityManagerActual::get);
+
     DonacionController donaciones = new DonacionController(
         repoDonaciones,
         repoDonantes,
         repoCatalogo,
-        repoRegistros
+        repoRegistros,
+        repoAsignaciones
     );
 
     EntidadBeneficiariaController entidades =

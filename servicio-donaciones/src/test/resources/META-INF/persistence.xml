@@ -113,6 +113,12 @@
         <class>org.example.dominio.catalogo.Bien</class>
         <class>org.example.dominio.donacion.RegistroDonacion</class>
 
+        <class>org.example.dominio.beneficiario.EntidadBeneficiaria</class>
+        <class>org.example.dominio.beneficiario.Necesidad</class>
+        <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
+        <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
+        <class>org.example.dominio.donacion.AsignacionDonacion</class>
+
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>

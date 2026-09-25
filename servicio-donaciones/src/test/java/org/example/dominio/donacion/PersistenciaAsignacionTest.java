@@ -1,42 +1,154 @@
 package org.example.dominio.donacion;
 
-import io.github.flbulgarelli.jpa.extras.simple.WithSimplePersistenceUnit;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import org.example.Repositorios.RepositorioAsignacionesDonacion;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
 import org.example.dominio.beneficiario.NecesidadExtraordinaria;
+import org.example.dominio.catalogo.Categoria;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Genero;
 import org.example.dominio.donante.PersonaHumana;
 import org.example.dominio.donante.TipoDocumento;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class PersistenciaAsignacionTest implements WithSimplePersistenceUnit {
+class PersistenciaAsignacionTest {
+
+  private EntityManagerFactory factory;
+  private EntityManager em;
+  private RepositorioAsignacionesDonacion repositorio;
+
+  @BeforeEach
+  void preparar() {
+    factory = Persistence.createEntityManagerFactory("donaciones-test");
+    em = factory.createEntityManager();
+    repositorio = new RepositorioAsignacionesDonacion(em);
+  }
+
+  private void abrirNuevoContexto() {
+    em.close();
+    em = factory.createEntityManager();
+    repositorio = new RepositorioAsignacionesDonacion(em);
+  }
 
   @Test
-  public void testPersistirAsignacion() {
-    withTransaction(() -> {
-      EntidadBeneficiaria entidad = new EntidadBeneficiaria("hogar","Av Santa Fe","12345678");
-      entityManager().persist(entidad);
+  void guardaRecuperaYBuscaAsignacion() {
+    LocalDate fecha = LocalDate.of(2026, 9, 25);
 
-      Subcategoria sub = new Subcategoria("SUB-ROPA", "Ropa", TipoAtributo.NO_PERECEDERO);
-      entityManager().persist(sub);
+    PersonaHumana donante = new PersonaHumana(
+        "carlos@example.org", "11223344", TipoDocumento.DNI,
+        "Carlos", "Gomez", 40, Genero.MASCULINO, "Calle 1"
+    );
 
-      NecesidadExtraordinaria necesidad = new NecesidadExtraordinaria("Ropa de abrigo", 10, sub, "unMotivo");
-      entityManager().persist(necesidad);
+    Categoria categoria = new Categoria("Alimentos");
+    Subcategoria subcategoria = new Subcategoria(
+        "SECOS", "Alimentos secos", TipoAtributo.NO_PERECEDERO
+    );
+    categoria.agregarSubcategoria(subcategoria);
 
-      PersonaHumana donante = new PersonaHumana("carlos@mail.com", "11223344", TipoDocumento.DNI, "Carlos", "Gomez", 40, Genero.MASCULINO, "Calle Falsa 123");
-      entityManager().persist(donante);
+    EntidadBeneficiaria entidad = new EntidadBeneficiaria(
+        "Comedor", "Calle 2", "12345678"
+    );
 
-      Donacion donacion = new Donacion("Camperas", 5, "UNIDAD", sub, null, null, null, donante);
-      entityManager().persist(donacion);
+    NecesidadExtraordinaria necesidad = new NecesidadExtraordinaria(
+        "Alimentos", 20, subcategoria, "Campania de invierno"
+    );
 
-      AsignacionDonacion asignacion = new AsignacionDonacion(donacion, entidad, necesidad, LocalDate.now());
-      entityManager().persist(asignacion);
+    Donacion donacion = new Donacion(
+        "Arroz", 5, "kg", subcategoria, null, null, donante
+    );
 
-      assertNotNull(asignacion.getIdAsString(), "La asignación debe tener un ID generado");
-    });
+    // Primero guardamos las entidades referenciadas.
+    em.getTransaction().begin();
+    em.persist(donante);
+    em.persist(categoria);
+    em.persist(entidad);
+    em.persist(necesidad);
+    em.persist(donacion);
+    em.getTransaction().commit();
+
+    String idEntidad = entidad.getIdAsString();
+    String idDonacion = donacion.getIdAsString();
+
+    AsignacionDonacion original = new AsignacionDonacion(
+        donacion, entidad, necesidad, fecha
+    );
+
+    repositorio.agregar(original);
+
+    String idAsignacion = original.getIdAsString();
+    assertNotNull(idAsignacion);
+
+    abrirNuevoContexto();
+
+    AsignacionDonacion recuperada =
+        repositorio.buscarPorId(idAsignacion).orElseThrow();
+
+    assertNotSame(original, recuperada);
+    assertEquals(idDonacion, recuperada.getDonacion().getIdAsString());
+    assertEquals(idEntidad, recuperada.getEntidad().getIdAsString());
+    assertEquals("Alimentos", recuperada.getNecesidad().getDescripcion());
+    assertEquals(fecha, recuperada.getFechaRecepcion());
+
+    assertEquals(
+        List.of(idAsignacion),
+        repositorio.buscarPorEntidad(idEntidad).stream()
+            .map(AsignacionDonacion::getIdAsString)
+            .toList()
+    );
+
+    // Ambos extremos del rango están incluidos.
+    assertEquals(1, repositorio.buscarEntreFechas(fecha, fecha).size());
+    assertTrue(
+        repositorio.buscarEntreFechas(
+            fecha.plusDays(1), fecha.plusDays(2)
+        ).isEmpty()
+    );
+
+    assertTrue(repositorio.buscarPorId("invalido").isEmpty());
+    assertTrue(repositorio.buscarPorEntidad("invalido").isEmpty());
+    assertTrue(
+        repositorio.buscarPorEntidad(UUID.randomUUID().toString()).isEmpty()
+    );
+    assertEquals(1, repositorio.buscarTodas().size());
+
+    // Eliminar la asignación no debe eliminar la donación ni la entidad.
+    repositorio.eliminar(recuperada);
+
+    abrirNuevoContexto();
+
+    assertTrue(repositorio.buscarPorId(idAsignacion).isEmpty());
+    assertNotNull(em.find(Donacion.class, UUID.fromString(idDonacion)));
+    assertNotNull(
+        em.find(EntidadBeneficiaria.class, UUID.fromString(idEntidad))
+    );
+  }
+
+  @AfterEach
+  void cerrar() {
+    try {
+      if (em != null && em.isOpen()) {
+        try {
+          if (em.getTransaction().isActive()) {
+            em.getTransaction().rollback();
+          }
+        } finally {
+          em.close();
+        }
+      }
+    } finally {
+      if (factory != null && factory.isOpen()) {
+        factory.close();
+      }
+    }
   }
 }
