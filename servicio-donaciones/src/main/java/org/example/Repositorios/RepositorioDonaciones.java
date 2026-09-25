@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
+import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.donacion.Donacion;
 
 public class RepositorioDonaciones implements WithSimplePersistenceUnit {
@@ -49,7 +50,17 @@ public class RepositorioDonaciones implements WithSimplePersistenceUnit {
 
   public void agregar(Donacion donacion) {
     EntityManager em = em();
-    enTransaccion(em, () -> em.persist(donacion));
+    enTransaccion(em, () -> {
+      if (donacion.getSubcategoria() != null) {
+        Subcategoria sub = em.find(Subcategoria.class, donacion.getSubcategoria().getId());
+        if (sub == null) {
+          em.persist(donacion.getSubcategoria());
+        } else if (sub != donacion.getSubcategoria()) {
+          donacion.setSubcategoria(sub);
+        }
+      }
+      em.persist(donacion);
+    });
   }
 
   public void actualizar(Donacion donacion) {
@@ -104,12 +115,14 @@ public class RepositorioDonaciones implements WithSimplePersistenceUnit {
     EntityManager em = em();
 
     enTransaccion(em, () -> {
+      em.createQuery("DELETE FROM AsignacionDonacion").executeUpdate();
       List<Donacion> donaciones = em.createQuery(
           "SELECT d FROM Donacion d", Donacion.class
       ).getResultList();
 
       donaciones.forEach(em::remove);
     });
+    em.clear();
   }
 
   private void enTransaccion(EntityManager em, Runnable operacion) {

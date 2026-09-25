@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
+import org.example.dominio.catalogo.Subcategoria;
 
 public class RepositorioEntidadesBeneficiarias
     implements WithSimplePersistenceUnit {
@@ -51,7 +52,19 @@ public class RepositorioEntidadesBeneficiarias
 
   public void agregar(EntidadBeneficiaria entidad) {
     EntityManager em = em();
-    enTransaccion(em, () -> em.persist(entidad));
+    enTransaccion(em, () -> {
+      for (org.example.dominio.beneficiario.Necesidad nec : entidad.getNecesidades()) {
+        if (nec.getSubcategoria() != null) {
+          Subcategoria sub = em.find(Subcategoria.class, nec.getSubcategoria().getId());
+          if (sub == null) {
+            em.persist(nec.getSubcategoria());
+          } else if (sub != nec.getSubcategoria()) {
+            nec.setSubcategoria(sub);
+          }
+        }
+      }
+      em.persist(entidad);
+    });
   }
 
   public void actualizar(EntidadBeneficiaria entidad) {
@@ -109,13 +122,14 @@ public class RepositorioEntidadesBeneficiarias
     EntityManager em = em();
 
     enTransaccion(em, () -> {
-      List<EntidadBeneficiaria> entidades = em.createQuery(
-          "SELECT e FROM EntidadBeneficiaria e",
-          EntidadBeneficiaria.class
-      ).getResultList();
-
-      entidades.forEach(em::remove);
+      em.createNativeQuery("DELETE FROM asignaciones_donacion").executeUpdate();
+      em.createNativeQuery("DELETE FROM representantes_beneficiarios").executeUpdate();
+      em.createNativeQuery("DELETE FROM necesidades_recurrentes").executeUpdate();
+      em.createNativeQuery("DELETE FROM necesidades_extraordinarias").executeUpdate();
+      em.createNativeQuery("DELETE FROM necesidades").executeUpdate();
+      em.createNativeQuery("DELETE FROM entidades_beneficiarias").executeUpdate();
     });
+    em.clear();
   }
 
   private void enTransaccion(EntityManager em, Runnable operacion) {

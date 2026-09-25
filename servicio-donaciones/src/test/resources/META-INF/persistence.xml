@@ -4,50 +4,50 @@
              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
              version="2.2">
 
+    <!-- Persistence unit global para tests que usan jpa-extras simple -->
     <persistence-unit name="simple-persistence-unit" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
-
-        <!--        persistencia del catálogo-->
+        <!-- Persistencia del catálogo -->
         <class>org.example.dominio.catalogo.Categoria</class>
         <class>org.example.dominio.catalogo.Subcategoria</class>
         <class>org.example.dominio.catalogo.Bien</class>
+
+        <!-- Persistencia de donantes -->
         <class>org.example.dominio.donante.Donante</class>
-        <class>org.example.dominio.donante.Representante</class>
         <class>org.example.dominio.donante.PersonaHumana</class>
         <class>org.example.dominio.donante.PersonaJuridica</class>
         <class>org.example.dominio.donante.MedioContacto</class>
+        <class>org.example.dominio.donante.Representante</class>
 
-        <!--        persistencia de donacion-->
+        <!-- Persistencia de donaciones -->
         <class>org.example.dominio.donacion.RegistroDonacion</class>
         <class>org.example.dominio.donacion.Donacion</class>
         <class>org.example.dominio.donacion.RegistroCambioEstado</class>
+        <class>org.example.dominio.donacion.AsignacionDonacion</class>
 
-        <!--        persistencia de beneficiario-->
+        <!-- Persistencia de beneficiarios -->
         <class>org.example.dominio.beneficiario.EntidadBeneficiaria</class>
+        <class>org.example.dominio.beneficiario.Representante</class>
         <class>org.example.dominio.beneficiario.Necesidad</class>
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
-        <class>org.example.dominio.donacion.AsignacionDonacion</class>
-        <class>org.example.dominio.donante.Representante</class>
 
         <properties>
-            <!-- Conexión a HSQLDB en memoria -->
             <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:testdb;sql.syntax_pgs=true"/>
             <property name="javax.persistence.jdbc.user" value="sa"/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
-            <!-- Configuración de Hibernate para memoria -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect"/>
-            <property name="hibernate.hbm2ddl.auto" value="create-drop"/> <!-- Crea las tablas al iniciar el test y las borra al terminar -->
+            <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="catalogo-test"
-                      transaction-type="RESOURCE_LOCAL">
+    <!-- Persistence unit específico para tests de catálogo -->
+    <persistence-unit name="catalogo-test" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
         <class>org.example.dominio.catalogo.Categoria</class>
@@ -57,21 +57,18 @@
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
-            <property name="javax.persistence.jdbc.driver"
-                      value="org.hsqldb.jdbc.JDBCDriver"/>
-            <property name="javax.persistence.jdbc.url"
-                      value="jdbc:hsqldb:mem:catalogo_test"/>
+            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:catalogo_test"/>
             <property name="javax.persistence.jdbc.user" value="sa"/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
-            <property name="hibernate.dialect"
-                      value="org.hibernate.dialect.HSQLDialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="donantes-test"
-                      transaction-type="RESOURCE_LOCAL">
+    <!-- Persistence unit específico para tests de donantes -->
+    <persistence-unit name="donantes-test" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
         <class>org.example.dominio.donante.Donante</class>
@@ -83,19 +80,17 @@
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
-            <property name="javax.persistence.jdbc.driver"
-                      value="org.hsqldb.jdbc.JDBCDriver"/>
-            <property name="javax.persistence.jdbc.url"
-                      value="jdbc:hsqldb:mem:donantes_test"/>
+            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:donantes_test"/>
             <property name="javax.persistence.jdbc.user" value="sa"/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
-            <property name="hibernate.dialect"
-                      value="org.hibernate.dialect.HSQLDialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
         </properties>
     </persistence-unit>
 
+    <!-- Persistence unit para tests de donaciones, beneficiarios y asignaciones -->
     <persistence-unit name="donaciones-test" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
@@ -107,31 +102,28 @@
 
         <class>org.example.dominio.catalogo.Categoria</class>
         <class>org.example.dominio.catalogo.Subcategoria</class>
+        <class>org.example.dominio.catalogo.Bien</class>
 
         <class>org.example.dominio.donacion.Donacion</class>
         <class>org.example.dominio.donacion.RegistroCambioEstado</class>
-
-        <class>org.example.dominio.catalogo.Bien</class>
         <class>org.example.dominio.donacion.RegistroDonacion</class>
+        <class>org.example.dominio.donacion.AsignacionDonacion</class>
 
         <class>org.example.dominio.beneficiario.EntidadBeneficiaria</class>
+        <class>org.example.dominio.beneficiario.Representante</class>
         <class>org.example.dominio.beneficiario.Necesidad</class>
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
-        <class>org.example.dominio.donacion.AsignacionDonacion</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
-            <property name="javax.persistence.jdbc.driver"
-                      value="org.hsqldb.jdbc.JDBCDriver"/>
-            <property name="javax.persistence.jdbc.url"
-                      value="jdbc:hsqldb:mem:donaciones_test"/>
+            <property name="javax.persistence.jdbc.driver" value="org.hsqldb.jdbc.JDBCDriver"/>
+            <property name="javax.persistence.jdbc.url" value="jdbc:hsqldb:mem:donaciones_test"/>
             <property name="javax.persistence.jdbc.user" value="sa"/>
             <property name="javax.persistence.jdbc.password" value=""/>
 
-            <property name="hibernate.dialect"
-                      value="org.hibernate.dialect.HSQLDialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.HSQLDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
             <property name="hibernate.show_sql" value="false"/>
         </properties>

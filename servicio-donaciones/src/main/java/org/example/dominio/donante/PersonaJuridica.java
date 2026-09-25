@@ -43,6 +43,7 @@ public class PersonaJuridica extends Donante {
 
     if (!representantes.contains(representante)) {
       representantes.add(representante);
+      representante.setPersonaJuridica(this);
     }
   }
 

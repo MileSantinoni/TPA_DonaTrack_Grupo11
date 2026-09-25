@@ -1,18 +1,18 @@
-package org.example.dominio.donante;
+package org.example.dominio.beneficiario;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-@Entity(name = "RepresentanteDonante")
-@Table(name = "representantes_donantes")
+@Entity(name = "RepresentanteBeneficiario")
+@Table(name = "representantes_beneficiarios")
 public class Representante {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-
-  @ManyToOne
-  @JoinColumn(name = "persona_juridica_id")
-  private PersonaJuridica personaJuridica;
 
   private String nombre;
   private String apellido;
@@ -25,6 +25,10 @@ public class Representante {
     this.nombre = nombre;
     this.apellido = apellido;
     this.email = email;
+  }
+
+  public Long getId() {
+    return id;
   }
 
   public String getNombre() {
@@ -49,17 +53,5 @@ public class Representante {
 
   public void setEmail(String email) {
     this.email = email;
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public PersonaJuridica getPersonaJuridica() {
-    return personaJuridica;
-  }
-
-  public void setPersonaJuridica(PersonaJuridica personaJuridica) {
-    this.personaJuridica = personaJuridica;
   }
 }

@@ -2,12 +2,13 @@ package org.example.dominio.donacion;
 
 import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
-
-import java.util.ArrayList;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
 import org.example.dominio.donante.Donante;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import javax.persistence.*;
 
 @Entity
@@ -15,8 +16,7 @@ import javax.persistence.*;
 public class Donacion {
 
   @Id
-  @GeneratedValue
-  private UUID id; //le agregue un id para la exposicion en apissss
+  private UUID id;
 
   @Column(name = "descripcion_general")
   private String descripcionGeneral;
@@ -26,7 +26,7 @@ public class Donacion {
   @Column(name = "unidad_medida")
   private String unidadMedida;
 
-  @ManyToOne
+  @ManyToOne(cascade = {CascadeType.MERGE})
   @JoinColumn(name = "subcategoria_id")
   private Subcategoria subcategoria;
 
@@ -36,15 +36,12 @@ public class Donacion {
   @Column(name = "fecha_vencimiento")
   private LocalDate fechaVencimiento;
 
-//  @Enumerated(EnumType.STRING)
   @Column(name = "estado_bien")
   private Estado estadoBien;
 
   @Column(name = "estado_actual")
   private String estadoActualTexto;
 
-//  @Enumerated(EnumType.STRING)
-  // esto lo dejamos en Trasient porque implementamos el patron state para estados, la instrancia de cada objeto no se puede guardar en bbdd,por eso guardamos el texto y usamos postload para instanciar el estado dinamicamente
   @Transient
   private EstadoDonacionState estadoActual;
 
@@ -53,9 +50,7 @@ public class Donacion {
   @OrderBy("fechaYHora ASC")
   private List<RegistroCambioEstado> historialEstados = new ArrayList<>();
 
-  //revisar esto TODO
-  //(cascade = CascadeType.PERSIST)
-  @ManyToOne
+  @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
   @JoinColumn(name = "donante_id")
   private Donante donante;
 
@@ -93,7 +88,7 @@ public class Donacion {
       Estado estadoBien,
       Donante donante
   ) {
-//    this.id = id;
+    this.id = UUID.randomUUID();
     this.descripcionGeneral = descripcionGeneral;
     this.cantidad = cantidad;
     this.unidadMedida = unidadMedida;
@@ -106,7 +101,6 @@ public class Donacion {
     this.historialEstados = new ArrayList<>();
     this.donante = donante;
   }
-
 
   public void cambiarEstado(EstadoDonacion nuevoEstado, String justificativo) {
     this.estadoActual.cambiarA(this, nuevoEstado, justificativo);
@@ -139,7 +133,7 @@ public class Donacion {
     return descripcionGeneral;
   }
 
-  public int getCantidad(){
+  public int getCantidad() {
     return cantidad;
   }
 
@@ -147,18 +141,25 @@ public class Donacion {
     return subcategoria;
   }
 
+  public void setSubcategoria(Subcategoria subcategoria) {
+    this.subcategoria = subcategoria;
+  }
+
   public LocalDate getFechaDeRegistro() {
     return fechaDeRegistro;
   }
 
-  public LocalDate getFechaVencimiento(){
+  public LocalDate getFechaVencimiento() {
     return fechaVencimiento;
   }
 
-  public Estado getEstadoBien(){
+  public Estado getEstadoBien() {
     return estadoBien;
   }
 
+  public UUID getId() {
+    return id;
+  }
 
   public String getIdAsString() {
     return id != null ? id.toString() : null;
@@ -186,7 +187,7 @@ public class Donacion {
   public AsignacionDonacion asignarA(
       org.example.dominio.beneficiario.EntidadBeneficiaria entidad,
       org.example.dominio.notificacion.Notificador notificador) {
-    java.util.Objects.requireNonNull(notificador, "El notificador es obligatorio");
+    Objects.requireNonNull(notificador, "El notificador es obligatorio");
     AsignacionDonacion asignacion = asignarA(entidad);
     notificador.notificarDonacionAsignadaBeneficiario(asignacion);
     notificador.notificarDonacionAsignadaDonante(asignacion);
@@ -204,6 +205,4 @@ public class Donacion {
     EstadoDonacion estado = EstadoDonacion.valueOf(estadoActualTexto);
     this.estadoActual = EstadoDonacionFactory.crear(estado);
   }
-
 }
-
