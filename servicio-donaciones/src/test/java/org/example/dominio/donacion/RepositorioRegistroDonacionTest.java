@@ -1,84 +1,250 @@
 package org.example.dominio.donacion;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import org.example.Repositorios.RepositorioRegistroDonacion;
-import org.example.dominio.donante.PersonaHumana;
+import org.example.dominio.catalogo.Bien;
+import org.example.dominio.catalogo.Categoria;
+import org.example.dominio.catalogo.Subcategoria;
+import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donante.Genero;
+import org.example.dominio.donante.PersonaHumana;
 import org.example.dominio.donante.TipoDocumento;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-public class RepositorioRegistroDonacionTest {
+class RepositorioRegistroDonacionTest {
 
+  private EntityManagerFactory factory;
+  private EntityManager em;
   private RepositorioRegistroDonacion repositorio;
-  private PersonaHumana donantePrueba;
+  private PersonaHumana donante;
+  private Subcategoria subcategoria;
 
   @BeforeEach
-  public void setUp() {
-    // 1. Obtenemos la instancia única del Singleton
-    repositorio = RepositorioRegistroDonacion.getInstance();
+  void preparar() {
+    factory = Persistence.createEntityManagerFactory("donaciones-test");
+    em = factory.createEntityManager();
+    repositorio = new RepositorioRegistroDonacion(em);
 
-    // 2. Limpiamos el repositorio antes de cada test para que no se mezclen los datos
-    repositorio.limpiarRepositorio();
-
-    // 3. Creamos un donante de prueba con tu constructor exacto
-    donantePrueba = new PersonaHumana(
-        "juan.perez@mail.com", // mail
-        "12345678",            // numeroDocumento
-        TipoDocumento.DNI,     // tipoDeDocumento
-        "Juan",                // nombre
-        "Pérez",               // apellido
-        35,                    // edad
-        Genero.MASCULINO,      // genero
-        "Calle Falsa 123"      // direccion
+    donante = new PersonaHumana(
+        "juan@example.org",
+        "12345678",
+        TipoDocumento.DNI,
+        "Juan",
+        "Perez",
+        35,
+        Genero.MASCULINO,
+        "Calle 1"
     );
+
+    Categoria categoria = new Categoria("Alimentos");
+
+    subcategoria = new Subcategoria(
+        "SECOS",
+        "Alimentos secos",
+        TipoAtributo.NO_PERECEDERO
+    );
+
+    categoria.agregarSubcategoria(subcategoria);
+
+    em.getTransaction().begin();
+    em.persist(donante);
+    em.persist(categoria);
+    em.getTransaction().commit();
+  }
+
+  private void abrirNuevoContexto() {
+    em.close();
+    em = factory.createEntityManager();
+    repositorio = new RepositorioRegistroDonacion(em);
   }
 
   @Test
-  public void testInstanciaSingletonEsUnica() {
-    // Verificamos que si pedimos la instancia dos veces, el sistema nos devuelve
-    // exactamente el mismo objeto en memoria (cumpliendo el patrón Singleton)
-    RepositorioRegistroDonacion otraReferencia = RepositorioRegistroDonacion.getInstance();
-    assertSame(repositorio, otraReferencia, "Ambas referencias deben apuntar al mismo Repositorio");
-  }
+  void guardaYRecuperaRegistroConSusBienes() {
+    Long idDonante = donante.getId();
 
-  @Test
-  public void testAgregarRegistroDonacion() {
-    // Creamos un registro de donación con los atributos definidos en el diagrama
-    RegistroDonacion nuevoRegistro = new RegistroDonacion(
+    RegistroDonacion original = new RegistroDonacion(
         "REG-001",
-        "Donación de ropa de abrigo para el invierno",
-        donantePrueba
-//        new Date()
+        "Alimentos para el comedor",
+        donante
     );
 
-    // Lo agregamos a nuestro repositorio
-    repositorio.agregarRegistro(nuevoRegistro);
+    Bien arroz = new Bien(
+        "BIEN-001",
+        "Arroz",
+        10,
+        "kg",
+        subcategoria,
+        null,
+        null
+    );
+    arroz.setFoto("arroz.jpg");
 
-    // Verificamos que la lista del repositorio ahora tenga 1 elemento
-    assertEquals(1, repositorio.obtenerTodos().size(), "El repositorio debería tener exactamente 1 registro guardado");
+    original.agregarBien(arroz);
+    repositorio.agregarRegistro(original);
+
+    abrirNuevoContexto();
+
+    RegistroDonacion recuperado = repositorio.buscarPorId("REG-001");
+
+    assertNotNull(recuperado);
+    assertNotSame(original, recuperado);
+    assertEquals(
+        "Alimentos para el comedor",
+        recuperado.getDescripcionGeneral()
+    );
+    assertEquals(idDonante, recuperado.getDonante().getId());
+    assertEquals(original.getFechaDeRegistro(), recuperado.getFechaDeRegistro());
+
+    assertEquals(1, recuperado.getListaBienes().size());
+
+    Bien bien = recuperado.getListaBienes().get(0);
+
+    assertEquals("BIEN-001", bien.getId());
+    assertEquals("Arroz", bien.getDescripcion());
+    assertEquals(10, bien.getCantidad());
+    assertEquals("kg", bien.getUnidadMedida());
+    assertEquals("arroz.jpg", bien.getFoto());
+    assertEquals("Alimentos secos", bien.getSubcategoria().getNombre());
+
+    // La segmentación debe seguir funcionando después de recuperar.
+    var donaciones = recuperado.segmentar();
+
+    assertEquals(1, donaciones.size());
+
+    Donacion segmentada = donaciones.get(0);
+
+    assertEquals("Arroz", segmentada.getDescripcionGeneral());
+    assertEquals(10, segmentada.getCantidad());
+    assertEquals(idDonante, segmentada.getDonante().getId());
+    assertEquals(
+        recuperado.getFechaDeRegistro(),
+        segmentada.getFechaDeRegistro()
+    );
+    assertEquals(EstadoDonacion.EN_DEPOSITO, segmentada.getEstadoActual());
   }
 
   @Test
-  public void testBuscarRegistroPorIdExistente() {
-    // Preparamos dos registros distintos
-    RegistroDonacion registro1 = new RegistroDonacion("REG-001", "Donación de fideos", donantePrueba);
-    RegistroDonacion registro2 = new RegistroDonacion("REG-002", "Mobiliario de oficina", donantePrueba);
+  void buscaPorIdYListaLosRegistrosPersistidos() {
+    repositorio.agregarRegistro(
+        new RegistroDonacion("REG-001", "Primera entrega", donante)
+    );
+    repositorio.agregarRegistro(
+        new RegistroDonacion("REG-002", "Segunda entrega", donante)
+    );
 
-    repositorio.agregarRegistro(registro1);
-    repositorio.agregarRegistro(registro2);
+    abrirNuevoContexto();
 
-    // Buscamos específicamente el segundo
-    RegistroDonacion registroEncontrado = repositorio.buscarPorId("REG-002");
+    RegistroDonacion segundo = repositorio.buscarPorId("REG-002");
 
-    // Verificamos que no sea nulo y que sus datos coincidan
-    assertNotNull(registroEncontrado, "El repositorio debería encontrar el registro REG-002");
-    assertEquals("REG-002", registroEncontrado.getId(), "El ID debe coincidir");
+    assertNotNull(segundo);
+    assertEquals("Segunda entrega", segundo.getDescripcionGeneral());
+    assertEquals(2, repositorio.obtenerTodos().size());
+    assertNull(repositorio.buscarPorId("INEXISTENTE"));
   }
 
   @Test
-  public void testBuscarRegistroPorIdInexistente() {
-    // Si intentamos buscar un ID que no fue guardado, el metodo debe devolver null
-    RegistroDonacion registroEncontrado = repositorio.buscarPorId("REG-999");
-    assertNull(registroEncontrado, "Al buscar un ID inexistente, debe retornar null");
+  void respetaElRollbackDeLaTransaccionExterna() {
+    RegistroDonacion registro = new RegistroDonacion(
+        "REG-ROLLBACK", "No debe quedar", donante
+    );
+
+    registro.agregarBien(new Bien(
+        "BIEN-ROLLBACK", "Fideos", 5, "kg",
+        subcategoria, null, null
+    ));
+
+    var generadas = registro.segmentar();
+
+    em.getTransaction().begin();
+
+    repositorio.agregarRegistroConDonaciones(registro, generadas);
+
+    // Ejecutamos las escrituras sin confirmar la transacción.
+    em.flush();
+
+    String idDonacion = generadas.get(0).getIdAsString();
+    assertNotNull(idDonacion);
+
+    em.getTransaction().rollback();
+
+    abrirNuevoContexto();
+
+    assertNull(repositorio.buscarPorId("REG-ROLLBACK"));
+    assertNull(em.find(Bien.class, "BIEN-ROLLBACK"));
+    assertNull(em.find(
+        Donacion.class,
+        java.util.UUID.fromString(idDonacion)
+    ));
+  }
+
+  @Test
+  void guardaRegistroBienYDonacionEnLaMismaOperacion() {
+    RegistroDonacion registro = new RegistroDonacion(
+        "REG-CONJUNTO", "Entrega de alimentos", donante
+    );
+
+    registro.agregarBien(new Bien(
+        "BIEN-CONJUNTO", "Arroz", 10, "kg",
+        subcategoria, null, null
+    ));
+
+    var generadas = registro.segmentar();
+
+    repositorio.agregarRegistroConDonaciones(registro, generadas);
+
+    String idDonacion = generadas.get(0).getIdAsString();
+    assertNotNull(idDonacion);
+
+    abrirNuevoContexto();
+
+    RegistroDonacion recuperado =
+        repositorio.buscarPorId("REG-CONJUNTO");
+
+    assertNotNull(recuperado);
+    assertEquals(1, recuperado.getListaBienes().size());
+    assertNotNull(em.find(Bien.class, "BIEN-CONJUNTO"));
+
+    Donacion donacion = em.find(
+        Donacion.class,
+        java.util.UUID.fromString(idDonacion)
+    );
+
+    assertNotNull(donacion);
+    assertEquals("Arroz", donacion.getDescripcionGeneral());
+    assertEquals(10, donacion.getCantidad());
+    assertEquals(
+        recuperado.getDonante().getId(),
+        donacion.getDonante().getId()
+    );
+    assertEquals(
+        recuperado.getFechaDeRegistro(),
+        donacion.getFechaDeRegistro()
+    );
+    assertEquals(EstadoDonacion.EN_DEPOSITO, donacion.getEstadoActual());
+  }
+
+  @AfterEach
+  void cerrar() {
+    try {
+      if (em != null && em.isOpen()) {
+        try {
+          if (em.getTransaction().isActive()) {
+            em.getTransaction().rollback();
+          }
+        } finally {
+          em.close();
+        }
+      }
+    } finally {
+      if (factory != null && factory.isOpen()) {
+        factory.close();
+      }
+    }
   }
 }

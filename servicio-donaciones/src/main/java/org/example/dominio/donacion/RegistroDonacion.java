@@ -70,4 +70,12 @@ public class RegistroDonacion {
   public LocalDate getFechaDeRegistro() {
     return fechaDeRegistro;
   }
+
+  public String getDescripcionGeneral() {
+    return descripcionGeneral;
+  }
+
+  public List<Bien> getListaBienes() {
+    return List.copyOf(listaBienes);
+  }
 }
