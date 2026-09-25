@@ -1,35 +1,13 @@
 package org.example.dominio.donante;
-import org.example.dominio.notificacion.Email;
-import org.example.dominio.notificacion.Notificacion;
-import org.example.dominio.notificacion.SMS;
-import org.example.dominio.notificacion.WhatsApp;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.example.dominio.notificacion.Notificador;
 
 public class DonanteTest {
 
-  public Notificador notificadorMock() {
-    Email emailFake = new Email() {
-      @Override
-      public Notificacion enviar(String destinatario, String mensaje) {
-        Notificacion notificacion = new Notificacion(destinatario, mensaje);
-        notificacion.marcarComoCompletada();
-        return notificacion;
-      }
-    };
-
-    return new Notificador(
-        emailFake,
-        new SMS(),
-        new WhatsApp()
-    );
-  }
-
   @Test
   void crearUnDonanteHumano() {
-
     PersonaHumana donante = new PersonaHumana(
         "Pedro@mail.com",
         "12345678",
@@ -50,7 +28,6 @@ public class DonanteTest {
 
   @Test
   void gestionarUnaPersonaHumana() {
-
     PersonaHumana donante = new PersonaHumana(
         "sofia.ramirez@mail.com",
         "33444555",
@@ -97,7 +74,6 @@ public class DonanteTest {
 
   @Test
   void gestionarUnaPersonaJuridica() {
-
     PersonaJuridica empresa = new PersonaJuridica(
         "contacto@techsolidaria.org",
         "30777888991",
@@ -145,21 +121,15 @@ public class DonanteTest {
     empresa.setRubro("Asistencia Social");
 
     assertEquals("Fundacion Tech Solidaria", empresa.getRazonSocial());
-
     assertEquals("Asistencia Social", empresa.getRubro());
-
     assertEquals(EstadoRegistro.ACTIVO, empresa.getEstadoRegistro());
-
     assertEquals(2, empresa.getRepresentantes().size());
-
     assertEquals(1, empresa.getMediosDeContacto().size());
-
     assertEquals(TipoContactoPredeterminado.TELEFONO, empresa.getContactoPredeterminado());
   }
 
   @Test
   void unDonanteNoPuedeCrearseSinMail() {
-
     assertThrows(
         IllegalArgumentException.class,
         () -> new PersonaHumana(
@@ -176,12 +146,7 @@ public class DonanteTest {
   }
 
   @Test
-  void unAdministradorPuedeActivarUnDonante() {
-    Administrador administrador = new Administrador(
-        "Laura",
-        "laura.admin@donatrack.com"
-    );
-
+  void unDonanteSePuedeActivar() {
     PersonaHumana donante = new PersonaHumana(
         "nicolas.paz@mail.com",
         "35111222",
@@ -193,9 +158,7 @@ public class DonanteTest {
         "Av. Nazca 1200"
     );
 
-    Notificador notificador = notificadorMock();
-
-    administrador.activarDonante(donante,notificador);
+    donante.activar();
 
     assertEquals(EstadoRegistro.ACTIVO, donante.getEstadoRegistro());
   }
