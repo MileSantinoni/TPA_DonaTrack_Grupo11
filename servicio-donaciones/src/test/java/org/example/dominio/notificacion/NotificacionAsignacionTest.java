@@ -4,7 +4,7 @@ import org.example.dominio.beneficiario.EntidadBeneficiaria;
 import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donante.Donante;
-import org.example.dominio.beneficiario.Representante;
+import org.example.dominio.donante.Representante;
 import org.example.dominio.donante.TipoDocumento;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

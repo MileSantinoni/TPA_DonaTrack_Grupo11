@@ -9,8 +9,8 @@ import org.example.dominio.donante.Representante;
 @Entity
 @Table(name = "entidades_beneficiarias")
 public class EntidadBeneficiaria {
+
   @Id
-  @GeneratedValue
   private UUID id;
   @Column(name = "razon_social")
   private String razonSocial;

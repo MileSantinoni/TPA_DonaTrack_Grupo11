@@ -2,7 +2,7 @@ package org.example.dominio.notificacion;
 
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
 import org.example.dominio.donante.*;
-import org.example.dominio.beneficiario.Representante;
+import org.example.dominio.donante.Representante;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
