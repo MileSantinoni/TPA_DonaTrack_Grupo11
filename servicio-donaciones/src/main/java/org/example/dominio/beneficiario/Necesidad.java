@@ -2,17 +2,40 @@ package org.example.dominio.beneficiario;
 
 import java.util.UUID;
 import org.example.dominio.catalogo.Subcategoria;
+import javax.persistence.*;
 
 // Clase Abstracta Necesidad
+
+@Entity
+@Table(name = "necesidades")
+@Inheritance(strategy = InheritanceType.JOINED)
+
 public abstract class Necesidad {
-  protected String id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
   protected String descripcion;
+
+  @Column(name = "cantidad_objetivo")
   protected int cantidadObjetivo;
+
+  @Column(name = "cantidad_cubierta")
   protected int cantidadCubierta;
+
+  @ManyToOne
+  @JoinColumn(name = "subcategoria_id")
   protected Subcategoria subcategoria;
 
+  //TODO esto hay que revisarlo, quizá estamos acoplando al pp
+  @ManyToOne
+  @JoinColumn(name = "entidad_beneficiaria_id")
+  protected EntidadBeneficiaria entidadBeneficiaria;
+
+  protected Necesidad() {}
+
   public Necesidad(String descripcion, int cantidadObjetivo, Subcategoria subcategoria) {
-    this.id = UUID.randomUUID().toString();
+//    this.id = id;
     this.descripcion = descripcion;
     this.cantidadObjetivo = cantidadObjetivo;
     this.subcategoria = subcategoria;
@@ -25,7 +48,7 @@ public abstract class Necesidad {
   }
   public abstract boolean estaSatisfecha();
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

@@ -42,7 +42,7 @@ public class ContratoLogisticaTest {
       HttpClient http = HttpClient.newHttpClient();
       String base = "http://localhost:" + app.port();
       HttpResponse<String> consulta = http.send(HttpRequest.newBuilder(
-          URI.create(base + "/interno/asignaciones/" + asignacion.getId())).GET().build(),
+          URI.create(base + "/interno/asignaciones/" + asignacion.getIdAsString())).GET().build(),
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, consulta.statusCode());
       var contrato = new ObjectMapper().readTree(consulta.body());

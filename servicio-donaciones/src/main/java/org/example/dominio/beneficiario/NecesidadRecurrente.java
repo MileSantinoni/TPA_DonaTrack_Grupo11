@@ -1,10 +1,18 @@
 package org.example.dominio.beneficiario;
 import java.time.LocalDate;
 import org.example.dominio.catalogo.Subcategoria;
+import javax.persistence.*;
 
+
+@Entity
+@Table(name = "necesidades_recurrentes")
 public class NecesidadRecurrente extends Necesidad {
   private LocalDate fechaInicioPeriodo;
+
+  @Enumerated(EnumType.STRING)
   private Periodicidad periodicidad;
+
+  protected NecesidadRecurrente() {}
 
   public NecesidadRecurrente(String descripcion, int cantidadObjetivo, Subcategoria subcategoria,
                              LocalDate fechaInicioPeriodo, Periodicidad periodicidad) {
@@ -12,6 +20,8 @@ public class NecesidadRecurrente extends Necesidad {
     this.fechaInicioPeriodo = fechaInicioPeriodo;
     this.periodicidad = periodicidad;
   }
+
+  public Periodicidad getPeriodicidad() { return periodicidad; }
 
   @Override
   public boolean estaSatisfecha() {

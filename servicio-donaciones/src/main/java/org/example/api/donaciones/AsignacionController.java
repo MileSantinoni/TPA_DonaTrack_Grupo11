@@ -121,7 +121,7 @@ public class AsignacionController {
 
 
             AsignacionResponse response = new AsignacionResponse(
-                asignacion.getId(),
+                asignacion.getIdAsString(),
                 asignacion.getDonacion().getIdAsString(),
                 asignacion.getEntidad().getIdAsString(),
                 asignacion.getEntidad().getRazonSocial(),

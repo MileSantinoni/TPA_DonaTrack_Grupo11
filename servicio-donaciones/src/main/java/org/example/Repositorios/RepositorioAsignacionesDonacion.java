@@ -36,7 +36,7 @@ public class RepositorioAsignacionesDonacion {
 
   public Optional<AsignacionDonacion> buscarPorId(String id) {
     return asignaciones.stream()
-        .filter(asignacion -> asignacion.getId().equals(id))
+        .filter(asignacion -> asignacion.getIdAsString().equals(id))
         .findFirst();
   }
 
