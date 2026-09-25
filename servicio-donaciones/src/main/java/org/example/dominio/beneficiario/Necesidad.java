@@ -1,13 +1,16 @@
 package org.example.dominio.beneficiario;
 
+import java.util.UUID;
 import org.example.dominio.catalogo.Subcategoria;
 import javax.persistence.*;
+
+// Clase Abstracta Necesidad
 
 @Entity
 @Table(name = "necesidades")
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class Necesidad {
 
+public abstract class Necesidad {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -24,24 +27,37 @@ public abstract class Necesidad {
   @JoinColumn(name = "subcategoria_id")
   protected Subcategoria subcategoria;
 
+  //TODO esto hay que revisarlo, quizá estamos acoplando al pp
   @ManyToOne
   @JoinColumn(name = "entidad_beneficiaria_id")
   protected EntidadBeneficiaria entidadBeneficiaria;
 
-  protected Necesidad() {
-  }
+  protected Necesidad() {}
 
   public Necesidad(String descripcion, int cantidadObjetivo, Subcategoria subcategoria) {
+//    this.id = id;
     this.descripcion = descripcion;
     this.cantidadObjetivo = cantidadObjetivo;
     this.subcategoria = subcategoria;
-    this.cantidadCubierta = 0;
+    this.cantidadCubierta = 0; // Inicia en 0
+  }
+
+  void asociarA(EntidadBeneficiaria entidad) {
+    java.util.Objects.requireNonNull(entidad);
+
+    if (this.entidadBeneficiaria != null
+        && this.entidadBeneficiaria != entidad) {
+      throw new IllegalStateException(
+          "La necesidad ya pertenece a otra entidad"
+      );
+    }
+
+    this.entidadBeneficiaria = entidad;
   }
 
   public void registrarDonacion(int cantidad) {
     this.cantidadCubierta += cantidad;
   }
-
   public abstract boolean estaSatisfecha();
 
   public Long getId() {

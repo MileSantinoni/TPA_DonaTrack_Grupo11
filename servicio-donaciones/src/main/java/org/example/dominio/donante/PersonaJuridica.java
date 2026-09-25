@@ -16,7 +16,11 @@ public class PersonaJuridica extends Donante {
   private TipoOrganizacion tipo;
   private String rubro;
 
-  @OneToMany(mappedBy = "personaJuridica", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(
+      mappedBy = "personaJuridica",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true
+  )
   private List<Representante> representantes = new ArrayList<>();
 
   public PersonaJuridica(
@@ -40,6 +44,8 @@ public class PersonaJuridica extends Donante {
 
   public void agregarRepresentante(Representante representante) {
     java.util.Objects.requireNonNull(representante);
+
+    representante.asociarAPersonaJuridica(this);
 
     if (!representantes.contains(representante)) {
       representantes.add(representante);

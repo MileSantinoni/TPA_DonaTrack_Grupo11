@@ -117,21 +117,20 @@ public class DonacionesApplication {
         repoDonaciones,
         repoDonantes,
         repoCatalogo,
-        repoRegistros,
-        repoAsignaciones
+        repoRegistros
     );
 
     EntidadBeneficiariaController entidades =
         new EntidadBeneficiariaController(repoEntidades);
 
     NecesidadController necesidades =
-        new NecesidadController(repoEntidades);
+        new NecesidadController(repoEntidades, repoCatalogo);
 
     AsignacionController asignaciones = new AsignacionController(
         repoDonaciones,
         repoEntidades,
         RepositorioResultadosAlgoritmos.getInstance(),
-        RepositorioAsignacionesDonacion.getInstance(),
+        repoAsignaciones,
         new AlgoritmoMadre(),
         new Notificador(new Email(), new SMS(), new WhatsApp())
     );

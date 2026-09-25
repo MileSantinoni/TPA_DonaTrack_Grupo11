@@ -9,7 +9,7 @@ import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donacion.RegistroDonacion;
 import org.example.dominio.donacion.EstadoDonacion;
 import org.example.dominio.donante.Donante;
-import org.example.dominio.beneficiario.Representante;
+import org.example.dominio.donante.Representante;
 import org.example.dominio.donante.TipoDocumento;
 import org.example.scheduler.VerificadorAusenciaDonantes;
 import org.junit.jupiter.api.Test;
