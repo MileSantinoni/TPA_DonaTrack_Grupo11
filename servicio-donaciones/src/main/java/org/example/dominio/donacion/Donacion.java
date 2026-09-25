@@ -44,6 +44,7 @@ public class Donacion {
   private String estadoActualTexto;
 
 //  @Enumerated(EnumType.STRING)
+  // esto lo dejamos en Trasient porque implementamos el patron state para estados, la instrancia de cada objeto no se puede guardar en bbdd,por eso guardamos el texto y usamos postload para instanciar el estado dinamicamente
   @Transient
   private EstadoDonacionState estadoActual;
 
@@ -52,6 +53,8 @@ public class Donacion {
   @OrderBy("fechaYHora ASC")
   private List<RegistroCambioEstado> historialEstados = new ArrayList<>();
 
+  //revisar esto TODO
+  //(cascade = CascadeType.PERSIST)
   @ManyToOne
   @JoinColumn(name = "donante_id")
   private Donante donante;

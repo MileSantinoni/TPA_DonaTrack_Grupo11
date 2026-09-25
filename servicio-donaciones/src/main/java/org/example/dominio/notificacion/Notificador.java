@@ -1,12 +1,12 @@
 package org.example.dominio.notificacion;
 
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
-import org.example.dominio.beneficiario.Representante;
 import org.example.dominio.donante.Donante;
 import org.example.dominio.donante.MedioContacto;
 import org.example.dominio.donante.TipoContactoPredeterminado;
 import org.example.dominio.donante.TipoMedioContacto;
 import org.example.dominio.donacion.AsignacionDonacion;
+import org.example.dominio.donante.Representante;
 
 import java.util.EnumMap;
 import java.util.List;

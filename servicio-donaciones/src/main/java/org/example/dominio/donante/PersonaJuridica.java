@@ -16,8 +16,7 @@ public class PersonaJuridica extends Donante {
   private TipoOrganizacion tipo;
   private String rubro;
 
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinColumn(name = "persona_juridica_id", nullable = false)
+  @OneToMany(mappedBy = "personaJuridica", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Representante> representantes = new ArrayList<>();
 
   public PersonaJuridica(

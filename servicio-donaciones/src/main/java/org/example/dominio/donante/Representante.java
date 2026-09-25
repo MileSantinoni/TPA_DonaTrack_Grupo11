@@ -1,6 +1,7 @@
 package org.example.dominio.donante;
 
 import javax.persistence.*;
+import org.example.dominio.beneficiario.EntidadBeneficiaria;
 
 @Entity(name = "RepresentanteDonante")
 @Table(name = "representantes_donantes")
@@ -10,6 +11,14 @@ public class Representante {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @ManyToOne
+  @JoinColumn(name = "entidad_beneficiaria_id")
+  private EntidadBeneficiaria entidadBeneficiaria;
+
+  @ManyToOne
+  @JoinColumn(name = "persona_juridica_id")
+  private PersonaJuridica personaJuridica;
+
   private String nombre;
   private String apellido;
   private String email;
@@ -18,12 +27,21 @@ public class Representante {
   }
 
   // Conservá debajo el constructor público, getters y setters actuales.
-
+// este para personas juridicas
   public Representante(String nombre, String apellido, String email) {
     this.nombre = nombre;
     this.apellido = apellido;
     this.email = email;
+//    this.personaJuridica = personaJuridica;
   }
+
+  // Constructor para Entidad Beneficiaria
+//  public Representante(String nombre, String apellido, String email, String telefono, EntidadBeneficiaria entidadBeneficiaria) {
+//    this.nombre = nombre;
+//    this.apellido = apellido;
+//    this.email = email;
+//    this.entidadBeneficiaria = entidadBeneficiaria;
+//  }
 
   public String getNombre() {
     return nombre;

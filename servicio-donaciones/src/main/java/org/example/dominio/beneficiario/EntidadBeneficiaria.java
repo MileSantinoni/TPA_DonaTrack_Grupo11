@@ -4,6 +4,7 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.example.dominio.donante.Representante;
 
 @Entity
 @Table(name = "entidades_beneficiarias")
@@ -17,10 +18,11 @@ public class EntidadBeneficiaria {
 
 
   private String telefono;
-  @Transient
+  @OneToMany(mappedBy = "entidadBeneficiaria", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Representante> representantes;
-  @Transient
-  private List<Necesidad> necesidades;
+
+  @OneToMany(mappedBy = "entidadBeneficiaria", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Necesidad> necesidades = new ArrayList<>();
 
   protected EntidadBeneficiaria() {
   }

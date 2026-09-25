@@ -27,6 +27,7 @@
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
         <class>org.example.dominio.donacion.AsignacionDonacion</class>
+        <class>org.example.dominio.donante.Representante</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>

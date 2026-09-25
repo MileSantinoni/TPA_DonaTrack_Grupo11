@@ -29,6 +29,7 @@
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
         <class>org.example.dominio.donacion.AsignacionDonacion</class>
+        <class>org.example.dominio.donante.Representante</class>
 
         <properties>
             <!-- Conexión a HSQLDB en memoria -->
