@@ -32,7 +32,7 @@ public class EntidadBeneficiaria {
   }
 
   public EntidadBeneficiaria(String razonSocial, String direccion, String telefono) {
-//    this.id = UUID.randomUUID().toString();
+    this.id = UUID.randomUUID();
     this.razonSocial = razonSocial;
     this.direccion = direccion;
     this.telefono = telefono;

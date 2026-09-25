@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
+import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.donacion.AsignacionDonacion;
 
 public class RepositorioAsignacionesDonacion
@@ -55,7 +56,40 @@ public class RepositorioAsignacionesDonacion
     Objects.requireNonNull(asignacion);
 
     EntityManager em = em();
-    enTransaccion(em, () -> em.persist(asignacion));
+    enTransaccion(em, () -> {
+      resolverSubcategorias(em, asignacion);
+      em.persist(asignacion);
+    });
+  }
+
+  private void resolverSubcategorias(EntityManager em, AsignacionDonacion asignacion) {
+    if (asignacion.getDonacion() != null && asignacion.getDonacion().getSubcategoria() != null) {
+      asignacion.getDonacion().setSubcategoria(
+          resolverSubcategoria(em, asignacion.getDonacion().getSubcategoria())
+      );
+    }
+    if (asignacion.getNecesidad() != null && asignacion.getNecesidad().getSubcategoria() != null) {
+      asignacion.getNecesidad().setSubcategoria(
+          resolverSubcategoria(em, asignacion.getNecesidad().getSubcategoria())
+      );
+    }
+    if (asignacion.getEntidad() != null) {
+      for (org.example.dominio.beneficiario.Necesidad nec : asignacion.getEntidad().getNecesidades()) {
+        if (nec.getSubcategoria() != null) {
+          nec.setSubcategoria(resolverSubcategoria(em, nec.getSubcategoria()));
+        }
+      }
+    }
+  }
+
+  private Subcategoria resolverSubcategoria(EntityManager em, Subcategoria sub) {
+    if (sub == null) return null;
+    Subcategoria existente = em.find(Subcategoria.class, sub.getId());
+    if (existente == null) {
+      em.persist(sub);
+      return sub;
+    }
+    return existente;
   }
 
   public void actualizar(AsignacionDonacion asignacion) {
@@ -66,8 +100,6 @@ public class RepositorioAsignacionesDonacion
   }
 
   public void eliminar(AsignacionDonacion asignacion) {
-    Objects.requireNonNull(asignacion);
-
     String idTexto = asignacion.getIdAsString();
 
     if (idTexto == null) {
@@ -143,6 +175,10 @@ public class RepositorioAsignacionesDonacion
         .getResultList();
   }
 
+  public void limpiarCache() {
+    em().clear();
+  }
+
   // Utilizar únicamente sobre la base de pruebas.
   public void limpiar() {
     EntityManager em = em();
@@ -155,6 +191,7 @@ public class RepositorioAsignacionesDonacion
 
       asignaciones.forEach(em::remove);
     });
+    em.clear();
   }
 
   private UUID interpretarId(String texto) {

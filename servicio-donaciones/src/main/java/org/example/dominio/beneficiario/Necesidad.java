@@ -23,7 +23,7 @@ public abstract class Necesidad {
   @Column(name = "cantidad_cubierta")
   protected int cantidadCubierta;
 
-  @ManyToOne
+  @ManyToOne(cascade = {CascadeType.MERGE})
   @JoinColumn(name = "subcategoria_id")
   protected Subcategoria subcategoria;
 
@@ -82,5 +82,17 @@ public abstract class Necesidad {
 
   public Subcategoria getSubcategoria() {
     return subcategoria;
+  }
+
+  public void setSubcategoria(Subcategoria subcategoria) {
+    this.subcategoria = subcategoria;
+  }
+
+  public EntidadBeneficiaria getEntidadBeneficiaria() {
+    return entidadBeneficiaria;
+  }
+
+  public void setEntidadBeneficiaria(EntidadBeneficiaria entidadBeneficiaria) {
+    this.entidadBeneficiaria = entidadBeneficiaria;
   }
 }

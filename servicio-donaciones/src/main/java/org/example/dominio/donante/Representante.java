@@ -106,4 +106,12 @@ public class Representante {
   public Long getId() {
     return id;
   }
+
+  public PersonaJuridica getPersonaJuridica() {
+    return personaJuridica;
+  }
+
+  public void setPersonaJuridica(PersonaJuridica personaJuridica) {
+    this.personaJuridica = personaJuridica;
+  }
 }

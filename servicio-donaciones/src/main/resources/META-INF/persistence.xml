@@ -6,28 +6,31 @@
 
     <persistence-unit name="simple-persistence-unit" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-<!--        persistencia del catálogo-->
+
+        <!-- Persistencia del catálogo -->
         <class>org.example.dominio.catalogo.Categoria</class>
         <class>org.example.dominio.catalogo.Subcategoria</class>
         <class>org.example.dominio.catalogo.Bien</class>
+
+        <!-- Persistencia de donantes -->
         <class>org.example.dominio.donante.Donante</class>
-        <class>org.example.dominio.donante.Representante</class>
         <class>org.example.dominio.donante.PersonaHumana</class>
         <class>org.example.dominio.donante.PersonaJuridica</class>
         <class>org.example.dominio.donante.MedioContacto</class>
+        <class>org.example.dominio.donante.Representante</class>
 
-<!--        persistencia de donacion-->
+        <!-- Persistencia de donaciones -->
         <class>org.example.dominio.donacion.RegistroDonacion</class>
         <class>org.example.dominio.donacion.Donacion</class>
         <class>org.example.dominio.donacion.RegistroCambioEstado</class>
+        <class>org.example.dominio.donacion.AsignacionDonacion</class>
 
-<!--        persistencia de beneficiario-->
+        <!-- Persistencia de beneficiarios -->
         <class>org.example.dominio.beneficiario.EntidadBeneficiaria</class>
+        <class>org.example.dominio.beneficiario.Representante</class>
         <class>org.example.dominio.beneficiario.Necesidad</class>
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
-        <class>org.example.dominio.donacion.AsignacionDonacion</class>
-        <class>org.example.dominio.donante.Representante</class>
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>

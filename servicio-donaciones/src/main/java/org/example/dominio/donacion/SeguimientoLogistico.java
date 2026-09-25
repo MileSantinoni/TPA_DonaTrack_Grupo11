@@ -41,7 +41,7 @@ public class SeguimientoLogistico {
           .filter(a -> a.getDonacion().getIdAsString().equals(referencia.idDonacion())).toList();
       if (candidatas.size() != 1) throw new IllegalStateException("No existe una asignacion unica para la donacion");
       AsignacionDonacion asignacion = candidatas.get(0);
-      if (!asignacion.getEntidad().getId().equals(referencia.idEntidad())) {
+      if (!asignacion.getEntidad().getIdAsString().equals(referencia.idEntidad())) {
         throw new IllegalStateException("La entidad destinataria no coincide con la asignacion");
       }
       if (asignacion.getDonacion().getEstadoActual() != esperado) {
@@ -51,6 +51,7 @@ public class SeguimientoLogistico {
     }
     for (AsignacionDonacion asignacion : seleccionadas) {
       asignacion.getDonacion().cambiarEstado(siguiente, evento.motivo());
+      asignaciones.actualizar(asignacion);
     }
     procesados.put(evento.idOperacion(), evento);
     for (AsignacionDonacion asignacion : seleccionadas) {

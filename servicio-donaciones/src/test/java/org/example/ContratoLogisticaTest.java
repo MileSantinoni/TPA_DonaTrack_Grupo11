@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
+import javax.persistence.Persistence;
 import org.example.Repositorios.RepositorioAsignacionesDonacion;
 import org.example.Repositorios.RepositorioDonaciones;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
@@ -36,25 +37,25 @@ public class ContratoLogisticaTest {
     var asignacion = donacion.asignarA(entidad);
     RepositorioAsignacionesDonacion.getInstance().agregar(asignacion);
 
-    Javalin app = DonacionesApplication.crearApp();
+    Javalin app = DonacionesApplication.crearApp(Persistence.createEntityManagerFactory("donaciones-test"));
     app.start(0);
     try {
       HttpClient http = HttpClient.newHttpClient();
       String base = "http://localhost:" + app.port();
       HttpResponse<String> consulta = http.send(HttpRequest.newBuilder(
-          URI.create(base + "/interno/asignaciones/" + asignacion.getIdAsString())).GET().build(),
+              URI.create(base + "/interno/asignaciones/" + asignacion.getIdAsString())).GET().build(),
           HttpResponse.BodyHandlers.ofString());
       assertEquals(200, consulta.statusCode());
       var contrato = new ObjectMapper().readTree(consulta.body());
-      assertEquals(entidad.getId(), contrato.get("idEntidad").asText());
+      assertEquals(entidad.getIdAsString(), contrato.get("idEntidad").asText());
       assertEquals("ASIGNACION_REALIZADA", contrato.get("estadoDonacion").asText());
 
       HttpResponse<Void> existencia = http.send(HttpRequest.newBuilder(URI.create(
-          base + "/interno/donaciones/" + donacion.getIdAsString() + "/existe"))
+              base + "/interno/donaciones/" + donacion.getIdAsString() + "/existe"))
           .GET().build(), HttpResponse.BodyHandlers.discarding());
       assertEquals(204, existencia.statusCode());
       HttpResponse<Void> ausente = http.send(HttpRequest.newBuilder(URI.create(
-          base + "/interno/donaciones/NO-EXISTE/existe"))
+              base + "/interno/donaciones/NO-EXISTE/existe"))
           .GET().build(), HttpResponse.BodyHandlers.discarding());
       assertEquals(404, ausente.statusCode());
       assertEquals("ASIGNACION_REALIZADA", donacion.getEstadoActual().name());

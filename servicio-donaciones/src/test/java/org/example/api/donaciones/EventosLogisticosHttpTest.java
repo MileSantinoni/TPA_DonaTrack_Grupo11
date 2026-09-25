@@ -36,8 +36,11 @@ class EventosLogisticosHttpTest {
       HttpClient http = HttpClient.newHttpClient();
       assertEquals(409, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
       donacion.cambiarEstado(EstadoDonacion.LISTA_PARA_ENTREGAR, "Lista");
+      repo.actualizar(asignacion);
       assertEquals(204, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
       assertEquals(204, http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+      repo.limpiarCache();
+      donacion = repo.buscarPorId(asignacion.getIdAsString()).orElseThrow().getDonacion();
       assertEquals(EstadoDonacion.EN_TRASLADO, donacion.getEstadoActual());
       assertEquals(3, donacion.getHistorialEstados().size());
     } finally { app.stop(); repo.limpiar(); }
