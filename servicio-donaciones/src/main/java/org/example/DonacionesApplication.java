@@ -136,7 +136,11 @@ public class DonacionesApplication {
     );
 
     IntegracionLogisticaController integracion =
-        new IntegracionLogisticaController();
+        new IntegracionLogisticaController(
+            repoAsignaciones,
+            repoDonaciones,
+            new Notificador(new Email(), new SMS(), new WhatsApp())
+        );
 
     app.get("/health", ctx -> ctx.result("OK"));
 

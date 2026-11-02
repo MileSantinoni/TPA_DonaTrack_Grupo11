@@ -8,21 +8,26 @@ import org.example.Repositorios.RepositorioAsignacionesDonacion;
 import org.example.Repositorios.RepositorioDonaciones;
 import org.example.api.donaciones.dto.AsignacionLogisticaResponse;
 import org.example.dominio.donacion.AsignacionDonacion;
+import java.util.Objects;
+import org.example.dominio.donacion.SeguimientoLogistico;
+import org.example.dominio.notificacion.Notificador;
 
 public class IntegracionLogisticaController {
-  private final RepositorioAsignacionesDonacion asignaciones = RepositorioAsignacionesDonacion.getInstance();
-  private final RepositorioDonaciones donaciones = RepositorioDonaciones.getInstance();
+  private final RepositorioAsignacionesDonacion asignaciones;
+  private final RepositorioDonaciones donaciones;
+  private final SeguimientoLogistico seguimiento;
 
-  private final org.example.dominio.donacion.SeguimientoLogistico seguimiento;
-
-  public IntegracionLogisticaController() {
-    this(new org.example.dominio.notificacion.Notificador(
-        new org.example.dominio.notificacion.Email(),
-        new org.example.dominio.notificacion.SMS(), new org.example.dominio.notificacion.WhatsApp()));
-  }
-
-  public IntegracionLogisticaController(org.example.dominio.notificacion.Notificador notificador) {
-    seguimiento = new org.example.dominio.donacion.SeguimientoLogistico(asignaciones, notificador);
+  public IntegracionLogisticaController(
+      RepositorioAsignacionesDonacion asignaciones,
+      RepositorioDonaciones donaciones,
+      Notificador notificador
+  ) {
+    this.asignaciones = Objects.requireNonNull(asignaciones);
+    this.donaciones = Objects.requireNonNull(donaciones);
+    this.seguimiento = new SeguimientoLogistico(
+        this.asignaciones,
+        Objects.requireNonNull(notificador)
+    );
   }
 
   public void registrarEvento(Context ctx) {

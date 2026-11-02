@@ -1,4 +1,4 @@
-package org.example.scheduler;
+package org.example.dominio.notificacion;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -17,6 +17,7 @@ import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
 import org.junit.jupiter.api.Test;
+import org.example.scheduler.VerificadorAusenciaDonantes;
 
 import static org.junit.jupiter.api.Assertions.*;
 

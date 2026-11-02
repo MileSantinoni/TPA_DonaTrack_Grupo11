@@ -1,15 +1,15 @@
 package org.example;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.Javalin;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.http.*;
 import java.time.LocalDate;
-import javax.persistence.Persistence;
+import java.util.Map;
+import java.util.UUID;
+import javax.persistence.*;
 import org.example.Repositorios.RepositorioAsignacionesDonacion;
 import org.example.Repositorios.RepositorioDonaciones;
 import org.example.dominio.beneficiario.EntidadBeneficiaria;
@@ -17,52 +17,161 @@ import org.example.dominio.catalogo.Estado;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.Donacion;
-import org.example.dominio.donante.Genero;
-import org.example.dominio.donante.PersonaHumana;
-import org.example.dominio.donante.TipoDocumento;
+import org.example.dominio.donacion.EstadoDonacion;
+import org.example.dominio.donante.*;
 import org.junit.jupiter.api.Test;
 
 public class ContratoLogisticaTest {
+
   @Test
   void exponeAsignacionYExistenciaSinCambiarEstado() throws Exception {
-    RepositorioDonaciones.getInstance().limpiar();
-    RepositorioAsignacionesDonacion.getInstance().limpiar();
-    var donante = new PersonaHumana("a@example.com", "12345678", TipoDocumento.DNI,
-        "Ana", "Perez", 30, Genero.OTRO, "Calle 1");
-    var subcategoria = new Subcategoria("SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO);
-    var donacion = new Donacion("Fideos", 20, "unidades", subcategoria,
-        LocalDate.now(), null, Estado.NUEVO, donante);
-    var entidad = new EntidadBeneficiaria("Comedor Sol", "Calle 2", "1111");
-    RepositorioDonaciones.getInstance().agregar(donacion);
-    var asignacion = donacion.asignarA(entidad);
-    RepositorioAsignacionesDonacion.getInstance().agregar(asignacion);
+    EntityManagerFactory factory =
+        Persistence.createEntityManagerFactory(
+            "simple-persistence-unit",
+            Map.of(
+                "javax.persistence.jdbc.driver",
+                "org.hsqldb.jdbc.JDBCDriver",
+                "javax.persistence.jdbc.url",
+                "jdbc:hsqldb:mem:contrato_" + UUID.randomUUID(),
+                "javax.persistence.jdbc.user", "sa",
+                "javax.persistence.jdbc.password", "",
+                "hibernate.dialect",
+                "org.hibernate.dialect.HSQLDialect",
+                "hibernate.hbm2ddl.auto", "create-drop"
+            )
+        );
 
-    Javalin app = DonacionesApplication.crearApp(Persistence.createEntityManagerFactory("donaciones-test"));
-    app.start(0);
+    Javalin app = null;
+
     try {
+      String idDonacion;
+      String idEntidad;
+      String idAsignacion;
+      int historialInicial;
+
+      EntityManager em = factory.createEntityManager();
+
+      try {
+        em.getTransaction().begin();
+
+        var donante = new PersonaHumana(
+            "a@example.com", "12345678", TipoDocumento.DNI,
+            "Ana", "Perez", 30, Genero.OTRO, "Calle 1"
+        );
+
+        var subcategoria = new Subcategoria(
+            "SUB-1", "Alimentos", TipoAtributo.NO_PERECEDERO
+        );
+
+        var entidad =
+            new EntidadBeneficiaria("Comedor Sol", "Calle 2", "1111");
+
+        em.persist(donante);
+        em.persist(subcategoria);
+        em.persist(entidad);
+
+        var donacion = new Donacion(
+            "Fideos", 20, "unidades", subcategoria,
+            LocalDate.now(), null, Estado.NUEVO, donante
+        );
+
+        em.persist(donacion);
+
+        var asignacion = donacion.asignarA(entidad);
+
+        new RepositorioAsignacionesDonacion(em).agregar(asignacion);
+
+        em.getTransaction().commit();
+
+        idDonacion = donacion.getIdAsString();
+        idEntidad = entidad.getIdAsString();
+        idAsignacion = asignacion.getIdAsString();
+        historialInicial = donacion.getHistorialEstados().size();
+      } finally {
+        try {
+          if (em.getTransaction().isActive()) {
+            em.getTransaction().rollback();
+          }
+        } finally {
+          em.close();
+        }
+      }
+
+      // La aplicación consulta la misma base donde preparamos los datos.
+      app = DonacionesApplication.crearApp(factory);
+      app.start(0);
+
       HttpClient http = HttpClient.newHttpClient();
       String base = "http://localhost:" + app.port();
-      HttpResponse<String> consulta = http.send(HttpRequest.newBuilder(
-              URI.create(base + "/interno/asignaciones/" + asignacion.getIdAsString())).GET().build(),
-          HttpResponse.BodyHandlers.ofString());
-      assertEquals(200, consulta.statusCode());
-      var contrato = new ObjectMapper().readTree(consulta.body());
-      assertEquals(entidad.getIdAsString(), contrato.get("idEntidad").asText());
-      assertEquals("ASIGNACION_REALIZADA", contrato.get("estadoDonacion").asText());
 
-      HttpResponse<Void> existencia = http.send(HttpRequest.newBuilder(URI.create(
-              base + "/interno/donaciones/" + donacion.getIdAsString() + "/existe"))
-          .GET().build(), HttpResponse.BodyHandlers.discarding());
-      assertEquals(204, existencia.statusCode());
-      HttpResponse<Void> ausente = http.send(HttpRequest.newBuilder(URI.create(
-              base + "/interno/donaciones/NO-EXISTE/existe"))
-          .GET().build(), HttpResponse.BodyHandlers.discarding());
+      HttpResponse<String> consulta = http.send(
+          HttpRequest.newBuilder(
+              URI.create(base + "/interno/asignaciones/" + idAsignacion)
+          ).GET().build(),
+          HttpResponse.BodyHandlers.ofString()
+      );
+
+      assertEquals(200, consulta.statusCode(), consulta.body());
+
+      var contrato = new ObjectMapper().readTree(consulta.body());
+
+      assertEquals(idEntidad, contrato.get("idEntidad").asText());
+      assertEquals(idDonacion, contrato.get("idDonacion").asText());
+      assertEquals(
+          "ASIGNACION_REALIZADA",
+          contrato.get("estadoDonacion").asText()
+      );
+
+      HttpResponse<String> existencia = http.send(
+          HttpRequest.newBuilder(
+              URI.create(
+                  base + "/interno/donaciones/" + idDonacion + "/existe"
+              )
+          ).GET().build(),
+          HttpResponse.BodyHandlers.ofString()
+      );
+
+      assertEquals(204, existencia.statusCode(), existencia.body());
+
+      HttpResponse<String> ausente = http.send(
+          HttpRequest.newBuilder(
+              URI.create(base + "/interno/donaciones/NO-EXISTE/existe")
+          ).GET().build(),
+          HttpResponse.BodyHandlers.ofString()
+      );
+
       assertEquals(404, ausente.statusCode());
-      assertEquals("ASIGNACION_REALIZADA", donacion.getEstadoActual().name());
+
+      EntityManager verificacion = factory.createEntityManager();
+
+      try {
+        Donacion recuperada =
+            new RepositorioDonaciones(verificacion)
+                .buscarPorId(idDonacion)
+                .orElseThrow();
+
+        assertEquals(
+            EstadoDonacion.ASIGNACION_REALIZADA,
+            recuperada.getEstadoActual()
+        );
+
+        assertEquals(
+            historialInicial,
+            recuperada.getHistorialEstados().size()
+        );
+      } finally {
+        verificacion.close();
+      }
     } finally {
-      app.stop();
-      RepositorioDonaciones.getInstance().limpiar();
-      RepositorioAsignacionesDonacion.getInstance().limpiar();
+      try {
+        if (app != null) {
+          app.stop();
+        }
+      } finally {
+        if (factory.isOpen()) {
+          factory.close();
+        }
+      }
     }
   }
 }

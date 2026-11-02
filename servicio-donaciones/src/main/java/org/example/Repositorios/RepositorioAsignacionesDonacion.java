@@ -11,6 +11,12 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import org.example.dominio.catalogo.Subcategoria;
 import org.example.dominio.donacion.AsignacionDonacion;
+import org.example.dominio.donacion.EventoLogisticoProcesado;
+import javax.persistence.LockModeType;
+import org.example.dominio.notificacion.NotificacionPendiente;
+import org.example.dominio.notificacion.Notificacion;
+import org.example.dominio.notificacion.EstadoNotificacion;
+import org.example.dominio.notificacion.Notificador;
 
 public class RepositorioAsignacionesDonacion
     implements WithSimplePersistenceUnit {
@@ -256,5 +262,102 @@ public class RepositorioAsignacionesDonacion
       }
       throw e;
     }
+  }
+
+  public Optional<EventoLogisticoProcesado> buscarEventoProcesado(
+      String idOperacion
+  ) {
+    return Optional.ofNullable(
+        em().find(EventoLogisticoProcesado.class, idOperacion)
+    );
+  }
+
+  public void guardarEventoProcesado(EventoLogisticoProcesado evento) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "El evento debe guardarse dentro de la transaccion del lote"
+      );
+    }
+
+    actual.persist(evento);
+  }
+
+  public void guardarNotificacionesPendientes(
+      List<NotificacionPendiente> pendientes
+  ) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "Las notificaciones deben guardarse en la transaccion del evento"
+      );
+    }
+
+    pendientes.forEach(actual::persist);
+  }
+
+  public List<String> buscarIdsNotificacionesPendientes(int limite) {
+    if (limite <= 0) {
+      throw new IllegalArgumentException("El limite debe ser positivo");
+    }
+
+    return em().createQuery(
+            "SELECT n.id FROM NotificacionPendiente n "
+                + "WHERE n.estado <> :completada "
+                + "ORDER BY n.ultimoIntento ASC, n.fechaCreacion ASC, n.id ASC",
+            String.class
+        )
+        .setParameter("completada", EstadoNotificacion.COMPLETADA)
+        .setMaxResults(limite)
+        .getResultList();
+  }
+
+  public List<NotificacionPendiente> buscarNotificacionesDeEvento(
+      String idOperacion
+  ) {
+    return em().createQuery(
+            "SELECT n FROM NotificacionPendiente n "
+                + "WHERE n.idOperacion = :idOperacion",
+            NotificacionPendiente.class
+        )
+        .setParameter("idOperacion", idOperacion)
+        .getResultList();
+  }
+
+  public boolean procesarNotificacionPendiente(
+      String id,
+      Notificador notificador
+  ) {
+    return ejecutarEnTransaccion(() -> {
+      EntityManager actual = em();
+
+      NotificacionPendiente pendiente =
+          actual.find(NotificacionPendiente.class, id);
+
+      if (pendiente == null) {
+        return false;
+      }
+
+      // Recarga y bloquea el registro antes de decidir si hay que enviarlo.
+      actual.refresh(pendiente, LockModeType.PESSIMISTIC_WRITE);
+
+      if (!pendiente.requiereEnvio()) {
+        return false;
+      }
+
+      Notificacion resultado;
+
+      try {
+        resultado = notificador.enviarPendiente(pendiente);
+      } catch (RuntimeException errorDeEnvio) {
+        pendiente.registrarFallo();
+        return true;
+      }
+
+      pendiente.registrarResultado(resultado);
+      return true;
+    });
   }
 }

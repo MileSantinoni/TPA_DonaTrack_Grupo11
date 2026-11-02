@@ -20,6 +20,9 @@ public class Email implements TipoNotificacion {
     prop.put("mail.smtp.port", "587");
     prop.put("mail.smtp.auth", "true");
     prop.put("mail.smtp.starttls.enable", "true");
+    prop.put("mail.smtp.connectiontimeout", "10000");
+    prop.put("mail.smtp.timeout", "10000");
+    prop.put("mail.smtp.writetimeout", "10000");
 
     Session session = Session.getInstance(prop, new Authenticator() {
       @Override

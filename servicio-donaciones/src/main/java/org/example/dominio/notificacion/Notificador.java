@@ -8,6 +8,9 @@ import org.example.dominio.donante.TipoMedioContacto;
 import org.example.dominio.donacion.AsignacionDonacion;
 import org.example.dominio.donante.Representante;
 
+import java.util.ArrayList;
+import org.example.dominio.donacion.EventoLogistico;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +32,45 @@ public class Notificador {
   }
 
   public Notificacion notificarDonante(Donante donante, String mensaje) {
-    String destinatario = resolverDestinatario(donante);
+    java.util.Objects.requireNonNull(
+        donante, "El donante es obligatorio"
+    );
 
-    TipoNotificacion tipoNotificacion =
-        estrategias.get(donante.getContactoPredeterminado());
+    TipoContactoPredeterminado canal =
+        donante.getContactoPredeterminado();
 
-    return tipoNotificacion.enviar(destinatario, mensaje);
+    if (canal == null) {
+      canal = TipoContactoPredeterminado.MAIL;
+    }
+
+    String destinatario;
+
+    if (canal == TipoContactoPredeterminado.MAIL) {
+      destinatario = donante.getMail();
+    } else {
+      TipoMedioContacto tipoMedio =
+          canal == TipoContactoPredeterminado.WHATSAPP
+              ? TipoMedioContacto.WHATSAPP
+              : TipoMedioContacto.TELEFONO;
+
+      destinatario = buscarNumero(
+          donante.getMediosDeContacto(),
+          tipoMedio
+      );
+
+      if (destinatario == null || destinatario.isBlank()) {
+        canal = TipoContactoPredeterminado.MAIL;
+        destinatario = donante.getMail();
+      }
+    }
+
+    if (destinatario == null || destinatario.isBlank()) {
+      throw new IllegalArgumentException(
+          "El donante no tiene un contacto valido"
+      );
+    }
+
+    return estrategias.get(canal).enviar(destinatario, mensaje);
   }
 
   public Notificacion notificarEntidadBeneficiaria(EntidadBeneficiaria entidad, String mensaje) {
@@ -52,28 +88,6 @@ public class Notificador {
   public Notificacion notificarPorEmail(String destinatario, String mensaje) {
     TipoNotificacion email = estrategias.get(TipoContactoPredeterminado.MAIL);
     return email.enviar(destinatario, mensaje);
-  }
-
-  // este hay que borrarlo quedo olvidado je
-  private String resolverDestinatario(Donante donante) {
-    TipoContactoPredeterminado tipo = donante.getContactoPredeterminado();
-
-    if (tipo == TipoContactoPredeterminado.MAIL) {
-      return donante.getMail();
-    }
-
-    TipoMedioContacto tipoMedio =
-        tipo == TipoContactoPredeterminado.WHATSAPP
-            ? TipoMedioContacto.WHATSAPP
-            : TipoMedioContacto.TELEFONO;
-
-    String numero = buscarNumero(donante.getMediosDeContacto(), tipoMedio);
-
-    if (numero != null) {
-      return numero;
-    }
-
-    return donante.getMail();
   }
 
   private String buscarNumero(List<MedioContacto> medios, TipoMedioContacto tipoMedio) {
@@ -140,6 +154,163 @@ public class Notificador {
     }
     notificarEntidadBeneficiaria(asignacion.getEntidad(), mensajeEntidad);
     notificarDonante(asignacion.getDonacion().getDonante(), mensajeDonante);
+  }
+
+  public Notificacion enviarPendiente(NotificacionPendiente pendiente) {
+    java.util.Objects.requireNonNull(
+        pendiente, "La notificacion pendiente es obligatoria"
+    );
+
+    if (!pendiente.requiereEnvio()) {
+      throw new IllegalStateException(
+          "La notificacion ya fue completada"
+      );
+    }
+
+    TipoNotificacion estrategia =
+        estrategias.get(pendiente.getCanal());
+
+    if (estrategia == null) {
+      throw new IllegalStateException(
+          "No existe una estrategia para el canal indicado"
+      );
+    }
+
+    return estrategia.enviar(
+        pendiente.getDestinatario(),
+        pendiente.getMensaje()
+    );
+  }
+
+  public List<NotificacionPendiente> prepararEventoLogistico(
+      AsignacionDonacion asignacion,
+      EventoLogistico evento
+  ) {
+    String mensajeEntidad;
+    String mensajeDonante;
+
+    switch (evento.tipo()) {
+      case INICIO_TRASLADO -> {
+        mensajeEntidad =
+            "Tu envio ya esta en camino. "
+                + "Podes seguirlo en el mapa interactivo.";
+
+        mensajeDonante =
+            "Tu donacion ya esta en camino. "
+                + "Podes seguir el envio en el mapa interactivo.";
+      }
+
+      case RECEPCION -> {
+        mensajeEntidad =
+            "Comprobante de entrega: " + evento.fecha()
+                + ". Camion: " + evento.patente();
+
+        mensajeDonante = mensajeEntidad;
+      }
+
+      case NO_RECIBIDA -> {
+        mensajeEntidad =
+            "No se pudo concretar la recepcion del envio. Motivo: "
+                + evento.motivo();
+
+        mensajeDonante =
+            "No se pudo concretar la entrega de tu donacion. Motivo: "
+                + evento.motivo();
+      }
+
+      case RETORNO_DEPOSITO -> {
+        return List.of();
+      }
+
+      default -> throw new IllegalArgumentException(
+          "Evento no soportado"
+      );
+    }
+
+    List<NotificacionPendiente> pendientes = new ArrayList<>();
+
+    pendientes.add(prepararParaEntidad(
+        evento.idOperacion(),
+        asignacion.getEntidad(),
+        mensajeEntidad
+    ));
+
+    Donante donante = asignacion.getDonacion().getDonante();
+
+    // Hay datos históricos y pruebas que no tienen donante asociado.
+    if (donante != null) {
+      pendientes.add(prepararParaDonante(
+          evento.idOperacion(),
+          donante,
+          mensajeDonante
+      ));
+    }
+
+    return pendientes;
+  }
+
+  private NotificacionPendiente prepararParaEntidad(
+      String idOperacion,
+      EntidadBeneficiaria entidad,
+      String mensaje
+  ) {
+    String email = buscarEmailRepresentante(entidad);
+
+    if (email != null) {
+      return new NotificacionPendiente(
+          idOperacion,
+          TipoContactoPredeterminado.MAIL,
+          email,
+          mensaje
+      );
+    }
+
+    return new NotificacionPendiente(
+        idOperacion,
+        TipoContactoPredeterminado.TELEFONO,
+        entidad.getTelefono(),
+        mensaje
+    );
+  }
+
+  private NotificacionPendiente prepararParaDonante(
+      String idOperacion,
+      Donante donante,
+      String mensaje
+  ) {
+    TipoContactoPredeterminado canal =
+        donante.getContactoPredeterminado();
+
+    if (canal == null) {
+      canal = TipoContactoPredeterminado.MAIL;
+    }
+
+    String destinatario;
+
+    if (canal == TipoContactoPredeterminado.MAIL) {
+      destinatario = donante.getMail();
+    } else {
+      TipoMedioContacto tipoMedio =
+          canal == TipoContactoPredeterminado.WHATSAPP
+              ? TipoMedioContacto.WHATSAPP
+              : TipoMedioContacto.TELEFONO;
+
+      destinatario = buscarNumero(
+          donante.getMediosDeContacto(), tipoMedio
+      );
+
+      if (destinatario == null || destinatario.isBlank()) {
+        canal = TipoContactoPredeterminado.MAIL;
+        destinatario = donante.getMail();
+      }
+    }
+
+    return new NotificacionPendiente(
+        idOperacion,
+        canal,
+        destinatario,
+        mensaje
+    );
   }
 
 }
