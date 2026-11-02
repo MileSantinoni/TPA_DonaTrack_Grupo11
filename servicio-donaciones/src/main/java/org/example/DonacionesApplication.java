@@ -158,6 +158,8 @@ public class DonacionesApplication {
     app.patch("/donaciones/{id}/estado", donaciones::cambiarEstadoDonacion);
     app.delete("/donaciones/{id}", donaciones::eliminarDonacion);
 
+    app.post("/registros-donacion", donaciones::registrarCarga);
+
     app.get("/entidades", entidades::obtenerTodas);
     app.get("/entidades/{id}", entidades::obtenerPorId);
     app.post("/entidades", entidades::crearEntidad);

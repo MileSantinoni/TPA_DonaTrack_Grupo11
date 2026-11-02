@@ -16,6 +16,9 @@ import java.util.UUID;
 import org.example.Repositorios.RepositorioRegistroDonacion;
 import org.example.dominio.catalogo.Bien;
 import org.example.dominio.donacion.RegistroDonacion;
+import java.util.ArrayList;
+import java.util.Map;
+import org.example.api.donaciones.dto.RegistroDonacionRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -86,16 +89,6 @@ public class DonacionController {
           .result("No existe la subcategoria: " + idSubcategoria);
       return;
     }
-
-    Donacion nuevaDonacion = new Donacion(
-        request.getDescripcionGeneral(),
-        request.getCantidad(),
-        request.getUnidadMedida(),
-        subcategoriaOpt.get(),
-        request.getFechaVencimiento(),
-        request.getEstadoBien(),
-        donanteOpt.get()
-    );
 
     if (request.getDescripcionGeneral() == null
         || request.getDescripcionGeneral().isBlank()
@@ -180,5 +173,115 @@ public class DonacionController {
 
     ctx.status(HttpStatus.OK)
         .result("Estado de la donación actualizado a: " + request.getNuevoEstado());
+  }
+
+  public void registrarCarga(Context ctx) {
+    RegistroDonacionRequest request =
+        ctx.bodyAsClass(RegistroDonacionRequest.class);
+
+    if (request == null
+        || request.idDonante() == null
+        || request.idDonante().isBlank()
+        || request.descripcionGeneral() == null
+        || request.descripcionGeneral().isBlank()
+        || request.bienes() == null
+        || request.bienes().isEmpty()) {
+      ctx.status(HttpStatus.BAD_REQUEST).result(
+          "Debe indicar donante, descripcion general y al menos un bien"
+      );
+      return;
+    }
+
+    Optional<Donante> donante =
+        repositorioDonantes.buscarPorId(request.idDonante());
+
+    if (donante.isEmpty()) {
+      ctx.status(HttpStatus.NOT_FOUND)
+          .result("No existe el donante: " + request.idDonante());
+      return;
+    }
+
+    // Primero validamos y construimos TODOS los bienes.
+    // Todavia no se escribe nada en la base.
+    List<Bien> bienes = new ArrayList<>();
+
+    for (RegistroDonacionRequest.BienRequest item : request.bienes()) {
+      if (item == null
+          || item.descripcion() == null
+          || item.descripcion().isBlank()
+          || item.cantidad() <= 0
+          || item.unidadMedida() == null
+          || item.unidadMedida().isBlank()
+          || item.idSubcategoria() == null
+          || item.idSubcategoria().isBlank()) {
+        ctx.status(HttpStatus.BAD_REQUEST).result(
+            "Cada bien debe indicar descripcion, cantidad positiva, "
+                + "unidad de medida y subcategoria"
+        );
+        return;
+      }
+
+      Optional<Subcategoria> subcategoria =
+          repositorioCatalogo.buscarSubcategoria(item.idSubcategoria());
+
+      if (subcategoria.isEmpty()) {
+        ctx.status(HttpStatus.NOT_FOUND).result(
+            "No existe la subcategoria: " + item.idSubcategoria()
+        );
+        return;
+      }
+
+      try {
+        Bien bien = new Bien(
+            UUID.randomUUID().toString(),
+            item.descripcion().trim(),
+            item.cantidad(),
+            item.unidadMedida().trim(),
+            subcategoria.get(),
+            item.fechaVencimiento(),
+            item.estadoBien()
+        );
+
+        if (item.foto() != null && !item.foto().isBlank()) {
+          bien.setFoto(item.foto().trim());
+        }
+
+        bienes.add(bien);
+      } catch (IllegalArgumentException e) {
+        ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
+        return;
+      }
+    }
+
+    RegistroDonacion registro = new RegistroDonacion(
+        UUID.randomUUID().toString(),
+        request.descripcionGeneral().trim(),
+        donante.get()
+    );
+
+    bienes.forEach(registro::agregarBien);
+
+    List<Donacion> generadas;
+
+    try {
+      generadas = registro.segmentar();
+    } catch (IllegalArgumentException e) {
+      ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
+      return;
+    }
+
+    // Este metodo ya guarda todo dentro de una misma transaccion.
+    repositorioRegistros.agregarRegistroConDonaciones(
+        registro, generadas
+    );
+
+    ctx.status(HttpStatus.CREATED).json(Map.of(
+        "idRegistro", registro.getId(),
+        "cantidadBienes", bienes.size(),
+        "cantidadDonaciones", generadas.size(),
+        "idsDonaciones", generadas.stream()
+            .map(Donacion::getIdAsString)
+            .toList()
+    ));
   }
 }
