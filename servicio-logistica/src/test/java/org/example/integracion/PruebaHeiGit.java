@@ -13,13 +13,27 @@ public class PruebaHeiGit {
     // Coordenadas en orden: longitud, latitud.
     List<Double> deposito = List.of(-58.3816, -34.6037);
 
+    var donaciones = new ClienteDonaciones(
+        System.getenv().getOrDefault("DONACIONES_URL", "http://localhost:8083")
+    );
+
+    var plan = TrabajosPlanificacion.preparar(
+        donaciones.listarAsignaciones(),
+        java.util.Set.of()
+    );
+
+    System.out.println("Pendientes por falta de ubicacion:");
+    for (var pendiente : plan.pendientesDeUbicacion()) {
+      System.out.println(pendiente.idDonacion() + " - " + pendiente.direccion());
+    }
+
+    if (plan.trabajos().isEmpty()) {
+      System.out.println("No hay entregas que se puedan planificar.");
+      return;
+    }
+
     var solicitud = new ClienteHeiGit.Solicitud(
-        List.of(
-            trabajo(1, -58.4106, -34.5889),
-            trabajo(2, -58.4333, -34.6037),
-            trabajo(3, -58.3732, -34.6212),
-            trabajo(4, -58.4270, -34.6190)
-        ),
+        plan.trabajos(),
         List.of(
             new ClienteHeiGit.Vehiculo(
                 1,
@@ -51,12 +65,32 @@ public class PruebaHeiGit {
       int orden = 1;
 
       for (JsonNode paso : ruta.path("steps")) {
-        if ("job".equals(paso.path("type").asText())) {
-          System.out.println(
-              orden++ + ". " + paso.path("description").asText()
-                  + " (id: " + paso.path("id").asInt() + ")"
+        // Solo los pasos "job" representan entregas.
+        if (!"job".equals(paso.path("type").asText())) {
+          continue;
+        }
+
+        JsonNode id = paso.path("id");
+        if (!id.isIntegralNumber() || !id.canConvertToInt()) {
+          throw new IllegalStateException("Paso de entrega sin ID valido: " + paso);
+        }
+
+        int idTrabajo = id.intValue();
+        var asignacion = plan.asignacionesPorTrabajo().get(idTrabajo);
+
+        if (asignacion == null) {
+          throw new IllegalStateException(
+              "HeiGIT devolvio el trabajo " + idTrabajo
+                  + ", pero se enviaron estos IDs: "
+                  + plan.asignacionesPorTrabajo().keySet()
           );
         }
+
+        System.out.println(
+            orden++ + ". Donacion " + asignacion.idDonacion()
+                + " -> " + asignacion.razonSocial()
+                + " (" + asignacion.direccion() + ")"
+        );
       }
     }
 

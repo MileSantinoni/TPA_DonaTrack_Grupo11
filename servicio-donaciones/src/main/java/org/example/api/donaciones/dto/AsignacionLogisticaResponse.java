@@ -6,5 +6,7 @@ public record AsignacionLogisticaResponse(
     String razonSocial,
     String direccion,
     String telefono,
-    String estadoDonacion
+    String estadoDonacion,
+    Double latitud,
+    Double longitud
 ) {}

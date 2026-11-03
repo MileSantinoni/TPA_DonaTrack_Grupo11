@@ -116,8 +116,13 @@ public class EntregaController {
     // Si hubo IOException o InterruptedException, no llegamos acá:
     // la base conserva el evento pendiente para el reintento.
 
-    // Segunda transacción: estados, fecha, fotos y eliminación del evento.
-    rutas.actualizar(ruta);
+    // Los cambios en el camión gestionado y la ruta se confirman juntos.
+    rutas.enTransaccion(() -> {
+      if (ruta.cantidadEntregas() > 0 && ruta.cantidadEntregadas() == ruta.cantidadEntregas()) {
+        ruta.getCamion().marcarDisponible();
+      }
+      rutas.actualizar(ruta);
+    });
   }
 
   private Ruta ruta(Context ctx) {

@@ -194,6 +194,9 @@ public class DonacionesApplication {
     app.post("/asignaciones/confirmar", asignaciones::confirmarAsignacion);
     app.post("/asignaciones/rechazar", asignaciones::rechazarAsignacion);
 
+    var avisoPlan = new org.example.api.donaciones.AvisoPlanificacionController(
+        entityManagerActual::get, repoAsignaciones);
+    app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
     app.post("/interno/logistica/eventos", integracion::registrarEvento);
     app.get("/interno/asignaciones", integracion::listarAsignaciones);
     app.get("/interno/asignaciones/{id}", integracion::buscarAsignacion);

@@ -66,6 +66,7 @@ public class ContratoLogisticaTest {
         var entidad =
             new EntidadBeneficiaria("Comedor Sol", "Calle 2", "1111");
 
+        entidad.confirmarUbicacion(-34.596118, -58.394256);
         em.persist(donante);
         em.persist(subcategoria);
         em.persist(entidad);
@@ -115,6 +116,8 @@ public class ContratoLogisticaTest {
 
       var contrato = new ObjectMapper().readTree(consulta.body());
 
+      assertEquals(-34.596118, contrato.get("latitud").doubleValue(), 0.000001);
+      assertEquals(-58.394256, contrato.get("longitud").doubleValue(), 0.000001);
       assertEquals(idEntidad, contrato.get("idEntidad").asText());
       assertEquals(idDonacion, contrato.get("idDonacion").asText());
       assertEquals(

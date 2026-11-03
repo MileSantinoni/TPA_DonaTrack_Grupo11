@@ -101,6 +101,12 @@ public class LogisticaApplication {
     ClienteDonaciones clienteDonaciones = new ClienteDonaciones(urlDonaciones);
     RutaController rutaController = new RutaController(camiones, monitor, clienteDonaciones);
 
+    var planificador = new org.example.planificacion.PlanificacionController(
+        entityManagerActual::get, clienteDonaciones, urlDonaciones);
+    app.post("/planificaciones", planificador::ejecutar);
+    app.post("/interno/planificaciones/resultado", planificador::callback);
+    app.get("/camiones/{patente}/rutas/{fecha}", planificador::consultar);
+
     app.get("/health", ctx -> ctx.result("OK"));
     org.example.Routes.RoutesLogistica.registrar(app, camionController, rutaController,
         new org.example.api.logistica.EntregaController(
@@ -108,7 +114,7 @@ public class LogisticaApplication {
         ));
     app.exception(IllegalArgumentException.class, (e, ctx) -> ctx.status(400).result(e.getMessage()));
     app.exception(IllegalStateException.class, (e, ctx) -> ctx.status(409).result(e.getMessage()));
-    app.exception(java.io.IOException.class, (e, ctx) -> ctx.status(502).result("No se pudo comunicar con Donaciones"));
+    app.exception(java.io.IOException.class, (e, ctx) -> ctx.status(502).result("Fallo la comunicacion con un servicio externo"));
     app.exception(InterruptedException.class, (e, ctx) -> {
       Thread.currentThread().interrupt();
       ctx.status(503).result("Comunicacion con Donaciones interrumpida");
