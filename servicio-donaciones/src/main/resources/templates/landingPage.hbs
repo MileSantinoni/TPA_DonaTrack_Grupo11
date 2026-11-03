@@ -3,17 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{titulo}}</title>
+    <title>DonaTrack · Plataforma de Trazabilidad de Donaciones</title>
+    <link rel="stylesheet" href="/assets/css/landing.css">
 </head>
 <body>
-<header>
-    <!-- Renderizado dinámico del dato inyectado desde el controlador -->
-    <h1>{{titulo}}</h1>
-    <p>Esta es la página pública inicial.</p>
-</header>
-<main>
-    <a href="/donaciones">Ver Donaciones</a>
-    <a href="/donantes">Acceso Donantes</a>
-</main>
+
+<div class="landing-container">
+
+    <!-- Header / Nav -->
+    <header class="navbar">
+        <div class="navbar-inner">
+            <div class="brand-logo">
+                <img src="/assets/images/logo_principal.svg" alt="DonaTrack Logo" width="173" height="54" />
+            </div>
+            <nav class="nav-links">
+                <a href="#mapa" class="nav-link">Mapa de entregas</a>
+                <a href="#sobre-nosotros" class="nav-link">Sobre DonaTrack</a>
+                <a href="/login" class="nav-link">Iniciar sesión</a>
+                <a href="/registro" class="btn btn-sm btn-primary-action">Registrarme</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="section section-hero">
+            <div class="hero-grid">
+                <div class="hero-content">
+                    <div class="section-title-box">
+                        <h1 class="hero-title">Conectando donaciones con necesidades reales</h1>
+                        <p class="hero-subtitle">Una plataforma pública para visualizar entregas, registrar donaciones y gestionar la trazabilidad de bienes de forma transparente.</p>
+                    </div>
+                    <div class="hero-actions">
+                        <a href="#mapa" class="btn btn-primary-marron">Explorar entregas</a>
+                        <a href="/login" class="btn btn-secondary">Iniciar sesión</a>
+                    </div>
+                </div>
+                <div class="hero-image-box">
+                    <img src="assets/images/hero-illustration.svg" alt="DonaTrack Ilus" width="520" height="520">
+                </div>
+            </div>
+        </section>
+
+        <!-- Impacto en Números -->
+        <section class="section">
+            <div class="section-title-box">
+                <h2 class="section-title">Impacto en números</h2>
+                <p class="section-subtitle">Ejemplo de estadísticas visibles para donantes, entidades y comunidad.</p>
+            </div>
+
+            <div class="cards-grid">
+                <article class="stat-card">
+                    <div class="stat-header">
+                        <span>Donaciones recibidas</span>
+                    </div>
+                    <span class="stat-number">24</span>
+                    <span class="stat-footer">Ejemplo ilustrativo · cajas registradas</span>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-header">
+                        <span>Entregas realizadas</span>
+                    </div>
+                    <span class="stat-number">08</span>
+                    <span class="stat-footer">Ejemplo ilustrativo · entregas coordinadas</span>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-header">
+                        <span>Entidades beneficiarias</span>
+                    </div>
+                    <span class="stat-number">12</span>
+                    <span class="stat-footer">Ejemplo ilustrativo · organizaciones conectadas</span>
+                </article>
+            </div>
+        </section>
+
+        <!-- Mapa de Entregas -->
+        <section id="mapa" class="section">
+            <div class="map-header">
+                <div class="section-title-box">
+                    <h2 class="section-title">Mapa de entregas</h2>
+                    <p class="section-subtitle">Visualiza entregas, entidades y donaciones en un mapa interactivo.</p>
+                </div>
+
+                <div class="map-filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Estado</label>
+                        <div class="filter-select">
+                            <span>Todos</span>
+                            <span>▼</span>
+                        </div>
+                        <span class="filter-caption">Filtrar por estado de entrega</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Entidad</label>
+                        <div class="filter-select">
+                            <span>Todas</span>
+                            <span>▼</span>
+                        </div>
+                        <span class="filter-caption">Filtrar por entidad beneficiaria</span>
+                    </div>
+
+                    <button class="btn btn-secondary-salvia">Filtrar</button>
+                </div>
+            </div>
+
+            <div class="map-viewport">
+                <img class="map-bg-image" src="https://placehold.co/1280x640" alt="Mapa interactivo de entregas">
+
+                <div class="map-attribution">
+                    © OpenStreetMap contributors
+                </div>
+
+                <!-- Leyenda -->
+                <div class="map-legend">
+                    <h4 class="font-manrope">Leyenda</h4>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:var(--brand-terracota); border-radius:50%;"></span>
+                        <span>Entrega activa</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:var(--palette-bg); border:1px solid var(--brand-marron); border-radius:50%;"></span>
+                        <span>Entregada</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:var(--brand-crema); border-radius:50%;"></span>
+                        <span>En traslado</span>
+                    </div>
+                </div>
+
+                <!-- Detalle de Entrega Overlay -->
+                <div class="map-detail-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 class="font-manrope">Detalle de entrega</h4>
+                        <span class="badge badge-info">Entregada</span>
+                    </div>
+                    <p style="font-size: 12px;">Entidad beneficiaria: Comedor Los Aromos</p>
+                    <p style="font-size: 14px;">Ejemplo ilustrativo: 24 cajas de alimentos no perecederos entregadas.</p>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="avatar-initials">MG</div>
+                        <div>
+                            <p style="font-size: 14px;">María González</p>
+                            <p style="font-size: 12px;">ID: DON-0248</p>
+                        </div>
+                    </div>
+                    <a href="#" style="font-size: 12px; color: var(--brand-marron);">Ver fotos de esta entrega →</a>
+                </div>
+
+                <!-- Contadores Overlay -->
+                <div class="map-counter-overlay">
+                    <div class="counter-chip">
+                        <span class="counter-chip-num">08</span>
+                        <span style="font-size: 12px;">entregas activas</span>
+                    </div>
+                    <div class="counter-chip">
+                        <span class="counter-chip-num">12</span>
+                        <span style="font-size: 12px;">en traslado</span>
+                    </div>
+                    <div class="counter-chip">
+                        <span class="counter-chip-num">24</span>
+                        <span style="font-size: 12px;">entregadas</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cómo Funciona -->
+        <section class="section">
+            <div class="section-title-box">
+                <h2 class="section-title">Cómo funciona</h2>
+                <p class="section-subtitle">Un flujo claro para donantes, entidades y operadores.</p>
+            </div>
+
+            <div class="cards-grid">
+                <article class="stat-card">
+                    <h3 class="font-manrope">1. Recibimos</h3>
+                    <p style="font-size: 14px;">Registra donaciones y bienes en el depósito con identificación clara y trazable.</p>
+                </article>
+
+                <article class="stat-card">
+                    <h3 class="font-manrope">2. Organizamos</h3>
+                    <p style="font-size: 14px;">Asignamos bienes a entidades según necesidades reales y prioridad de entrega.</p>
+                </article>
+
+                <article class="stat-card">
+                    <h3 class="font-manrope">3. Entregamos</h3>
+                    <p style="font-size: 14px;">Coordinamos el traslado y confirmamos la recepción con evidencia visual.</p>
+                </article>
+            </div>
+        </section>
+
+        <!-- Sobre DonaTrack -->
+        <section id="sobre-nosotros" class="section" style="flex-direction: row; gap: 64px;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 32px;">
+                <div class="section-title-box">
+                    <span style="color: var(--brand-terracota); font-size: 13px; font-weight: 500;">Sobre DonaTrack</span>
+                    <h2 class="section-title" style="font-size: 32px;">La solidaridad tiene un camino.</h2>
+                </div>
+                <p class="section-subtitle">DonaTrack es una plataforma pública para registrar donaciones, visualizar entregas y seguir el recorrido de los bienes. Un lugar para hacer más clara y transparente la solidaridad.</p>
+
+                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                    <span class="badge badge-info">Registro de donaciones</span>
+                    <span class="badge badge-info">Trazabilidad de bienes</span>
+                    <span class="badge badge-info">Gestión de entregas</span>
+                </div>
+            </div>
+
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 24px;">
+                <article class="stat-card stat-card-white">
+                    <span style="font-size: 14px; color: var(--text-secondary-accessible);">Nuestra misión</span>
+                    <h3 class="font-manrope" style="font-size: 24px;">Conectar donaciones con necesidades reales</h3>
+                </article>
+
+                <article class="stat-card stat-card-white">
+                    <span style="font-size: 14px; color: var(--text-secondary-accessible);">Nuestro propósito</span>
+                    <h3 class="font-manrope" style="font-size: 24px;">Dar claridad y transparencia en el camino de cada donación</h3>
+                </article>
+            </div>
+        </section>
+
+        <!-- Call to Action -->
+        <section class="section-cta">
+            <div class="section-title-box">
+                <h2 class="section-title">¿Querés sumarte a DonaTrack?</h2>
+                <p class="section-subtitle">Registrá tu cuenta para donar o recibir bienes de forma segura. Seguí cada entrega y conocé el impacto de tu ayuda.</p>
+            </div>
+            <div style="display: flex; gap: 16px;">
+                <a href="/registro/donante" class="btn btn-light">Registro de donante</a>
+                <a href="/registro/entidad" class="btn btn-light">Registro de entidad beneficiaria</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <img src="/assets/images/logo_principal.svg" alt="DonaTrack" width="289" height="90">
+                <p style="font-size: 14px;">Plataforma de trazabilidad para donaciones y entregas sociales.</p>
+            </div>
+
+            <div class="footer-columns">
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Navegación</h4>
+                    <a href="#mapa" class="nav-link">Mapa de entregas</a>
+                    <a href="#sobre-nosotros" class="nav-link">Sobre DonaTrack</a>
+                    <a href="/contacto" class="nav-link">Contacto</a>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Legal</h4>
+                    <a href="/acerca" class="nav-link">Acerca de</a>
+                    <a href="/privacidad" class="nav-link">Privacidad</a>
+                    <a href="/terminos" class="nav-link">Términos</a>
+                </div>
+                <div class="footer-col">
+                    <h4 class="footer-col-title">Redes</h4>
+                    <a href="#" class="nav-link">Instagram</a>
+                    <a href="#" class="nav-link">LinkedIn</a>
+                    <a href="#" class="nav-link">YouTube</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>© DonaTrack · Las entregas mostradas son ejemplos ilustrativos.</p>
+            <div class="footer-bottom-links">
+                <a href="/acerca" class="nav-link">Acerca de</a>
+                <a href="/privacidad" class="nav-link">Privacidad</a>
+                <a href="/terminos" class="nav-link">Términos</a>
+                <a href="/contacto" class="nav-link">Contacto</a>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
 </body>
 </html>
