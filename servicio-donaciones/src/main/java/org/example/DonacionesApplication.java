@@ -63,7 +63,7 @@ public class DonacionesApplication {
     // Debajo continúa tu código de ObjectMapper y Javalin.create.
     ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    Javalin app = Javalin.create(config -> config.jsonMapper(new JavalinJackson(mapper)));
+    Javalin app = Javalin.create(config -> config.jsonMapper(new JavalinJackson()));
 
     app.before(ctx -> {
       entityManagerActual.set(factory.createEntityManager());
