@@ -27,6 +27,8 @@ import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
 import org.example.Repositorios.RepositorioRegistroDonacion;
+import org.example.api.donaciones.UbicacionEntidadController;
+import org.example.integracion.ClienteGeocodificacion;
 
 public class DonacionesApplication {
   public static Javalin crearApp() {
@@ -113,6 +115,14 @@ public class DonacionesApplication {
     RepositorioAsignacionesDonacion repoAsignaciones =
         new RepositorioAsignacionesDonacion(entityManagerActual::get);
 
+    UbicacionEntidadController ubicaciones =
+        new UbicacionEntidadController(
+            repoEntidades,
+            () -> new ClienteGeocodificacion(
+                System.getenv("HEIGIT_API_KEY")
+            )
+        );
+
     DonacionController donaciones = new DonacionController(
         repoDonaciones,
         repoDonantes,
@@ -169,6 +179,15 @@ public class DonacionesApplication {
     app.post("/entidades/{idEntidad}/necesidades/recurrentes", necesidades::registrarRecurrente);
     app.post("/entidades/{idEntidad}/necesidades/extraordinarias", necesidades::registrarExtraordinaria);
     app.delete("/entidades/{idEntidad}/necesidades/{idNecesidad}", necesidades::eliminarNecesidad);
+    app.get(
+        "/entidades/{id}/ubicacion/candidatos",
+        ubicaciones::buscarCandidatos
+    );
+
+    app.put(
+        "/entidades/{id}/ubicacion",
+        ubicaciones::confirmarUbicacion
+    );
 
     app.post("/asignaciones/ejecutar/{idDonacion}", asignaciones::ejecutarAlgoritmos);
     app.get("/asignaciones/ranking/{idDonacion}", asignaciones::obtenerRanking);

@@ -28,6 +28,32 @@ public class EntidadBeneficiaria {
   @OneToMany(mappedBy = "entidadBeneficiaria", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Necesidad> necesidades = new ArrayList<>();
 
+  @Column(name = "latitud")
+  private Double latitud;
+
+  @Column(name = "longitud")
+  private Double longitud;
+
+  public Double getLatitud() {
+    return latitud;
+  }
+
+  public Double getLongitud() {
+    return longitud;
+  }
+
+  public void confirmarUbicacion(double latitud, double longitud) {
+    if (!Double.isFinite(latitud)
+        || !Double.isFinite(longitud)
+        || latitud < -90 || latitud > 90
+        || longitud < -180 || longitud > 180) {
+      throw new IllegalArgumentException("Las coordenadas no son validas");
+    }
+
+    this.latitud = latitud;
+    this.longitud = longitud;
+  }
+
   protected EntidadBeneficiaria() {
   }
 
@@ -70,7 +96,14 @@ public class EntidadBeneficiaria {
 
 
   public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }
-  public void setDireccion(String direccion) { this.direccion = direccion; }
+  public void setDireccion(String direccion) {
+    if (!java.util.Objects.equals(this.direccion, direccion)) {
+      this.latitud = null;
+      this.longitud = null;
+    }
+
+    this.direccion = direccion;
+  }
   public void setTelefono(String telefono) { this.telefono = telefono; }
 
   public String getIdAsString() {
