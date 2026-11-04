@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="760" viewBox="0 0 320 760">
+<g fill="none" stroke="#A8846C" stroke-opacity=".19" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(26 40) rotate(-18 32 28) scale(0.95)"><rect x="3" y="8" width="34" height="26" rx="3"/><path d="M37 18h12l10 11v5H37M42 18v11h17"/><circle cx="14" cy="37" r="6"/><circle cx="48" cy="37" r="6"/></g>
+<g transform="translate(208 124) rotate(19 32 28) scale(0.8)"><path d="m8 14 24-11 24 11v29L32 56 8 43Zm0 0 24 12 24-12M32 26v30M20 8l24 12v12"/></g>
+<g transform="translate(68 242) rotate(-13 32 28) scale(0.85)"><path d="M32 50 9 28C-6 12 15-5 28 10l4 4 4-4C49-5 70 12 55 28Z"/><path d="m17 35 17-17 12 12-16 17M25 12l12 12"/></g>
+<g transform="translate(205 342) rotate(24 32 28) scale(0.8)"><rect x="3" y="8" width="34" height="26" rx="3"/><path d="M37 18h12l10 11v5H37M42 18v11h17"/><circle cx="14" cy="37" r="6"/><circle cx="48" cy="37" r="6"/></g>
+<g transform="translate(34 440) rotate(-22 32 28) scale(1)"><path d="m8 14 24-11 24 11v29L32 56 8 43Zm0 0 24 12 24-12M32 26v30M20 8l24 12v12"/></g>
+<g transform="translate(196 572) rotate(17 32 28) scale(0.75)"><path d="M32 50 9 28C-6 12 15-5 28 10l4 4 4-4C49-5 70 12 55 28Z"/><path d="m17 35 17-17 12 12-16 17M25 12l12 12"/></g>
+<g transform="translate(55 662) rotate(-12 32 28) scale(0.85)"><rect x="3" y="8" width="34" height="26" rx="3"/><path d="M37 18h12l10 11v5H37M42 18v11h17"/><circle cx="14" cy="37" r="6"/><circle cx="48" cy="37" r="6"/></g>
+</g>
+</svg>
