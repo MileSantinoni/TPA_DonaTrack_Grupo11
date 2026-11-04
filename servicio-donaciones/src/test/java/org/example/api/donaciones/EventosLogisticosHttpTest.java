@@ -30,7 +30,7 @@ class EventosLogisticosHttpTest {
         notificador
     );
     ObjectMapper json = new ObjectMapper().findAndRegisterModules();
-    Javalin app = Javalin.create(c -> c.jsonMapper(new JavalinJackson(json)));
+    Javalin app = Javalin.create(c -> c.jsonMapper(new JavalinJackson(json, false)));
     app.post("/interno/logistica/eventos", controller::registrarEvento); app.start(0);
     try {
       var evento = new EventoLogistico(

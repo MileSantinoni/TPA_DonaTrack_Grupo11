@@ -26,7 +26,7 @@ public class Server {
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     this.app = Javalin.create(config -> {
-      config.jsonMapper(new JavalinJackson());
+      config.jsonMapper(new JavalinJackson(mapper, false));
       initializeStaticFiles(config);
       initializeTemplating(config);
     });

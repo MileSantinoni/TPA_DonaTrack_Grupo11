@@ -51,7 +51,7 @@ public class LogisticaApplication {
     ThreadLocal<EntityManager> entityManagerActual = new ThreadLocal<>();
     ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    Javalin app = Javalin.create(config -> config.jsonMapper(new JavalinJackson(mapper)));
+    Javalin app = Javalin.create(config -> config.jsonMapper(new JavalinJackson(mapper, false)));
 
     app.before(ctx -> {
       entityManagerActual.set(factory.createEntityManager());
