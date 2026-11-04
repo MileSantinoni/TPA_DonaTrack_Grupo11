@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entidades beneficiarias | DonaTrack</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <link rel="stylesheet" href="/assets/css/entidades-beneficiarias.css">
+  <script src="/assets/js/entidades-beneficiarias.js" defer></script>
+</head>
+<body class="dt-donante dt-entidades">
+<div class="dt-pagina">
+  {{> templates/partials/header-donante}}
+  <main class="dt-contenido">
+    <section class="dt-presentacion" aria-labelledby="titulo">
+      <p class="dt-eyebrow">MI ESPACIO DONANTE</p>
+      <h1 id="titulo" class="font-manrope">Cada donación cuenta.</h1>
+      <p class="dt-intro">Consultá tus donaciones y conocé las necesidades de las entidades beneficiarias.</p>
+    </section>
+    <nav class="dt-tabs" aria-label="Mi espacio donante">
+      <a class="dt-tab" href="/mis-donaciones">Mis donaciones</a>
+      <a class="dt-tab dt-tab-activa" href="/entidades-beneficiarias" aria-current="page">Entidades beneficiarias</a>
+    </nav>
+    <p id="dt-aviso" class="dt-aviso" role="status" hidden></p>
+    <form id="dt-buscar-entidades" class="dt-buscar-entidades" role="search">
+      <label class="dt-buscador"><img src="/assets/images/donante/buscar.svg" alt=""><span class="dt-sr-only">Buscar entidad por nombre</span><input type="search" name="nombre" placeholder="Buscar entidad por nombre…" autocomplete="off"></label>
+      <button class="btn btn-primary-action" type="submit">Buscar</button>
+    </form>
+    <section class="dt-entidades-seccion" aria-labelledby="titulo-entidades">
+      <h2 id="titulo-entidades" class="font-manrope">Entidades beneficiarias</h2>
+      <p class="dt-entidades-descripcion">Conocé qué necesitan. Las asignaciones se realizan desde el depósito.</p>
+      <p class="dt-sr-only" id="dt-entidades-contador" role="status" aria-live="polite"></p>
+      <div class="dt-entidades-grid">
+<article class="dt-entidad-card" data-nombre="Comedor Los Aromos">
+  <h3><img src="/assets/images/donante/entidad.svg" alt="">Comedor Los Aromos</h3>
+  <p>Av. San Martín 1450, CABA</p>
+  <p class="dt-entidad-resumen">Alimentos · 2 necesidades</p>
+  <button class="btn dt-entidad-boton" type="button" data-modal="necesidades-aromos" aria-haspopup="dialog" aria-controls="necesidades-aromos">Ver necesidades<span class="dt-sr-only"> de Comedor Los Aromos</span></button>
+</article>
+<article class="dt-entidad-card" data-nombre="Hogar Esperanza">
+  <h3><img src="/assets/images/donante/entidad.svg" alt="">Hogar Esperanza</h3>
+  <p>Av. Rivadavia 3201, CABA</p>
+  <p class="dt-entidad-resumen">Abrigo · 3 necesidades</p>
+  <button class="btn dt-entidad-boton" type="button" data-modal="necesidades-esperanza" aria-haspopup="dialog" aria-controls="necesidades-esperanza">Ver necesidades<span class="dt-sr-only"> de Hogar Esperanza</span></button>
+</article>
+<article class="dt-entidad-card" data-nombre="Los Pinos">
+  <h3><img src="/assets/images/donante/entidad.svg" alt="">Los Pinos</h3>
+  <p>Juncal 1987, CABA</p>
+  <p class="dt-entidad-resumen">Alimentos · 1 necesidad</p>
+  <button class="btn dt-entidad-boton" type="button" data-modal="necesidades-pinos" aria-haspopup="dialog" aria-controls="necesidades-pinos">Ver necesidades<span class="dt-sr-only"> de Los Pinos</span></button>
+</article>
+<article class="dt-entidad-card" data-nombre="Fundación Manos">
+  <h3><img src="/assets/images/donante/entidad.svg" alt="">Fundación Manos</h3>
+  <p>Av. Córdoba 2450, CABA</p>
+  <p class="dt-entidad-resumen">Higiene · 2 necesidades</p>
+  <button class="btn dt-entidad-boton" type="button" data-modal="necesidades-manos" aria-haspopup="dialog" aria-controls="necesidades-manos">Ver necesidades<span class="dt-sr-only"> de Fundación Manos</span></button>
+</article>
+      </div>
+      <p id="dt-entidades-vacio" class="dt-vacio" hidden>No encontramos entidades con ese nombre. Borrá la búsqueda y tocá Buscar para ver todas.</p>
+    </section>
+  </main>
+</div>
+{{> templates/partials/modales-necesidades}}
+</body>
+</html>

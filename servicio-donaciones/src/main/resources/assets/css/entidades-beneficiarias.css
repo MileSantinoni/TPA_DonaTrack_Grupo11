@@ -1,0 +1,36 @@
+/* Complementos de la vista: reutiliza main.css y el espacio donante. */
+.dt-entidades .dt-pagina {min-height:1230px}
+.dt-buscar-entidades {display:grid;grid-template-columns:minmax(0,1fr) 202px;gap:24px;align-items:center;margin-top:28px}
+.dt-buscador {height:52px;display:flex;gap:8px;align-items:center;border:1px solid var(--border-default);border-radius:8px;padding:12px;min-width:0}
+.dt-buscador img {flex-shrink:0}
+.dt-buscador input {font:14px/1.5 'Inter',sans-serif;background:transparent;border:0;min-width:0;flex:1;color:var(--brand-marron);outline:none}
+.dt-buscador input::placeholder {color:var(--text-secondary-accessible);opacity:1}
+.dt-entidades-seccion {margin-top:34px}
+.dt-entidades-seccion h2 {font-size:24px;line-height:30px;font-weight:600}
+.dt-entidades-descripcion {font-size:14px;line-height:21px;margin-top:12px;color:var(--text-secondary-accessible)}
+.dt-entidades-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;row-gap:48px;margin-top:29px}
+.dt-entidad-card {display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:24px;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-white);box-shadow:0 2px 8px #241a1210;min-width:0}
+.dt-entidad-card h3 {display:flex;align-items:center;gap:12px;font:600 18px/1.3 'Manrope',sans-serif}
+.dt-entidad-card h3 img {flex-shrink:0}
+.dt-entidad-card p {font-size:14px;line-height:1.5}
+.dt-entidad-card .dt-entidad-resumen {font-size:13px;color:var(--text-secondary-accessible)}
+.dt-entidad-boton {background:var(--surface-white);border:1px solid #a28b7b;color:var(--brand-marron)}
+.dt-entidades .btn:hover,.dt-entidades .btn:active {opacity:1}
+.dt-entidades :is(button,input):focus {outline:none;box-shadow:none}
+.dt-entidades.dt-teclado :is(button,input):focus-visible {outline:1px solid var(--text-secondary-accessible);outline-offset:3px}
+.dt-sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dt-modal-necesidades {width:680px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);margin:auto;border:0;border-radius:16px;padding:32px 32px 44px;color:var(--brand-marron);background:var(--surface-white);font-family:'Inter',sans-serif;overflow:auto}
+.dt-modal-necesidades::backdrop {background:rgba(36,26,18,.35)}
+.dt-modal-necesidades h2 {font:600 24px/1.25 'Manrope',sans-serif}
+.dt-modal-direccion {font-size:14px;line-height:21px;color:var(--text-secondary-accessible);margin-top:14px}
+.dt-necesidades-lista {list-style:none;display:flex;flex-direction:column;gap:20px;margin:29px 0 0;padding:0}
+.dt-necesidad {position:relative;min-height:112px;border-radius:8px;background:var(--palette-bg);padding:18px 20px;display:grid;grid-template-columns:minmax(0,1fr) 198px;grid-template-rows:auto auto;gap:14px 18px;align-items:start}
+.dt-necesidad h3 {font-size:18px;font-weight:600;line-height:24px;grid-area:1/1}
+.dt-necesidad-categoria {font-size:14px;line-height:21px;color:var(--text-secondary-accessible);grid-area:2/1}
+.dt-necesidad-tipo {font-size:12px;font-weight:600;line-height:18px;grid-area:1/2;justify-self:center;margin-top:2px}
+.dt-necesidad-cantidad {font-size:14px;font-weight:600;line-height:21px;grid-area:2/2;margin-top:10px}
+.dt-modal-pie {display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:40px}
+.dt-modal-pie p {font-size:12px;line-height:18px;color:var(--text-secondary-accessible)}
+.dt-modal-pie button {min-width:128px}
+html.dt-modal-abierto {overflow:hidden}
+@media(max-width:750px) {.dt-entidades .dt-pagina{min-height:100vh}.dt-buscar-entidades{grid-template-columns:1fr;gap:12px}.dt-entidades-grid{grid-template-columns:1fr;row-gap:20px}.dt-entidades-seccion{margin-top:28px}.dt-modal-necesidades{padding:24px;max-height:calc(100dvh - 24px)}.dt-modal-necesidades h2{font-size:21px}.dt-necesidad{grid-template-columns:1fr;gap:8px;padding:18px;min-height:0}.dt-necesidad h3,.dt-necesidad-categoria,.dt-necesidad-tipo,.dt-necesidad-cantidad{grid-area:auto;justify-self:start;margin:0}.dt-modal-pie{align-items:flex-start;flex-direction:column;gap:16px;margin-top:24px}.dt-modal-pie form,.dt-modal-pie button{width:100%}}
