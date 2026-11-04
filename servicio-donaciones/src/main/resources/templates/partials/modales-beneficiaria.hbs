@@ -1,0 +1,31 @@
+<dialog id="be-modal-necesidad" class="be-modal" aria-labelledby="be-modal-titulo">
+<form id="be-form-necesidad">
+<h2 id="be-modal-titulo" class="font-manrope">Registrar necesidad</h2>
+<p>Completá los datos de los bienes que necesita tu entidad.</p>
+<div class="be-campos">
+<label class="be-ancho">Descripción *<input name="descripcion" required maxlength="180"><small>Describí los bienes solicitados.</small></label>
+<label>Categoría *<select name="categoria" required><option>Alimentos</option><option>Abrigo</option><option>Higiene</option></select></label>
+<label>Subcategoría *<select name="subcategoria" required></select></label>
+<label>Cantidad objetivo *<input name="objetivo" type="number" min="0.01" step="0.01" required><small id="be-unidad">Unidad: kg</small></label>
+<fieldset class="be-tipo"><legend>Tipo de necesidad *</legend><div><label><input type="radio" name="tipo" value="Recurrente" checked><span>Recurrente</span></label><label><input type="radio" name="tipo" value="Extraordinaria"><span>Extraordinaria</span></label></div></fieldset>
+<label data-recurrente>Periodicidad *<select name="periodicidad"><option>Mensual</option><option>Semanal</option><option>Diaria</option></select></label>
+<label data-recurrente>Inicio del período *<input type="date" name="inicio"><small>DD/MM/AAAA</small></label>
+<label data-extraordinaria class="be-ancho" hidden>Motivo *<input name="motivo" maxlength="240"><small>Indicá la situación que origina la necesidad.</small></label>
+</div>
+<p class="be-ayuda">Los campos con * son obligatorios.</p>
+<div class="be-acciones"><button class="btn btn-secondary" type="button" data-cerrar>Cancelar</button><button class="btn btn-primary-action" id="be-guardar" type="submit">Registrar necesidad</button></div>
+</form></dialog>
+<dialog id="be-modal-eliminar" class="be-modal be-modal-corto" aria-labelledby="be-eliminar-titulo">
+<h2 id="be-eliminar-titulo" class="font-manrope">¿Eliminar esta necesidad?</h2><strong id="be-eliminar-nombre"></strong><p>Esta necesidad no tiene asignaciones vinculadas. Si la eliminás, dejará de aparecer entre las solicitudes de tu entidad.</p>
+<div class="be-acciones"><button class="btn btn-secondary" type="button" data-cerrar>Cancelar</button><button class="btn be-peligro" type="button" id="be-eliminar-confirmar">Eliminar necesidad</button></div>
+</dialog>
+<dialog id="be-modal-recepcion" class="be-modal" aria-labelledby="be-recepcion-titulo">
+<form id="be-form-recepcion"><h2 class="font-manrope" id="be-recepcion-titulo">Confirmar recepción</h2>
+<div><h3>Alimentos no perecederos · 20 kg</h3><p>DON-0248 · Comedor Los Aromos</p></div>
+<p>Adjuntá fotos de la donación recibida.</p>
+<div class="be-dropzone" id="be-dropzone"><img src="/assets/images/beneficiaria/subir.svg" alt=""><strong>Arrastrá tus fotos acá</strong><p>Seleccioná imágenes de los bienes recibidos</p><label class="btn btn-secondary be-selector">Seleccionar fotos<input id="be-fotos" type="file" accept="image/jpeg,image/png,image/webp" multiple></label></div>
+<small>Hasta 5 fotos JPG, PNG o WebP de 5 MB cada una.</small>
+<p id="be-error-fotos" role="alert" hidden></p><div id="be-preview" class="be-preview"></div>
+<label class="be-checkbox"><input type="checkbox" name="confirmacion" required>Confirmo que recibimos esta donación.</label>
+<div class="be-acciones"><button class="btn btn-secondary" type="button" data-cerrar>Cancelar</button><button class="btn btn-primary-action" type="submit">Confirmar recepción</button></div>
+</form></dialog>

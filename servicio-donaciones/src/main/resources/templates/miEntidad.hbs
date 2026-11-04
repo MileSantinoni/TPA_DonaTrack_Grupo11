@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi entidad | DonaTrack</title>
+<link rel="stylesheet" href="/assets/main.css">
+<link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+<link rel="stylesheet" href="/assets/css/mi-entidad.css">
+<link rel="stylesheet" href="/assets/css/marco-compartido.css">
+<script src="/assets/vendor/leaflet/leaflet.js" defer></script>
+<script src="/assets/js/mi-entidad.js" defer></script>
+</head>
+<body class="dt-donante dt-beneficiaria dt-fondo">
+<div class="dt-pagina dt-marco">
+{{> templates/partials/header-beneficiaria}}
+<main class="dt-contenido">
+<section class="dt-presentacion" aria-labelledby="titulo">
+<p class="dt-eyebrow">MI ENTIDAD BENEFICIARIA</p>
+<h1 class="font-manrope" id="titulo">Tu ayuda llega más lejos.</h1>
+<p class="dt-intro">Gestioná tus necesidades y seguí las donaciones que recibís.</p>
+</section>
+<nav class="dt-tabs" role="tablist" aria-label="Mi entidad">
+<button class="dt-tab dt-tab-activa" role="tab" id="tab-donaciones" aria-selected="true" aria-controls="panel-donaciones" type="button">Donaciones asignadas</button>
+<button class="dt-tab" role="tab" id="tab-necesidades" aria-selected="false" aria-controls="panel-necesidades" tabindex="-1" type="button">Mis necesidades</button>
+</nav>
+<p id="be-aviso" class="dt-aviso" role="status" hidden></p>
+<section id="panel-donaciones" role="tabpanel" aria-labelledby="tab-donaciones">
+<form id="be-filtro-donaciones" class="be-filtros be-filtros-donaciones">
+<label>Estado<select name="estado"><option value="">Todos los estados</option><option value="asignada">Asignada</option><option value="lista">Lista para entregar</option><option value="traslado">En traslado</option><option value="entregada">Entregada</option></select><small>Filtro opcional</small></label>
+<label class="be-busqueda"><span class="be-sr">Buscar donación por producto o código</span><input type="search" name="texto" placeholder="Buscar donación por producto o código…"></label>
+<button class="btn btn-primary-action" type="submit">Buscar</button>
+</form>
+<div class="dt-resultados"><h2 class="font-manrope">Donaciones asignadas</h2><p id="be-total-donaciones" role="status">3 donaciones</p></div>
+<div class="dt-lista">
+<details class="dt-donacion" id="be-donacion-principal" open data-estado="traslado">
+<summary><span class="dt-id">DON-0248</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Alimentos no perecederos</h3><p>20 kg · Alimentos / Arroz · Comedor Los Aromos · 28 oct 2026</p><span class="badge dt-badge-traslado" id="be-estado-principal"><img src="/assets/images/donante/traslado.svg" alt="">En traslado</span></summary>
+{{> templates/partials/seguimiento-beneficiaria}}
+<div class="be-confirmacion" id="be-confirmacion"><p>¿Ya recibiste los bienes? Confirmá la recepción y adjuntá fotos.</p><button class="btn btn-primary-action" type="button" id="be-recibir">Confirmar recepción</button></div>
+</details>
+<details class="dt-donacion" data-estado="asignada"><summary><span class="dt-id">DON-0249</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Frazadas</h3><p>15 unidades · Abrigo / Ropa de cama · Comedor Los Aromos</p><span class="badge badge-info">Asignada</span></summary><div class="dt-detalle-simple"><p>La donación está asignada a tu entidad. El traslado todavía no comenzó.</p></div></details>
+<details class="dt-donacion" data-estado="entregada"><summary><span class="dt-id">DON-0187</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Artículos de higiene</h3><p>10 unidades · Higiene / Jabón · Comedor Los Aromos</p><span class="badge dt-badge-entregada"><img src="/assets/images/donante/entregada.svg" alt="">Entregada</span></summary><div class="dt-detalle-simple"><p>Recepción confirmada. Datos ilustrativos.</p></div></details>
+</div><p id="be-vacio-donaciones" class="dt-vacio" hidden>No hay donaciones que coincidan con estos filtros.</p>
+</section>
+<section id="panel-necesidades" role="tabpanel" aria-labelledby="tab-necesidades" hidden>
+<div class="be-titulo"><h2 class="font-manrope">Mis necesidades</h2><button class="btn btn-primary-action" type="button" id="be-registrar">Registrar necesidad</button></div>
+<form id="be-filtro-necesidades" class="be-filtros be-filtros-necesidades">
+<label>Tipo<select name="tipo"><option value="">Todos los tipos</option><option>Recurrente</option><option>Extraordinaria</option></select><small>Opcional</small></label>
+<label>Cobertura<select name="cobertura"><option value="">Todas</option><option value="pendiente">Pendientes</option><option value="cubierta">Cubiertas</option></select><small>Opcional</small></label>
+<label class="be-busqueda"><span class="be-sr">Buscar por descripción</span><input type="search" name="texto" placeholder="Buscar por descripción…"></label><button class="btn btn-primary-action" type="submit">Buscar</button>
+</form>
+<p id="be-total-necesidades" class="be-total" role="status">3 necesidades registradas</p>
+<div id="be-necesidades" class="dt-lista"></div><p id="be-vacio-necesidades" class="dt-vacio" hidden>No hay necesidades que coincidan con estos filtros.</p>
+<noscript>Activá JavaScript para explorar esta demostración de necesidades.</noscript>
+</section>
+<p class="be-demo">Vista de ejemplo: los cambios y las fotos se conservan solamente hasta recargar la página.</p>
+</main></div>
+{{> templates/partials/modales-beneficiaria}}
+</body></html>

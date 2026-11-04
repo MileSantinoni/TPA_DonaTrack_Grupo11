@@ -1,0 +1,40 @@
+/* Complementos del panel: reutiliza main.css, mis-donaciones.css y el marco. */
+.dt-beneficiaria .dt-nombre{width:auto;white-space:nowrap}
+.dt-beneficiaria .dt-tab:first-child{width:210px}.dt-beneficiaria .dt-tab{width:180px}
+.be-filtros{display:grid;gap:24px;background:white;border-radius:12px;padding:20px 24px;margin-top:24px;align-items:center;min-height:132px}
+.be-filtros-donaciones{grid-template-columns:280px minmax(0,1fr) 238px}.be-filtros-necesidades{grid-template-columns:240px 240px minmax(0,1fr) 232px}
+.be-filtros label,.be-campos>label{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.5;min-width:0}
+.be-filtros input,.be-filtros select,.be-campos input:not([type=radio]),.be-campos select{width:100%;height:44px;border:1px solid #a28b7b;border-radius:8px;background:white;padding:0 12px;color:var(--brand-marron);font:14px Inter,sans-serif}
+.be-filtros .be-busqueda input{height:52px;padding-left:36px;background:white url('/assets/images/donante/buscar.svg') no-repeat 12px center;background-size:18px}
+.be-filtros small,.be-campos small,.be-ayuda{font-size:12px;color:var(--text-secondary-accessible)}
+.be-confirmacion{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 24px;font-size:14px}.be-confirmacion .btn{min-width:244px}
+.be-titulo{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-top:24px}.be-titulo h2{font-size:24px;font-weight:600}.be-titulo .btn{min-width:258px}
+.be-total{font-size:14px;margin:24px 0}.be-necesidad{background:white;border-radius:12px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:16px 24px;min-height:176px}
+.be-necesidad h3{font-size:18px;font-weight:600}.be-necesidad p{font-size:14px;margin-top:10px;line-height:1.5}.be-tipo-texto{font-size:14px;align-self:start;min-width:38%}.be-cobertura{display:flex;gap:20px;flex-wrap:wrap;font-size:14px;font-weight:500;align-self:end}.be-card-acciones{display:flex;justify-content:flex-end;gap:16px;align-self:end}.be-card-acciones button{min-width:108px}.be-vinculada{grid-column:2;text-align:right;color:var(--text-secondary-accessible);font-size:12px}.be-necesidad .be-datos{grid-row:1 / 3}
+.be-peligro{background:#fbede9;border:1px solid #fbede9;color:#a43f36}.be-card-acciones button:disabled{background:var(--brand-crema);border-color:var(--brand-crema);color:var(--text-secondary-accessible);cursor:not-allowed;opacity:1}
+.be-demo{font-size:12px;color:var(--text-secondary-accessible);margin-top:28px}
+.be-modal{margin:auto;width:min(680px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:0;border-radius:16px;padding:32px;color:var(--brand-marron);background:white;box-shadow:0 20px 80px #57423930}
+.be-modal::backdrop{background:#30261f66;backdrop-filter:blur(3px)}
+.be-modal h2{font-size:26px;font-weight:600}.be-modal p{font-size:14px;line-height:1.5}.be-modal form,.be-modal-corto{flex-direction:column;gap:28px}.be-modal form{display:flex}.be-modal-corto[open]{display:flex;width:min(580px,calc(100% - 32px))}.be-modal h3{font-size:18px;margin-bottom:10px}
+.be-campos{display:grid;grid-template-columns:1fr 1fr;gap:32px 24px;margin:4px 0 16px}.be-ancho{grid-column:1 / -1}.be-acciones{display:grid;grid-template-columns:220px 1fr;gap:24px;margin-top:24px}.be-tipo{border:0;min-width:0}.be-tipo legend{font-size:13px;margin-bottom:8px}.be-tipo>div{display:flex;gap:8px}.be-tipo label{position:relative;flex:1}.be-tipo span{display:flex;justify-content:center;align-items:center;height:44px;border:1px solid #a28b7b;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}.be-tipo input{position:absolute;opacity:0;width:1px;height:1px}.be-tipo input:checked+span{background:var(--action-primary);color:white;border-color:var(--action-primary)}.be-tipo input:focus-visible+span{outline:2px solid var(--action-primary);outline-offset:3px}
+.be-dropzone{border:1px dashed var(--border-default);border-radius:8px;background:var(--palette-bg);display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px;text-align:center}.be-dropzone p{font-size:12px;color:var(--text-secondary-accessible)}.be-selector{position:relative;overflow:hidden}.be-selector input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}.be-selector:focus-within{outline:2px solid var(--action-primary);outline-offset:3px}.be-checkbox{display:flex;gap:12px;align-items:center;font-size:14px}.be-checkbox input{accent-color:var(--action-primary);width:24px;height:24px}.be-preview{display:flex;flex-wrap:wrap;gap:12px}.be-preview figure{width:110px;position:relative}.be-preview img{width:110px;height:90px;object-fit:cover;border-radius:8px}.be-preview button{position:absolute;right:0;top:0;border:1px solid var(--border-default);border-radius:50%;background:white;width:28px;height:28px;cursor:pointer}.be-preview figcaption{font-size:11px;overflow-wrap:anywhere}#be-error-fotos{color:#a43f36}.be-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:1300px){.be-filtros-necesidades{grid-template-columns:1fr 1fr}.be-filtros-donaciones{grid-template-columns:220px minmax(0,1fr) 140px}}
+@media(max-width:750px){.be-filtros-donaciones,.be-filtros-necesidades{grid-template-columns:1fr}.be-titulo,.be-confirmacion{align-items:stretch;flex-direction:column}.be-necesidad{grid-template-columns:1fr}.be-necesidad .be-datos{grid-row:auto}.be-vinculada{grid-column:auto;text-align:left}.be-card-acciones{justify-content:flex-start}.be-campos{grid-template-columns:1fr;gap:20px}.be-modal{padding:24px}.be-acciones{grid-template-columns:1fr;gap:12px}.be-modal h2{font-size:23px}.be-cobertura{gap:12px}.be-filtros{padding:20px}.dt-beneficiaria .dt-tabs{height:auto;min-height:44px}.dt-beneficiaria .dt-tab{min-width:0}}
+
+/* Mismo comportamiento de foco y selects que Mis donaciones. */
+.dt-beneficiaria .be-filtros :is(input,select,button):focus {
+    outline: none;
+    box-shadow: none;
+}
+.dt-beneficiaria.dt-teclado .be-filtros :is(input,select,button):focus-visible {
+    outline: 1px solid var(--text-secondary-accessible);
+    outline-offset: 2px;
+}
+.dt-beneficiaria .be-filtros .btn:hover,
+.dt-beneficiaria .be-filtros .btn:active {opacity: 1;}
+.dt-beneficiaria .be-filtros select {
+    appearance: none;
+    background: var(--surface-white) url('/assets/images/donante/chevron.svg') no-repeat right 12px center;
+    padding: 0 36px 0 12px;
+    font-family: inherit;
+}
