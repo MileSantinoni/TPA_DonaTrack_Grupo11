@@ -1,0 +1,39 @@
+/* Compartido por los paneles. No afecta al footer de la landing. */
+.dt-pagina.dt-marco {
+  display: flex;
+  flex-direction: column;
+}
+.dt-pagina.dt-marco > main {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+.dt-footer-panel {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 0 72px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border-default);
+  color: var(--text-secondary-accessible);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dt-footer-panel p {margin: 0;}
+.dt-footer-panel nav {display: flex;flex-wrap: wrap;gap: 8px 24px;}
+.dt-footer-panel a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: inherit;
+  text-decoration: none;
+}
+.dt-footer-panel a:hover {color: var(--brand-marron);text-decoration: underline;}
+.dt-footer-panel a:focus-visible {outline: 2px solid var(--action-primary);outline-offset: 4px;}
+@media (max-width: 1150px) {.dt-footer-panel {margin: 0 32px;}}
+@media (max-width: 750px) {
+  .dt-footer-panel {margin: 0 16px;padding: 20px 0;}
+  .dt-footer-panel nav {gap: 8px 20px;}
+}
