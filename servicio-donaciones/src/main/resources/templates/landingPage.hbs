@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DonaTrack · Plataforma de Trazabilidad de Donaciones</title>
+    <link rel="stylesheet" href="/assets/main.css">
     <link rel="stylesheet" href="/assets/css/landing.css">
 </head>
 <body>
@@ -11,19 +12,7 @@
 <div class="landing-container">
 
     <!-- Header / Nav -->
-    <header class="navbar">
-        <div class="navbar-inner">
-            <div class="brand-logo">
-                <img src="/assets/images/logo_principal.svg" alt="DonaTrack Logo" width="173" height="54" />
-            </div>
-            <nav class="nav-links">
-                <a href="#mapa" class="nav-link">Mapa de entregas</a>
-                <a href="#sobre-nosotros" class="nav-link">Sobre DonaTrack</a>
-                <a href="/login" class="nav-link">Iniciar sesión</a>
-                <a href="/registro" class="btn btn-sm btn-primary-action">Registrarme</a>
-            </nav>
-        </div>
-    </header>
+    {{> templates/partials/header-publico}}
 
     <main>
         <!-- Hero Section -->
@@ -40,7 +29,7 @@
                     </div>
                 </div>
                 <div class="hero-image-box">
-                    <img src="assets/images/hero-illustration.svg" alt="DonaTrack Ilus" width="520" height="520">
+                    <img src="/assets/images/hero-illustration.svg" alt="DonaTrack Ilus" width="520" height="520">
                 </div>
             </div>
         </section>
@@ -237,46 +226,7 @@
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-top">
-            <div class="footer-brand">
-                <img src="/assets/images/logo_principal.svg" alt="DonaTrack" width="289" height="90">
-                <p style="font-size: 14px;">Plataforma de trazabilidad para donaciones y entregas sociales.</p>
-            </div>
-
-            <div class="footer-columns">
-                <div class="footer-col">
-                    <h4 class="footer-col-title">Navegación</h4>
-                    <a href="#mapa" class="nav-link">Mapa de entregas</a>
-                    <a href="#sobre-nosotros" class="nav-link">Sobre DonaTrack</a>
-                    <a href="/contacto" class="nav-link">Contacto</a>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-col-title">Legal</h4>
-                    <a href="/acerca" class="nav-link">Acerca de</a>
-                    <a href="/privacidad" class="nav-link">Privacidad</a>
-                    <a href="/terminos" class="nav-link">Términos</a>
-                </div>
-                <div class="footer-col">
-                    <h4 class="footer-col-title">Redes</h4>
-                    <a href="#" class="nav-link">Instagram</a>
-                    <a href="#" class="nav-link">LinkedIn</a>
-                    <a href="#" class="nav-link">YouTube</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            <p>© DonaTrack · Las entregas mostradas son ejemplos ilustrativos.</p>
-            <div class="footer-bottom-links">
-                <a href="/acerca" class="nav-link">Acerca de</a>
-                <a href="/privacidad" class="nav-link">Privacidad</a>
-                <a href="/terminos" class="nav-link">Términos</a>
-                <a href="/contacto" class="nav-link">Contacto</a>
-            </div>
-        </div>
-    </footer>
+    {{> templates/partials/footer}}
 
 </div>
 
