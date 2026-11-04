@@ -22,6 +22,9 @@ import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificador;
 import org.example.dominio.notificacion.SMS;
 import org.example.dominio.notificacion.WhatsApp;
+import org.example.api.donaciones.AvisoPlanificacionController;
+import org.example.api.donaciones.UbicacionEntidadController;
+import org.example.integracion.ClienteGeocodificacion;
 
 public class Router {
 
@@ -45,6 +48,20 @@ public class Router {
         new RepositorioRegistroDonacion(entityManagerSupplier);
     RepositorioAsignacionesDonacion repoAsignaciones =
         new RepositorioAsignacionesDonacion(entityManagerSupplier);
+
+    UbicacionEntidadController ubicaciones =
+        new UbicacionEntidadController(
+            repoEntidades,
+            () -> new ClienteGeocodificacion(
+                System.getenv("HEIGIT_API_KEY")
+            )
+        );
+
+    AvisoPlanificacionController avisoPlan =
+        new AvisoPlanificacionController(
+            entityManagerSupplier,
+            repoAsignaciones
+        );
 
     // Controladores API
     DonanteController donantes = new DonanteController(repoDonantes);
@@ -78,6 +95,7 @@ public class Router {
     // Rutas de Vistas / Healthcheck
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/home", landingController::index);
+    app.get("/", landingController::index);
     // Rutas Donantes
     app.get("/donantes", donantes::obtenerTodos);
     app.get("/donantes/{id}", donantes::obtenerPorId);
@@ -117,5 +135,10 @@ public class Router {
     app.get("/interno/asignaciones", integracion::listarAsignaciones);
     app.get("/interno/asignaciones/{id}", integracion::buscarAsignacion);
     app.get("/interno/donaciones/{id}/existe", integracion::existeDonacion);
+
+    // Rutas
+    app.get("/entidades/{id}/ubicacion/candidatos", ubicaciones::buscarCandidatos);
+    app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
+    app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
   }
 }

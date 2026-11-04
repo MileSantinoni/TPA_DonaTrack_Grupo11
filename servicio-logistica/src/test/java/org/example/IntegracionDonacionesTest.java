@@ -34,7 +34,8 @@ class IntegracionDonacionesTest {
 
     remoto = Javalin.create(c -> c.jsonMapper(
         new JavalinJackson(
-            new ObjectMapper().findAndRegisterModules()
+            new ObjectMapper().findAndRegisterModules(),
+            false
         )
     ));
 

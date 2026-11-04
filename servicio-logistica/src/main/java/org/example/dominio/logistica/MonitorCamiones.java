@@ -139,7 +139,10 @@ public class MonitorCamiones {
   }
 
   private Ruta buscarRutaPorPatente(String patente) {
-    var encontradas = rutas.buscarPorPatente(patente);
+    var historial = rutas.buscarPorPatente(patente);
+    if (historial.size() <= 1) return historial.isEmpty() ? null : historial.get(0);
+    var encontradas = historial.stream().filter(r -> r.getEntregas().stream()
+        .anyMatch(e -> e.getEstado() != EstadoEntrega.ENTREGADA)).toList();
 
     if (encontradas.size() > 1) {
       throw new IllegalStateException(
@@ -172,7 +175,7 @@ public class MonitorCamiones {
       throws java.io.IOException, InterruptedException {
     Camion camion = camiones.buscarPorPatente(plan.patente()).orElse(null);
     if (camion == null || !camion.estaDisponible()) return false;
-    if (rutaDe(plan.patente()) != null) throw new IllegalStateException("El camion ya tiene una ruta registrada");
+    if (rutas.buscarPorPatente(plan.patente()).stream().anyMatch(r -> r.getEntregas().isEmpty() || r.cantidadEntregadas() < r.cantidadEntregas())) throw new IllegalStateException("El camion ya tiene una ruta registrada");
     if (plan.destinos().isEmpty()) throw new IllegalArgumentException("La ruta no tiene entregas");
     var asignaciones = donaciones.listarDestinos();
     Ruta ruta = new Ruta(camion, plan.deposito());

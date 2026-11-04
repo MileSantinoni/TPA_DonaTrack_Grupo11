@@ -14,6 +14,17 @@ import javax.persistence.*;
 @Entity
 @Table(name = "donaciones")
 public class Donacion {
+  @Column(name = "ultimo_lote_planificado")
+  private String ultimoLotePlanificado;
+
+  public void registrarPlanificacion(String idLote) {
+    if (idLote.equals(ultimoLotePlanificado)) return;
+    if (getEstadoActual() != EstadoDonacion.ASIGNACION_REALIZADA)
+      throw new IllegalStateException("La donacion ya no esta asignada para planificar");
+    cambiarEstado(EstadoDonacion.LISTA_PARA_ENTREGAR, "Ruta planificada: " + idLote);
+    ultimoLotePlanificado = idLote;
+  }
+
 
   @Id
   private UUID id;

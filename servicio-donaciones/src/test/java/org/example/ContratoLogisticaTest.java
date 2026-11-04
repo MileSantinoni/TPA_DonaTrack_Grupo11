@@ -19,6 +19,7 @@ import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donacion.EstadoDonacion;
 import org.example.dominio.donante.*;
+import org.example.server.Server;
 import org.junit.jupiter.api.Test;
 
 public class ContratoLogisticaTest {
@@ -66,6 +67,7 @@ public class ContratoLogisticaTest {
         var entidad =
             new EntidadBeneficiaria("Comedor Sol", "Calle 2", "1111");
 
+        entidad.confirmarUbicacion(-34.596118, -58.394256);
         em.persist(donante);
         em.persist(subcategoria);
         em.persist(entidad);
@@ -98,7 +100,7 @@ public class ContratoLogisticaTest {
       }
 
       // La aplicación consulta la misma base donde preparamos los datos.
-      app = DonacionesApplication.crearApp(factory);
+      app = Server.crearApp(factory);
       app.start(0);
 
       HttpClient http = HttpClient.newHttpClient();
@@ -115,6 +117,8 @@ public class ContratoLogisticaTest {
 
       var contrato = new ObjectMapper().readTree(consulta.body());
 
+      assertEquals(-34.596118, contrato.get("latitud").doubleValue(), 0.000001);
+      assertEquals(-58.394256, contrato.get("longitud").doubleValue(), 0.000001);
       assertEquals(idEntidad, contrato.get("idEntidad").asText());
       assertEquals(idDonacion, contrato.get("idDonacion").asText());
       assertEquals(

@@ -232,7 +232,7 @@ class EventosLogisticosPersistenciaHttpTest {
     );
 
     Javalin app = Javalin.create(
-        config -> config.jsonMapper(new JavalinJackson(json))
+        config -> config.jsonMapper(new JavalinJackson(json, false))
     );
 
     app.exception(Exception.class, (e, ctx) -> {

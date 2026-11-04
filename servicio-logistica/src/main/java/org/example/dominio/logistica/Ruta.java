@@ -23,6 +23,10 @@ public class Ruta {
   private List<Entrega> entregas = new ArrayList<>();
 
   private boolean activa;
+  @Column(name = "fecha_planificada")
+  private java.time.LocalDate fechaPlanificada;
+  public java.time.LocalDate getFechaPlanificada() { return fechaPlanificada; }
+  public void programarPara(java.time.LocalDate dia) { fechaPlanificada = java.util.Objects.requireNonNull(dia); }
 
   // Provisorio, igual que eventoPendiente en Entrega.
   @Convert(converter = EventoLogisticoConverter.class)
