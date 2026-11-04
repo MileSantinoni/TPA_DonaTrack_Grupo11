@@ -19,6 +19,7 @@ import org.example.dominio.catalogo.TipoAtributo;
 import org.example.dominio.donacion.Donacion;
 import org.example.dominio.donacion.EstadoDonacion;
 import org.example.dominio.donante.*;
+import org.example.server.Server;
 import org.junit.jupiter.api.Test;
 
 public class ContratoLogisticaTest {
@@ -99,7 +100,7 @@ public class ContratoLogisticaTest {
       }
 
       // La aplicación consulta la misma base donde preparamos los datos.
-      app = DonacionesApplication.crearApp(factory);
+      app = Server.crearApp(factory);
       app.start(0);
 
       HttpClient http = HttpClient.newHttpClient();
