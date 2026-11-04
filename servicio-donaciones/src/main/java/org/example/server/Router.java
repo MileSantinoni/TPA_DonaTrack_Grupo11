@@ -140,5 +140,8 @@ public class Router {
     app.get("/entidades/{id}/ubicacion/candidatos", ubicaciones::buscarCandidatos);
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
+
+    app.get("/mis-donaciones", ctx -> ctx.render("misDonaciones.hbs", java.util.Map.of()));
+    app.get("/entidades-beneficiarias", ctx -> ctx.render("entidadesBeneficiarias.hbs", java.util.Map.of()));
   }
 }

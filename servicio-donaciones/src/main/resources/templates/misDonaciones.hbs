@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis donaciones | DonaTrack</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <script src="/assets/vendor/leaflet/leaflet.js" defer></script>
+  <script src="/assets/js/mis-donaciones.js" defer></script>
+</head>
+<body class="dt-donante">
+<div class="dt-pagina">
+  {{> templates/partials/header-donante}}
+  <main class="dt-contenido">
+    <section class="dt-presentacion" aria-labelledby="titulo">
+      <p class="dt-eyebrow">MI ESPACIO DONANTE</p>
+      <h1 id="titulo" class="font-manrope">Cada donación cuenta.</h1>
+      <p class="dt-intro">Consultá tus donaciones y conocé las necesidades de las entidades beneficiarias.</p>
+    </section>
+    <nav class="dt-tabs" aria-label="Mi espacio donante">
+      <a href="/mis-donaciones" class="dt-tab dt-tab-activa" aria-current="page">Mis donaciones</a>
+      <a class="dt-tab" href="/entidades-beneficiarias">Entidades beneficiarias</a>
+    </nav>
+    <p id="dt-aviso" class="dt-aviso" role="status" hidden></p>
+    <form class="dt-filtros" id="dt-filtros" aria-label="Filtrar donaciones de ejemplo">
+      <label>Estado<select name="estado"><option value="">Todos los estados</option><option value="traslado">En traslado</option><option value="entregada">Entregada</option><option value="deposito">En depósito</option></select><small>Opcional</small></label>
+      <label>Categoría<select name="categoria"><option value="">Todas las categorías</option><option>Alimentos</option><option>Indumentaria</option><option>Higiene</option></select><small>Opcional</small></label>
+      <label>Subcategoría<select name="subcategoria"><option value="">Todas las subcategorías</option><option>Arroz</option><option>Abrigos</option><option>Jabón</option></select><small>Opcional</small></label>
+      <button class="btn btn-primary-action" type="submit">Buscar</button>
+      <button class="btn btn-light dt-limpiar" type="reset">Limpiar filtros</button>
+    </form>
+    <section aria-labelledby="tus-donaciones">
+      <div class="dt-resultados"><h2 class="font-manrope" id="tus-donaciones">Tus donaciones</h2><p id="dt-contador" role="status">3 donaciones</p></div>
+      <div class="dt-lista">
+        <details class="dt-donacion" open data-estado="traslado" data-categoria="Alimentos" data-subcategoria="Arroz">
+          <summary><span class="dt-id">DON-0248</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Alimentos no perecederos</h3><p>20 kg · Alimentos / Arroz · Comedor Los Aromos · 28 oct 2026</p><span class="badge dt-badge-traslado"><img src="/assets/images/donante/traslado.svg" alt="">En traslado</span></summary>
+          {{> templates/partials/seguimiento-donante}}
+        </details>
+        <details class="dt-donacion" data-estado="entregada" data-categoria="Indumentaria" data-subcategoria="Abrigos">
+          <summary><span class="dt-id">DON-0192</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Abrigos de invierno</h3><p>12 unidades · Indumentaria / Abrigos · Hogar Esperanza</p><span class="badge dt-badge-entregada"><img src="/assets/images/donante/entregada.svg" alt="">Entregada</span></summary>
+          <div class="dt-detalle-simple"><h4>Donación entregada</h4><p>Destino: Hogar Esperanza.</p><p>Este detalle es ilustrativo. El comprobante y el historial se conectarán más adelante.</p></div>
+        </details>
+        <details class="dt-donacion" data-estado="deposito" data-categoria="Higiene" data-subcategoria="Jabón">
+          <summary><span class="dt-id">DON-0187</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Artículos de higiene</h3><p>8 unidades · Higiene / Jabón · Sin entidad asignada</p><span class="badge badge-info"><img src="/assets/images/donante/deposito.svg" alt="">En depósito</span></summary>
+          <div class="dt-detalle-simple"><h4>Pendiente de asignación</h4><p>Los bienes se encuentran en el depósito. Todavía no hay un traslado para mostrar.</p></div>
+        </details>
+      </div>
+      <p id="dt-vacio" class="dt-vacio" hidden>No hay donaciones que coincidan con estos filtros.</p>
+    </section>
+  </main>
+</div>
+</body>
+</html>
