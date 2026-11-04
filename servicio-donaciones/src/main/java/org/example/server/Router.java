@@ -17,6 +17,7 @@ import org.example.api.donaciones.EntidadBeneficiariaController;
 import org.example.api.donaciones.IntegracionLogisticaController;
 import org.example.api.donaciones.NecesidadController;
 import org.example.controllers.LandingController;
+import org.example.controllers.RegistrationController;
 import org.example.dominio.algoritmo.AlgoritmoMadre;
 import org.example.dominio.notificacion.Email;
 import org.example.dominio.notificacion.Notificador;
@@ -91,11 +92,20 @@ public class Router {
 
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController();
+    RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
 
     // Rutas de Vistas / Healthcheck
     app.get("/health", ctx -> ctx.result("OK"));
-    app.get("/home", landingController::index);
     app.get("/", landingController::index);
+
+    // Rutas de Registro
+    app.get("/registro", ctx -> ctx.redirect("/registro/donante"));
+    app.get("/registro/donante", registrationController::registroDonante);
+    app.post("/registro/donante", registrationController::crearPersonaHumana);
+    app.get("/registro/donante/juridica", registrationController::registroDonanteJuridica);
+    app.post("/registro/donante/juridica", registrationController::crearPersonaJuridica);
+    app.get("/registro/entidad", registrationController::registroEntidad);
+    app.post("/registro/entidad", registrationController::crearEntidad);
     // Rutas Donantes
     app.get("/donantes", donantes::obtenerTodos);
     app.get("/donantes/{id}", donantes::obtenerPorId);
