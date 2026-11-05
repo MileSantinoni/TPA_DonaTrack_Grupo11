@@ -1,0 +1,11 @@
+<link rel="stylesheet" href="/assets/css/notificaciones.css">
+<button type="button" class="dt-notificaciones" aria-label="Notificaciones" aria-controls="dt-bandeja" aria-expanded="false"><img src="/assets/images/donante/bell.svg" alt=""><span data-cuenta></span></button>
+<section id="dt-bandeja" aria-label="Notificaciones" hidden>
+  <div class="av-cab"><strong>Notificaciones</strong><button type="button" data-todas>Marcar todas como leídas</button></div>
+  <div class="av-tabs" role="tablist" aria-label="Estado de las notificaciones">
+    <button type="button" role="tab" id="av-pendientes" aria-controls="av-lista" aria-selected="true">Sin leer</button>
+    <button type="button" role="tab" id="av-leidas" aria-controls="av-lista" aria-selected="false" tabindex="-1">Leídas</button>
+  </div>
+  <div id="av-lista" role="tabpanel" aria-labelledby="av-pendientes" tabindex="0"><ul></ul><p data-vacio></p></div><small aria-live="polite" data-resumen></small>
+</section>
+<script defer src="/assets/js/notificaciones.js"></script>
