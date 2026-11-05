@@ -6,7 +6,8 @@
     <title>DonaTrack · Plataforma de Trazabilidad de Donaciones</title>
     <link rel="stylesheet" href="/assets/main.css">
     <link rel="stylesheet" href="/assets/css/landing.css">
-  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+    <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn6kkiOmNeweLEBYEifpyZG5nTSM4yBtA&callback=initMap&loading=async" async defer></script>
 </head>
 <body class="dt-fondo">
 
@@ -94,54 +95,58 @@
                             <span>▼</span>
                         </div>
                         <span class="filter-caption">Filtrar por entidad beneficiaria</span>
-                    </div>
-
-                    <button class="btn btn-secondary-salvia">Filtrar</button>
-                </div>
-            </div>
-
-            <div class="map-viewport">
-                <img class="map-bg-image" src="https://placehold.co/1280x640" alt="Mapa interactivo de entregas">
-
-                <div class="map-attribution">
-                    © OpenStreetMap contributors
-                </div>
-
-                <!-- Leyenda -->
-                <div class="map-legend">
-                    <h4 class="font-manrope">Leyenda</h4>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:var(--brand-terracota); border-radius:50%;"></span>
-                        <span>Entrega activa</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:var(--palette-bg); border:1px solid var(--brand-marron); border-radius:50%;"></span>
-                        <span>Entregada</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:var(--brand-crema); border-radius:50%;"></span>
-                        <span>En traslado</span>
-                    </div>
-                </div>
-
-                <!-- Detalle de Entrega Overlay -->
-                <div class="map-detail-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 class="font-manrope">Detalle de entrega</h4>
-                        <span class="badge badge-info">Entregada</span>
-                    </div>
-                    <p style="font-size: 12px;">Entidad beneficiaria: Comedor Los Aromos</p>
-                    <p style="font-size: 14px;">Ejemplo ilustrativo: 24 cajas de alimentos no perecederos entregadas.</p>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div class="avatar-initials">MG</div>
-                        <div>
-                            <p style="font-size: 14px;">María González</p>
-                            <p style="font-size: 12px;">ID: DON-0248</p>
+                        <div class="filter-options" id="filtro-entidades" style="display: none;">
+                            {{#each entidades}}
+                            <label class="filter-option">
+                                <input type="checkbox" value="{{this.id}}" class="filtro-entidad-checkbox">
+                                {{this.razonSocial}}
+                            </label>
+                            {{/each}}
                         </div>
                     </div>
-                    <a href="#" style="font-size: 12px; color: var(--brand-marron);">Ver fotos de esta entrega →</a>
+
+                    <button class="btn btn-secondary-salvia" id="btn-filtros-mapa">Filtrar</button>
+                    </div>
                 </div>
 
+                <div class="map-viewport">
+                    <div id="mapa-google" style="height: 100%; width: 100%; display: block;"></div>
+                    <div class="loading-overlay" id="map-loading-overlay">
+                        <div class="loading-spinner"></div>
+                        <p>Cargando mapa de entregas...</p>
+                    </div>
+
+                    <!-- Leyenda -->
+                    <!-- <div class="map-legend">
+                         <h4 class="font-manrope">Leyenda</h4>
+                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                             <span style="width:12px; height:12px; background:var(--brand-terracota); border-radius:50%;"></span>
+                             <span>Entrega activa</span>
+                         </div>
+                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                             <span style="width:12px; height:12px; background:var(--palette-bg); border:1px solid var(--brand-marron); border-radius:50%;"></span>
+                             <span>Entregada</span>
+                         </div>
+                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                             <span style="width:12px; height:12px; background:var(--brand-crema); border-radius:50%;"></span>
+                             <span>En traslado</span>
+                         </div>
+                     </div>-->
+
+                     <!-- Detalle de Entrega Overlay -->
+                <div class="map-detail-card" id="map-detail-card" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h4 class="font-manrope">Detalle de entrega</h4>
+                        <button class="btn btn-small" id="btn-cerrar-detalle">Cerrar</button>
+                    </div>
+                    <div id="detalle-contenido"></div>
+                    <div class="fotos-detalle" id="fotos-detalle">
+                        <h5 class="font-manrope">Fotos de la entrega</h5>
+                        <div id="galeria-fotos"></div>
+                    </div>
+                </div>
+
+                <!-- Contadores Overlay -->
                 <!-- Contadores Overlay -->
                 <div class="map-counter-overlay">
                     <div class="counter-chip">
@@ -228,6 +233,32 @@
     </main>
 
     {{> templates/partials/footer}}
+
+    <!-- Datos para el mapa (JSON embebido desde el controlador) -->
+    <input type="hidden" id="mapa-center-lat" value="-34.6037">
+    <input type="hidden" id="mapa-center-lng" value="-58.3816">
+
+    <script>
+        window.landingData = {
+            entidades: [
+                {{#each entidades}}
+                { id: "{{this.id}}", razonSocial: "{{this.razonSocial}}", direccion: "{{this.direccion}}", telefono: "{{this.telefono}}", latitud: {{this.latitud}}, longitud: {{this.longitud}} },
+                {{/each}}
+            ],
+            asignaciones: [
+                {{#each asignaciones}}
+                { id: "{{this.id}}", entidad: { id: "{{this.entidad.id}}" }, donacion: { id: "{{this.donacion.id}}" } },
+                {{/each}}
+            ],
+            donaciones: [
+                {{#each donaciones}}
+                { id: "{{this.id}}", descripcionGeneral: "{{this.descripcionGeneral}}", cantidad: {{this.cantidad}}, unidadMedida: "{{this.unidadMedida}}", estadoActualTexto: "{{this.estadoActualTexto}}" },
+                {{/each}}
+            ]
+        };
+    </script>
+
+    <script src="/assets/js/landing.js"></script>
 
 </div>
 

@@ -91,7 +91,7 @@ public class Router {
     );
 
     // Controladores de vistas Handlebars
-    LandingController landingController = new LandingController();
+    LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
     RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
 
     // Rutas de Vistas / Healthcheck
