@@ -180,6 +180,10 @@ public class Donacion {
     return donante;
   }
 
+  public String getUnidadMedida() {
+    return unidadMedida;
+  }
+
   public AsignacionDonacion asignarA(org.example.dominio.beneficiario.EntidadBeneficiaria entidad) {
     if (this.getEstadoActual() != EstadoDonacion.EN_DEPOSITO) {
       throw new IllegalStateException("La donacion no esta en deposito");

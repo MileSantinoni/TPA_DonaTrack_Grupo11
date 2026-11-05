@@ -7,3 +7,161 @@
 @media(max-width:1000px){.dt-admin #acciones button{min-width:0}}@media(max-width:720px){.dt-admin .ac-head{display:grid;gap:12px}.dt-admin #acciones{justify-content:flex-start}.ac-summary{flex-wrap:wrap}}
 .dt-admin .ac-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin:24px 0 16px}.dt-admin .ac-toolbar .tabs-admin{margin:0;gap:8px}.dt-admin .ac-toolbar .tabs-admin a{width:auto;padding-inline:14px}.dt-admin .ac-toolbar #acciones{display:flex;flex-flow:row nowrap;width:auto;margin:0 0 0 auto;gap:10px}.dt-admin .ac-toolbar #acciones button{width:auto;min-width:0;white-space:nowrap}
 .ac-caption{display:block;font-size:12px;font-weight:500;color:var(--text-secondary-accessible);margin-bottom:4px}.ac-specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;max-width:720px;padding:14px 16px;background:var(--palette-bg);border-radius:8px}.ac-specs p,.ac-truck-foot p{margin:0}.ac-truck-foot,.ac-truck-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.ac-truck-foot{justify-content:space-between;margin-top:16px}.ac-truck-actions{margin-left:auto;justify-content:flex-end}@media(max-width:650px){.dt-admin .ac-toolbar .tabs-admin{gap:0}.dt-admin .ac-toolbar .tabs-admin a{padding-inline:7px}.dt-admin .ac-toolbar #acciones{flex-wrap:wrap}}
+.dt-admin .ac-total {
+    margin-bottom: 18px;
+    font-size: 14px;
+}
+
+.dt-admin .ac-crecer {
+    flex: 1;
+}
+
+.dt-admin .ac-cerrar {
+    border: 0;
+    background: transparent;
+    font-size: 24px;
+    color: inherit;
+}
+
+.dt-admin #registrar-carga {
+    display: grid;
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.dt-admin .ac-bien {
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 18px;
+    margin: 0 0 18px;
+    min-width: 0;
+}
+
+.dt-admin .ac-bien legend {
+    padding: 0 8px;
+    font-weight: 600;
+}
+
+.dt-admin .ac-bien [data-quitar] {
+    margin-top: 12px;
+}
+
+.dt-admin .ac-ayuda {
+    font-size: 13px;
+    color: var(--text-secondary-accessible);
+    margin: 12px 0;
+}
+
+.dt-admin .ac-error {
+    color: #993b31;
+    white-space: pre-wrap;
+}
+
+.dt-admin #propuestas {
+    display: grid;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.dt-admin button:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+.dt-admin #filtros :is(input, select, button, a):focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-admin.teclado #filtros :is(input, select, button, a):focus-visible {
+    outline: 1px solid #746258;
+    outline-offset: 2px;
+}
+.dt-admin #registro .ac-busqueda-donante {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.dt-admin #registro .ac-busqueda-donante label {
+    min-width: 0;
+}
+
+.dt-admin #registro .ac-busqueda-donante button {
+    height: 44px;
+    margin: 0;
+}
+
+.dt-admin #registro .ac-paso {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary-accessible);
+    margin-bottom: 18px;
+}
+
+.dt-admin #registro .ac-enlace-alta {
+    display: block;
+    border: 0;
+    background: transparent;
+    color: var(--action-primary);
+    padding: 0;
+    margin-top: 20px;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dt-admin #registro .ac-modal-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.dt-admin #registro .ac-modal-acciones .btn {
+    width: 100%;
+    min-width: 0;
+}
+
+.dt-admin #registro .ac-sin-borde {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.dt-admin #alta-donante {
+    display: grid;
+    gap: 18px;
+}
+
+.dt-admin #registro .ac-donante-elegido {
+    background: var(--palette-bg);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.dt-admin #registro :is(input, select, button):focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-admin.teclado #registro :is(input, select, button):focus-visible {
+    outline: 1px solid #746258;
+    outline-offset: 2px;
+}
+
+@media (max-width: 550px) {
+    .dt-admin #registro .ac-busqueda-donante {
+        grid-template-columns: 1fr;
+    }
+
+    .dt-admin #registro .ac-modal-acciones {
+        grid-template-columns: 1fr;
+    }
+}

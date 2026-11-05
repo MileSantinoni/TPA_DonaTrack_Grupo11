@@ -16,7 +16,15 @@ const rank=[['Comedor Los Aromos','Av. San Martín 1450, CABA',95],['Hogar Esper
 const cats={Alimentos:['Arroz','Lácteos','Otros alimentos'],Indumentaria:['Abrigos','Ropa'],Higiene:['Jabón','Otros']};
 const sections={donaciones:['Donaciones del depósito','Registrá las donaciones recibidas, asignalas y coordiná su entrega.'],donantes:['Personas donantes','Consultá las personas registradas e incorporá nuevos donantes.'],camiones:['Camiones de la flota','Consultá la disponibilidad y administrá los vehículos del depósito.']};
 let tab,filters={},onSubmit,goBack,focusBefore,chosen,selectedRank=0,truckChoice='',draft={};
-function view(){tab=Object.hasOwn(sections,location.hash.slice(1))?location.hash.slice(1):'donaciones';filters={};[$('titulo').textContent,$('bajada').textContent]=sections[tab];document.querySelectorAll('.tabs-admin a').forEach(a=>a.toggleAttribute('aria-current',a.hash==='#'+tab));$('acciones').innerHTML=tab==='donaciones'?btn('Crear nueva donación','new',true):tab==='donantes'?btn('Importar CSV','csv')+btn('Registrar donante','person',true):btn('Registrar camión','truck',true);
+function view(){
+    if (!location.hash || location.hash === '#donaciones') {
+        location.replace('/administracion/donaciones');
+        return;
+    }
+
+    tab = Object.hasOwn(sections, location.hash.slice(1))
+        ? location.hash.slice(1)
+        : 'donantes';filters={};[$('titulo').textContent,$('bajada').textContent]=sections[tab];document.querySelectorAll('.tabs-admin a').forEach(a=>a.toggleAttribute('aria-current',a.hash==='#'+tab));$('acciones').innerHTML=tab==='donaciones'?btn('Crear nueva donación','new',true):tab==='donantes'?btn('Importar CSV','csv')+btn('Registrar donante','person',true):btn('Registrar camión','truck',true);
 $('filtros').innerHTML=(tab==='donaciones'?select('Estado','state',['Todos','En depósito','Pendiente de asignación','Vencimiento superado','Asignada','En traslado','Entregada','Vencida'])+select('Categoría','cat',['Todas',...Object.keys(cats)]):tab==='donantes'?select('Tipo de persona','state',['Todas','Persona humana','Persona jurídica']):select('Disponibilidad','state',['Todos','Disponible','En ruta','No disponible']))+field('Buscar '+({donaciones:'donación por nombre',donantes:'por nombre, email o documento',camiones:'por patente'})[tab],'q','','search',false)+'<button class="btn btn-primary-action">Buscar</button>'+ (tab==='donaciones'?btn('Limpiar filtros','clear'):'');$('aviso').textContent='';list();}
 function list(){const data=tab==='donaciones'?goods:tab==='donantes'?people:trucks;$('lista').innerHTML=data.map((x,i)=>{const st=filters.state;if(filters.q&&!norm([x.name,x.email,x.doc,x.id].join(' ')).includes(norm(filters.q))||filters.cat&&filters.cat!=='Todas'&&filters.cat!==x.cat)return '';if(st&&!['Todos','Todas'].includes(st)&&!(st==='Vencimiento superado'?x.expired&&x.state==='En depósito':st==='Pendiente de asignación'? !x.expired&&x.state==='En depósito':st===(x.state||x.type)))return '';
 const name=esc(x.name),state=esc(x.state);

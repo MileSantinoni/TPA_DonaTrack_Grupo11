@@ -26,6 +26,8 @@ import org.example.dominio.notificacion.WhatsApp;
 import org.example.api.donaciones.AvisoPlanificacionController;
 import org.example.api.donaciones.UbicacionEntidadController;
 import org.example.integracion.ClienteGeocodificacion;
+import org.example.controllers.MisDonacionesController;
+import org.example.controllers.EntidadesBeneficiariasController;
 
 public class Router {
 
@@ -80,7 +82,12 @@ public class Router {
         repoEntidades,
         RepositorioResultadosAlgoritmos.getInstance(),
         repoAsignaciones,
-        new AlgoritmoMadre(),
+        new AlgoritmoMadre(
+            new org.example.dominio.algoritmo.AlgoritmoCompatibilidadSemantica(),
+            new org.example.dominio.algoritmo.AlgoritmoPrioridadSubAtendidos(
+                repoAsignaciones
+            )
+        ),
         notificador
     );
 
@@ -90,14 +97,25 @@ public class Router {
         notificador
     );
 
+
+
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
     RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
+    MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
+    EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
+    var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/", landingController::index);
+    app.get("/mis-donaciones", misDonaciones::index);
+    app.get("/mis-donaciones/{id}/seguimiento", misDonaciones::seguimiento);
+    app.get("/entidades-beneficiarias", entidadesBeneficiarias::index);
+    app.get("/administracion/donaciones", adminDonaciones::index);
+    app.get("/administracion/donaciones/buscar-donantes", adminDonaciones::buscarDonantes);
+    app.get("/administracion/donaciones/{id}/propuestas", adminDonaciones::propuestas);
 
     // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
     app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));
@@ -155,7 +173,5 @@ public class Router {
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
-    app.get("/mis-donaciones", ctx -> ctx.render("misDonaciones.hbs", java.util.Map.of()));
-    app.get("/entidades-beneficiarias", ctx -> ctx.render("entidadesBeneficiarias.hbs", java.util.Map.of()));
   }
 }

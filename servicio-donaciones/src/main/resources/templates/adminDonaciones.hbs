@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Donaciones del depósito | DonaTrack</title>
+
+    <link rel="stylesheet" href="/assets/main.css">
+    <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+    <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/css/footer-panel.css">
+
+    <script defer src="/assets/js/admin-donaciones.js"></script>
+</head>
+
+<body class="dt-donante dt-admin dt-fondo">
+<div class="dt-pagina dt-marco">
+    {{> templates/partials/header-admin}}
+
+    <main class="dt-contenido">
+        <div class="ac-head">
+            <div>
+                <small>ADMINISTRACIÓN</small>
+                <h1>Donaciones del depósito</h1>
+                <p>Registrá las donaciones recibidas y asignalas a las entidades.</p>
+            </div>
+        </div>
+
+        <div class="ac-toolbar">
+            <nav class="tabs-admin" aria-label="Secciones de administración">
+                <a href="/administracion/donaciones" aria-current="page">
+                    Donaciones
+                </a>
+                <a href="/administracion#donantes">Personas donantes</a>
+                <a href="/administracion#camiones">Camiones</a>
+            </nav>
+
+            <div id="acciones">
+                <button type="button"
+                        class="btn btn-primary-action"
+                        id="abrir-registro">
+                    Registrar donaciones
+                </button>
+            </div>
+        </div>
+
+        <form id="filtros" method="get" action="/administracion/donaciones">
+            <label>
+                Estado
+                <select name="estado">
+                    <option value="">Todos los estados</option>
+                    {{#each estados}}
+                        <option value="{{valor}}" {{#if elegido}}selected{{/if}}>
+                            {{nombre}}
+                        </option>
+                    {{/each}}
+                </select>
+            </label>
+
+            <label>
+                Categoría
+                <select name="categoria">
+                    <option value="">Todas las categorías</option>
+                    {{#each categorias}}
+                        <option value="{{nombre}}" {{#if elegido}}selected{{/if}}>
+                            {{nombre}}
+                        </option>
+                    {{/each}}
+                </select>
+            </label>
+
+            <label>
+                Descripción
+                <input type="search" name="q" value="{{q}}"
+                       placeholder="Buscar donación">
+            </label>
+
+            <button class="btn btn-primary-action" type="submit">Buscar</button>
+            <a class="btn btn-secondary" href="/administracion/donaciones">
+                Limpiar filtros
+            </a>
+        </form>
+
+        <p id="aviso" role="status"></p>
+        <p class="ac-total">Resultados: {{total}}</p>
+
+        <section aria-label="Donaciones">
+            {{#each donaciones}}
+                <article class="ac-card">
+                    <div class="ac-line">
+                        <h3>{{descripcion}}</h3>
+                        <span class="badge {{clase}}">{{estado}}</span>
+                    </div>
+
+                    <p>{{cantidad}} {{unidad}} · {{categoria}} / {{subcategoria}}</p>
+                    <small>{{id}} · Donante: {{donante}} · Ingreso: {{fecha}}</small>
+
+                    {{#if vencida}}
+                        <p class="ac-warn">Vencimiento superado: {{vencimiento}}</p>
+                    {{/if}}
+
+                    <div class="ac-end">
+                        {{#if asignable}}
+                            <button type="button"
+                                    class="btn btn-primary-action"
+                                    data-asignar="{{id}}">
+                                Asignar donación
+                            </button>
+                        {{/if}}
+
+                        {{#if puedeVencer}}
+                            <button type="button"
+                                    class="btn btn-secondary"
+                                    data-vencer="{{id}}">
+                                Marcar como vencida
+                            </button>
+                        {{/if}}
+                    </div>
+                </article>
+            {{else}}
+                <p class="dt-vacio">No hay donaciones con esos filtros.</p>
+            {{/each}}
+        </section>
+
+        {{#if hayPaginacion}}
+            <form class="dt-paginacion" method="get"
+                  action="/administracion/donaciones">
+                <input type="hidden" name="estado" value="{{estado}}">
+                <input type="hidden" name="categoria" value="{{categoria}}">
+                <input type="hidden" name="q" value="{{q}}">
+
+                {{#if anterior}}
+                    <button class="btn btn-secondary" name="pagina" value="{{anterior}}">
+                        Anterior
+                    </button>
+                {{/if}}
+
+                <span>Página {{pagina}} de {{paginas}}</span>
+
+                {{#if siguiente}}
+                    <button class="btn btn-secondary" name="pagina" value="{{siguiente}}">
+                        Siguiente
+                    </button>
+                {{/if}}
+            </form>
+        {{/if}}
+    </main>
+
+    {{> templates/partials/footer-panel}}
+</div>
+
+<dialog id="registro" aria-labelledby="titulo-registro">
+    <header>
+        <h2 id="titulo-registro">Registrar donaciones</h2>
+        <button type="button" class="ac-cerrar"
+                data-cerrar aria-label="Cerrar">×</button>
+    </header>
+
+    <!-- PASO 1: DONANTE -->
+    <section id="paso-donante">
+        <p class="ac-paso">PASO 1 DE 2 · DONANTE</p>
+
+        <form id="buscar-donante" class="ac-busqueda-donante">
+            <label>
+                Buscar por email o documento
+                <input name="q" type="search" minlength="2" required>
+            </label>
+
+            <button class="btn btn-secondary" type="submit">
+                Buscar
+            </button>
+        </form>
+
+        <p id="resultado-busqueda" role="status"></p>
+
+        <label>
+            Donante seleccionado
+            <select name="idDonante"
+                    id="donante-seleccionado"
+                    form="registrar-carga"
+                    required>
+                <option value="">Primero buscá un donante</option>
+            </select>
+        </label>
+
+        <button type="button" id="abrir-alta-donante"
+                class="ac-enlace-alta">
+            ¿No está registrado? Registrar nuevo donante
+        </button>
+
+        <div class="ac-modal-acciones">
+            <button type="button" class="btn btn-secondary" data-cerrar>
+                Cancelar
+            </button>
+            <button type="button" id="continuar-bienes"
+                    class="btn btn-primary-action">
+                Continuar
+            </button>
+        </div>
+    </section>
+
+    <!-- ALTA DE DONANTE -->
+    <section id="paso-alta-donante" hidden>
+        <p class="ac-paso">REGISTRAR NUEVO DONANTE</p>
+
+        <form id="alta-donante">
+            <label>
+                Tipo de persona
+                <select name="clase" id="tipo-alta-donante">
+                    <option value="humana">Persona humana</option>
+                    <option value="juridica">Persona jurídica</option>
+                </select>
+            </label>
+
+            <fieldset id="alta-humana" class="ac-sin-borde">
+                <div class="ac-grid">
+                    <label>
+                        Nombre
+                        <input name="nombre" required maxlength="255">
+                    </label>
+                    <label>
+                        Apellido
+                        <input name="apellido" required maxlength="255">
+                    </label>
+                    <label>
+                        Edad
+                        <input name="edad" type="number"
+                               min="0" max="150" step="1" required>
+                    </label>
+                    <label>
+                        Género
+                        <select name="genero" required>
+                            <option value="">Seleccionar</option>
+                            <option value="FEMENINO">Femenino</option>
+                            <option value="MASCULINO">Masculino</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+                    </label>
+                    <label>
+                        Dirección
+                        <input name="direccion" required maxlength="255">
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset id="alta-juridica" class="ac-sin-borde" hidden disabled>
+                <div class="ac-grid">
+                    <label>
+                        Razón social
+                        <input name="razonSocial" required maxlength="255">
+                    </label>
+                    <label>
+                        Tipo de organización
+                        <select name="tipo" required>
+                            <option value="EMPRESA">Empresa</option>
+                            <option value="ONG">ONG</option>
+                            <option value="GUBERNAMENTAL">Gubernamental</option>
+                            <option value="INSTITUCION">Institución</option>
+                        </select>
+                    </label>
+                    <label>
+                        Rubro
+                        <input name="rubro" required maxlength="255">
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="ac-grid">
+                <label>
+                    <span id="etiqueta-documento">DNI</span>
+                    <input name="numeroDocumento" required maxlength="30">
+                </label>
+                <label>
+                    Email
+                    <input name="mail" type="email" required maxlength="255">
+                </label>
+            </div>
+
+            <p class="ac-error" role="alert"></p>
+
+            <div class="ac-modal-acciones">
+                <button type="button" id="volver-busqueda"
+                        class="btn btn-secondary">
+                    Volver
+                </button>
+                <button type="submit" class="btn btn-primary-action">
+                    Registrar y continuar
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <!-- PASO 2: BIENES -->
+    <section id="paso-bienes" hidden>
+        <p class="ac-paso">PASO 2 DE 2 · BIENES RECIBIDOS</p>
+        <p id="resumen-donante" class="ac-donante-elegido"></p>
+
+        <form id="registrar-carga">
+            <label>
+                Descripción de la carga
+                <input name="descripcionGeneral" required maxlength="255">
+            </label>
+
+            <div id="bienes"></div>
+
+            <button type="button" id="agregar-bien" class="btn btn-secondary">
+                + Agregar otro bien
+            </button>
+
+            <p class="ac-ayuda">
+                Los bienes se agrupan en donaciones según su subcategoría,
+                unidad de medida, vencimiento y estado.
+            </p>
+
+            <p class="ac-error" role="alert"></p>
+
+            <div class="ac-modal-acciones">
+                <button type="button" id="volver-donante"
+                        class="btn btn-secondary">
+                    Volver al donante
+                </button>
+                <button class="btn btn-primary-action" type="submit">
+                    Registrar carga
+                </button>
+            </div>
+        </form>
+    </section>
+</dialog>
+
+<template id="plantilla-bien">
+    <fieldset class="ac-bien">
+        <legend>Bien</legend>
+
+        <div class="ac-grid">
+            <label>
+                Descripción
+                <input name="descripcion" required maxlength="255">
+            </label>
+
+            <label>
+                Subcategoría
+                <select name="idSubcategoria" required>
+                    <option value="">Seleccionar</option>
+                    {{#each subcategorias}}
+                        <option value="{{id}}" data-tipo="{{tipo}}">{{nombre}}</option>
+                    {{/each}}
+                </select>
+            </label>
+
+            <label>
+                Cantidad
+                <input name="cantidad" type="number"
+                       min="1" max="2147483647" step="1" required>
+            </label>
+
+            <label>
+                Unidad de medida
+                <select name="unidadMedida" required>
+                    <option value="KG">kg</option>
+                    <option value="UNIDADES">unidades</option>
+                    <option value="LITROS">litros</option>
+                </select>
+            </label>
+
+            <label>
+                Fecha de vencimiento
+                <input name="fechaVencimiento" type="date">
+            </label>
+
+            <label>
+                Estado del bien
+                <select name="estadoBien">
+                    <option value="">No corresponde</option>
+                    <option value="NUEVO">Nuevo</option>
+                    <option value="USADO">Usado</option>
+                </select>
+            </label>
+        </div>
+
+        <p class="ac-ayuda ac-requisito"></p>
+
+        <button type="button" class="btn btn-secondary" data-quitar>
+            Quitar bien
+        </button>
+    </fieldset>
+</template>
+
+<dialog id="asignacion" aria-labelledby="titulo-asignacion">
+    <header>
+        <h2 id="titulo-asignacion">Asignar donación</h2>
+        <button type="button" class="ac-cerrar" data-cerrar aria-label="Cerrar">×</button>
+    </header>
+
+    <p>Seleccioná una de las entidades propuestas por el algoritmo.</p>
+
+    <form id="confirmar-asignacion">
+        <div id="propuestas"></div>
+        <p class="ac-error" role="alert"></p>
+
+        <p class="ac-ayuda">
+            Esta acción confirma la asignación. La ruta se planifica desde logística.
+        </p>
+
+        <div class="ac-line">
+            <button type="button" class="btn btn-secondary" data-cerrar>
+                Cancelar
+            </button>
+            <button class="btn btn-primary-action" type="submit">
+                Confirmar asignación
+            </button>
+        </div>
+    </form>
+</dialog>
+</body>
+</html>

@@ -34,3 +34,40 @@
 .dt-modal-pie button {min-width:128px}
 html.dt-modal-abierto {overflow:hidden}
 @media(max-width:750px) {.dt-entidades .dt-pagina{min-height:100vh}.dt-buscar-entidades{grid-template-columns:1fr;gap:12px}.dt-entidades-grid{grid-template-columns:1fr;row-gap:20px}.dt-entidades-seccion{margin-top:28px}.dt-modal-necesidades{padding:24px;max-height:calc(100dvh - 24px)}.dt-modal-necesidades h2{font-size:21px}.dt-necesidad{grid-template-columns:1fr;gap:8px;padding:18px;min-height:0}.dt-necesidad h3,.dt-necesidad-categoria,.dt-necesidad-tipo,.dt-necesidad-cantidad{grid-area:auto;justify-self:start;margin:0}.dt-modal-pie{align-items:flex-start;flex-direction:column;gap:16px;margin-top:24px}.dt-modal-pie form,.dt-modal-pie button{width:100%}}
+.dt-entidades .dt-entidad-boton {
+    margin-top: auto;
+}
+
+.dt-entidades .dt-entidades-sin-resultados {
+    grid-column: 1 / -1;
+    margin-top: 0;
+}
+
+.dt-entidades .dt-limpiar-busqueda {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--action-primary);
+    font-size: 14px;
+}
+
+.dt-entidades .dt-necesidad-cantidad {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 0;
+}
+
+.dt-entidades .dt-necesidad-cantidad p {
+    margin: 0;
+}
+
+.dt-entidades :is(button, input, a):focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-entidades.dt-teclado :is(button, input, a):focus-visible {
+    outline: 1px solid var(--text-secondary-accessible);
+    outline-offset: 3px;
+}

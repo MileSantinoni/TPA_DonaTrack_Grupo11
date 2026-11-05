@@ -59,7 +59,12 @@ public class DonanteController {
     );
 
     repositorio.agregar(nuevoDonante);
-    ctx.status(HttpStatus.CREATED).result("Donante creado exitosamente.");
+    ctx.status(HttpStatus.CREATED).json(java.util.Map.of(
+        "id", nuevoDonante.getId().toString(),
+        "nombre", nuevoDonante.getNombre() + " " + nuevoDonante.getApellido(),
+        "mail", nuevoDonante.getMail(),
+        "documento", nuevoDonante.getNumeroDocumento()
+    ));
   }
 
 
@@ -127,7 +132,12 @@ public class DonanteController {
     );
 
     repositorio.agregar(nuevoDonante);
-    ctx.status(HttpStatus.CREATED).result("Persona Jurídica creada exitosamente.");
+    ctx.status(HttpStatus.CREATED).json(java.util.Map.of(
+        "id", nuevoDonante.getId().toString(),
+        "nombre", nuevoDonante.getRazonSocial(),
+        "mail", nuevoDonante.getMail(),
+        "documento", nuevoDonante.getNumeroDocumento()
+    ));
   }
 
 
