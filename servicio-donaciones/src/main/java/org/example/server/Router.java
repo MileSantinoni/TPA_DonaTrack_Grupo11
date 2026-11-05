@@ -95,6 +95,7 @@ public class Router {
     RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
 
     // Rutas de Vistas / Healthcheck
+    app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/", landingController::index);
 

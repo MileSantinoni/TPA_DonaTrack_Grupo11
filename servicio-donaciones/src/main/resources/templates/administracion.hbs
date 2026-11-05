@@ -1,0 +1,8 @@
+<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administración | DonaTrack</title>
+<link rel="stylesheet" href="/assets/main.css"><link rel="stylesheet" href="/assets/css/mis-donaciones.css"><link rel="stylesheet" href="/assets/css/marco-compartido.css"><link rel="stylesheet" href="/assets/css/admin.css"><link rel="stylesheet" href="/assets/css/footer-panel.css"><script defer src="/assets/js/admin.js"></script></head>
+<body class="dt-donante dt-admin dt-fondo"><div class="dt-pagina dt-marco">{{> templates/partials/header-admin}}
+<main class="dt-contenido"><div class="ac-head"><div><small>ADMINISTRACIÓN</small><h1 id="titulo">Donaciones del depósito</h1><p id="bajada">Registrá las donaciones recibidas, asignalas y coordiná su entrega.</p></div></div>
+<div class="ac-toolbar"><nav class="tabs-admin" aria-label="Secciones de administración"><a href="#donaciones">Donaciones</a><a href="#donantes">Personas donantes</a><a href="#camiones">Camiones</a></nav><div id="acciones"></div></div>
+<form id="filtros"></form><section id="lista" aria-label="Resultados"></section><p id="aviso" role="status"></p><small>Vista de ejemplo · Los cambios duran hasta recargar la página.</small></main>
+{{> templates/partials/footer-panel}}</div>
+<dialog id="modal" aria-labelledby="mt"><form id="formulario"><header><h2 id="mt"></h2><button type="button" id="cerrar" aria-label="Cerrar">×</button></header><div id="campos"></div><p id="error" role="alert"></p><div id="pie"></div></form></dialog></body></html>
