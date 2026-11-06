@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Camiones de la flota | DonaTrack</title>
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/footer-panel.css">
+
+  <script defer src="/assets/js/admin-camiones.js"></script>
+  <script defer src="/assets/js/admin-eliminar-camion.js"></script>
+</head>
+
+<dialog id="eliminar-camion" aria-labelledby="titulo-eliminar-camion">
+  <form id="form-eliminar-camion">
+    <header>
+      <h2 id="titulo-eliminar-camion">Eliminar camión</h2>
+
+      <button
+          type="button"
+          class="ac-cerrar"
+          data-cerrar-eliminacion
+          aria-label="Cerrar">
+        ×
+      </button>
+    </header>
+
+    <p>
+      ¿Querés eliminar el camión con patente
+      <strong id="patente-eliminar-camion"></strong>?
+    </p>
+
+    <p class="ac-ayuda">
+      Solo se puede eliminar si no tiene rutas ni entregas asociadas.
+      Esta acción es definitiva.
+    </p>
+
+    <p id="error-eliminar-camion" class="ac-error" role="alert"></p>
+
+    <div class="ac-grid ac-confirmar-eliminacion">
+      <button
+          type="button"
+          class="btn btn-secondary"
+          data-cerrar-eliminacion>
+        Cancelar
+      </button>
+
+      <button type="submit" class="btn btn-primary-action">
+        Eliminar camión
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<body class="dt-donante dt-admin dt-fondo">
+<div class="dt-pagina dt-marco">
+  {{> templates/partials/header-admin}}
+
+  <main class="dt-contenido">
+    <div class="ac-head">
+      <div>
+        <small>ADMINISTRACIÓN</small>
+        <h1>Camiones de la flota</h1>
+        <p>
+          Consultá la disponibilidad y administrá
+          los vehículos del depósito.
+        </p>
+      </div>
+    </div>
+
+    <div class="ac-toolbar">
+      <nav class="tabs-admin" aria-label="Secciones de administración">
+        <a href="/administracion/donaciones">Donaciones</a>
+        <a href="/administracion/donantes">Personas donantes</a>
+        <a href="/administracion/camiones" aria-current="page">
+          Camiones
+        </a>
+      </nav>
+
+      <div id="acciones">
+        <button
+            type="button"
+            class="btn btn-primary-action"
+            id="nuevo-camion">
+          Registrar camión
+        </button>
+      </div>
+    </div>
+
+    <form id="filtros" method="get" action="/administracion/camiones">
+      <label>
+        Disponibilidad
+        <select name="estado">
+          {{#each estados}}
+            <option value="{{valor}}" {{#if elegido}}selected{{/if}}>
+              {{nombre}}
+            </option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>
+        Buscar por patente
+        <input type="search" name="q" value="{{q}}">
+      </label>
+
+      <button class="btn btn-primary-action">Buscar</button>
+    </form>
+
+    <p id="aviso" role="status"></p>
+
+    {{#if error}}
+      <p class="ac-error" role="alert">{{error}}</p>
+      <a class="btn btn-secondary" href="/administracion/camiones">
+        Volver a consultar
+      </a>
+    {{else}}
+      <p class="ac-total">Resultados: {{total}}</p>
+
+      <section id="lista" aria-label="Camiones">
+        {{#each camiones}}
+          <details
+              class="ac-card"
+              {{#if @first}}open{{/if}}
+              data-patente="{{patente}}"
+              data-kg="{{kg}}"
+              data-m3="{{m3}}"
+              data-h="{{h}}"
+              data-disponible="{{disponible}}">
+
+            <summary class="ac-summary">
+              <strong>
+                <small class="ac-caption">Patente</small>
+                {{patente}}
+              </strong>
+
+              <span class="ac-state" data-state="{{estado}}">
+                {{estado}}
+              </span>
+
+              <span class="ac-show">Mostrar detalles</span>
+              <span class="ac-hide">Ocultar detalles</span>
+            </summary>
+
+            <div class="ac-specs">
+              <p>
+                Capacidad de carga<br>
+                <strong>{{kg}} kg</strong>
+              </p>
+              <p>
+                Volumen<br>
+                <strong>{{m3}} m³</strong>
+              </p>
+              <p>
+                Altura<br>
+                <strong>{{h}} m</strong>
+              </p>
+            </div>
+
+            <div class="ac-truck-foot">
+              <div>
+                <span class="ac-caption">Rutas pendientes</span>
+
+                {{#each rutas}}
+                  <p>Fecha: {{fecha}}</p>
+
+                  <ul class="ac-entregas-camion">
+                    {{#each entregas}}
+                      <li>
+                        {{orden}}. {{donacion}} → {{entidad}}
+                        <br>
+                        <small>{{direccion}}</small>
+                      </li>
+                    {{/each}}
+                  </ul>
+                {{else}}
+                  <p>Sin rutas pendientes asignadas.</p>
+                {{/each}}
+              </div>
+
+              <div class="ac-truck-actions">
+                {{#if editable}}
+                  <button
+                      type="button"
+                      class="btn btn-secondary"
+                      data-disponibilidad>
+                    {{#if disponible}}
+                      Marcar no disponible
+                    {{else}}
+                      Marcar disponible
+                    {{/if}}
+                  </button>
+                {{/if}}
+
+                <button
+                    type="button"
+                    class="btn btn-secondary ac-editar-camion"
+                    data-editar
+                    {{#unless editable}}
+                      disabled
+                      title="Tiene entregas pendientes"
+                    {{/unless}}>
+                  <svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6">
+                    <path d="M4 16l-1 5 5-1L20 8l-4-4z M14 6l4 4"/>
+                  </svg>
+
+                  Editar información
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary ac-eliminar-camion"
+                    data-eliminar-camion>
+                  <svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round">
+                    <path d="M3 6h18 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7"/>
+                  </svg>
+
+                  Eliminar
+                </button>
+              </div>
+            </div>
+
+            {{#unless editable}}
+              <small class="ac-caption">
+                Las características y la disponibilidad no se pueden
+                modificar mientras tenga entregas pendientes.
+              </small>
+            {{/unless}}
+          </details>
+        {{else}}
+          <p>No hay camiones con esos filtros.</p>
+        {{/each}}
+      </section>
+
+      {{#if hayPaginacion}}
+        <nav class="ac-paginacion" aria-label="Páginas de camiones">
+          {{#if anterior}}
+            <a href="{{anterior}}" class="btn btn-secondary">
+              Anterior
+            </a>
+          {{/if}}
+
+          <span>Página {{pagina}} de {{paginas}}</span>
+
+          {{#if siguiente}}
+            <a href="{{siguiente}}" class="btn btn-secondary">
+              Siguiente
+            </a>
+          {{/if}}
+        </nav>
+      {{/if}}
+    {{/if}}
+  </main>
+
+  {{> templates/partials/footer-panel}}
+</div>
+
+<dialog id="modal" aria-labelledby="mt">
+  <form id="formulario">
+    <header>
+      <h2 id="mt">Registrar camión</h2>
+      <button type="button" id="cerrar" aria-label="Cerrar">×</button>
+    </header>
+
+    <div id="campos">
+      <label>
+        Patente
+        <input name="patente" required maxlength="20">
+      </label>
+
+      <div class="ac-grid">
+        <label>
+          Capacidad de carga (kg)
+          <input
+              name="kg"
+              type="number"
+              min="0.001"
+              step="any"
+              required>
+        </label>
+
+        <label>
+          Volumen (m³)
+          <input
+              name="m3"
+              type="number"
+              min="0.001"
+              step="any"
+              required>
+        </label>
+
+        <label>
+          Altura (m)
+          <input
+              name="h"
+              type="number"
+              min="0.001"
+              step="any"
+              required>
+        </label>
+
+        <label>
+          Disponibilidad
+          <select name="disponible">
+            <option value="true">Disponible</option>
+            <option value="false">No disponible</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <p id="error" role="alert"></p>
+
+    <div id="pie">
+      <button type="button" class="btn btn-secondary" id="cancelar">
+        Cancelar
+      </button>
+
+      <button type="submit" class="btn btn-primary-action" id="guardar">
+        Registrar camión
+      </button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>

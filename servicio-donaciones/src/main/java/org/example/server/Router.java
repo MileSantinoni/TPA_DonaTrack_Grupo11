@@ -104,6 +104,7 @@ public class Router {
     EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
+    var adminCamiones = new org.example.controllers.AdminCamionesController();
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
@@ -121,6 +122,11 @@ public class Router {
     app.post("/administracion/donantes/{id}/editar", adminDonantes::guardar);
     app.post("/administracion/donantes/{id}/eliminar", adminDonantes::eliminar);
     app.post("/administracion/donantes/importar", adminDonantes::importar);
+    app.get("/administracion/camiones", adminCamiones::index);
+    app.post("/administracion/camiones", adminCamiones::guardar);
+    app.post("/administracion/camiones/{patente}/editar", adminCamiones::guardar);
+    app.post("/administracion/camiones/{patente}/disponibilidad", adminCamiones::cambiarDisponibilidad);
+    app.post("/administracion/camiones/{patente}/eliminar", adminCamiones::eliminar);
 
     // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
     app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));

@@ -199,3 +199,50 @@
     outline: 1px solid #746258;
     outline-offset: 2px;
 }
+
+.ac-state[data-state="Con ruta asignada"] {
+    background: #eee8f4;
+    color: #5c436d;
+}
+
+.dt-admin .ac-editar-camion {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dt-admin .ac-editar-camion:disabled {
+    cursor: not-allowed;
+}
+
+.dt-admin .ac-entregas-camion {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 16px;
+}
+
+.dt-admin .ac-entregas-camion li {
+    margin-bottom: 8px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.dt-admin .ac-eliminar-camion {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dt-admin .ac-confirmar-eliminacion {
+    margin-top: 24px;
+}
+
+.dt-admin #eliminar-camion button:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-admin.teclado #eliminar-camion button:focus-visible {
+    outline: 1px solid #746258;
+    outline-offset: 2px;
+}

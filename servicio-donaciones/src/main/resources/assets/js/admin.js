@@ -17,6 +17,10 @@ const cats={Alimentos:['Arroz','Lácteos','Otros alimentos'],Indumentaria:['Abri
 const sections={donaciones:['Donaciones del depósito','Registrá las donaciones recibidas, asignalas y coordiná su entrega.'],donantes:['Personas donantes','Consultá las personas registradas e incorporá nuevos donantes.'],camiones:['Camiones de la flota','Consultá la disponibilidad y administrá los vehículos del depósito.']};
 let tab,filters={},onSubmit,goBack,focusBefore,chosen,selectedRank=0,truckChoice='',draft={};
 function view(){
+    if (location.hash === '#camiones') {
+        location.replace('/administracion/camiones');
+        return;
+    }
     if (location.hash === '#donantes') {
         location.replace('/administracion/donantes');
         return;
