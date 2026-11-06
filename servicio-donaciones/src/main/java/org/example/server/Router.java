@@ -98,6 +98,7 @@ public class Router {
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/", landingController::index);
+    app.get("/fotos-publicas", landingController::fotosPublicas);
 
     // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
     app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));
