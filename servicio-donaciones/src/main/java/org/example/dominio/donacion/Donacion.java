@@ -184,18 +184,59 @@ public class Donacion {
     return unidadMedida;
   }
 
-  public AsignacionDonacion asignarA(org.example.dominio.beneficiario.EntidadBeneficiaria entidad) {
-    if (this.getEstadoActual() != EstadoDonacion.EN_DEPOSITO) {
-      throw new IllegalStateException("La donacion no esta en deposito");
+  public AsignacionDonacion asignarA(
+      org.example.dominio.beneficiario.EntidadBeneficiaria entidad
+  ) {
+    if (getEstadoActual() != EstadoDonacion.EN_DEPOSITO) {
+      throw new IllegalStateException(
+          "La donacion no esta en deposito"
+      );
     }
+
+    var candidaturas = entidad.getNecesidades().stream()
+        .filter(n -> n.puedeRecibir(this, LocalDate.now()))
+        .sorted(java.util.Comparator.comparing(
+            n -> n.getId(),
+            java.util.Comparator.nullsLast(
+                java.util.Comparator.naturalOrder()
+            )
+        ))
+        .map(n ->
+            new org.example.dominio.algoritmo.CandidaturaBeneficiaria(
+                this, entidad, n
+            )
+        )
+        .toList();
+
+    var ordenadas =
+        new org.example.dominio.algoritmo.AlgoritmoCompatibilidadSemantica()
+            .proponer(candidaturas);
+
     org.example.dominio.beneficiario.Necesidad necesidad =
-        entidad.getNecesidades().isEmpty() ? null : entidad.getNecesidades().get(0);
-    AsignacionDonacion asignacion =
-        new AsignacionDonacion(this, entidad, necesidad, LocalDate.now());
+        ordenadas.isEmpty()
+            ? null
+            : ordenadas.get(0).getNecesidad();
+
+    if (necesidad == null && !entidad.getNecesidades().isEmpty()) {
+      throw new IllegalStateException(
+          "La entidad no tiene una necesidad pendiente compatible "
+              + "con la subcategoría y unidad."
+      );
+    }
+
+    AsignacionDonacion asignacion = new AsignacionDonacion(
+        this,
+        entidad,
+        necesidad,
+        null
+    );
+
     cambiarEstado(
         EstadoDonacion.ASIGNACION_REALIZADA,
-        "Asignada a la entidad beneficiaria " + entidad.getRazonSocial()
+        "Asignada a la entidad beneficiaria "
+            + entidad.getRazonSocial()
     );
+
     return asignacion;
   }
 

@@ -116,10 +116,6 @@ public class MiEntidadController {
         if (!List.of("pendiente", "cubierta").contains(cobertura)) {
           throw new BadRequestResponse("Cobertura inválida.");
         }
-
-        from += cobertura.equals("cubierta")
-            ? " AND n.cantidadCubierta >= n.cantidadObjetivo"
-            : " AND n.cantidadCubierta < n.cantidadObjetivo";
       }
 
       if (!q.isEmpty()) {
@@ -166,40 +162,66 @@ public class MiEntidadController {
       );
     }
 
-    String alias = necesidades ? "n" : "d";
-
-    var cuenta = em.createQuery(
-        "SELECT COUNT(" + alias + ")" + from,
-        Long.class
-    );
-
-    params.forEach(cuenta::setParameter);
-
-    long total = cuenta.getSingleResult();
-    long paginas = Math.max(1, (total + 9) / 10);
-
-    pagina = (int) Math.min(pagina, paginas);
-
-    var consulta = em.createQuery(
-        "SELECT " + alias + from
-            + (necesidades
-            ? " ORDER BY n.id DESC"
-            : " ORDER BY d.fechaDeRegistro DESC, d.id")
-    );
-
-    params.forEach(consulta::setParameter);
+    long total;
+    long paginas;
 
     List<Map<String, Object>> filas = new ArrayList<>();
 
-    for (Object o : consulta
-        .setFirstResult((pagina - 1) * 10)
-        .setMaxResults(10)
-        .getResultList()) {
-      filas.add(
-          necesidades
-              ? datosNecesidad((Necesidad) o)
-              : datosDonacion((Donacion) o)
+    if (necesidades) {
+      var consulta = em.createQuery(
+          "SELECT n" + from + " ORDER BY n.id DESC",
+          Necesidad.class
       );
+
+      params.forEach(consulta::setParameter);
+
+      LocalDate hoy = LocalDate.now();
+
+      List<Necesidad> lista = consulta.getResultList().stream()
+          .filter(n ->
+              cobertura.isEmpty()
+                  || (n.cantidadCubiertaEn(hoy)
+                  >= n.getCantidadObjetivo())
+                  == cobertura.equals("cubierta")
+          )
+          .toList();
+
+      total = lista.size();
+      paginas = Math.max(1, (total + 9) / 10);
+      pagina = (int) Math.min(pagina, paginas);
+
+      lista.stream()
+          .skip((pagina - 1L) * 10)
+          .limit(10)
+          .map(this::datosNecesidad)
+          .forEach(filas::add);
+
+    } else {
+      var cuenta = em.createQuery(
+          "SELECT COUNT(d)" + from,
+          Long.class
+      );
+
+      params.forEach(cuenta::setParameter);
+
+      total = cuenta.getSingleResult();
+      paginas = Math.max(1, (total + 9) / 10);
+      pagina = (int) Math.min(pagina, paginas);
+
+      var consulta = em.createQuery(
+          "SELECT d" + from
+              + " ORDER BY d.fechaDeRegistro DESC, d.id",
+          Donacion.class
+      );
+
+      params.forEach(consulta::setParameter);
+
+      consulta.setFirstResult((pagina - 1) * 10)
+          .setMaxResults(10)
+          .getResultList()
+          .stream()
+          .map(this::datosDonacion)
+          .forEach(filas::add);
     }
 
     modelo.put(
@@ -309,6 +331,16 @@ public class MiEntidadController {
       );
     }
 
+    String unidad;
+
+    try {
+      unidad = Necesidad.normalizarUnidad(
+          campo(ctx, "unidad")
+      );
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestResponse(e.getMessage());
+    }
+
     int objetivo;
 
     try {
@@ -362,7 +394,7 @@ public class MiEntidadController {
 
       if (ctx.pathParamMap().containsKey("id")) {
         n = necesidadPropia(ctx);
-        em.lock(n, LockModeType.PESSIMISTIC_WRITE);
+        em.refresh(n, LockModeType.PESSIMISTIC_WRITE);
 
         if (tipo.equals("Recurrente")
             != (n instanceof NecesidadRecurrente)) {
@@ -371,7 +403,16 @@ public class MiEntidadController {
           );
         }
 
-        boolean vinculada = vinculada(n);
+        boolean vinculada = vinculada(n) || n.tieneAportes();
+
+        if (vinculada
+            && !Objects.equals(n.getUnidadMedida(), unidad)) {
+          throw new ConflictResponse(
+              "No se puede cambiar la unidad de una necesidad "
+                  + "con asignaciones. Creá una nueva necesidad "
+                  + "para esa unidad."
+          );
+        }
 
         String subActual = n.getSubcategoria() == null
             ? null
@@ -389,12 +430,6 @@ public class MiEntidadController {
             || periodo != r.getPeriodicidad())) {
           throw new ConflictResponse(
               "El período no puede cambiar porque tiene asignaciones."
-          );
-        }
-
-        if (objetivo < n.getCantidadCubierta()) {
-          throw new BadRequestResponse(
-              "El objetivo no puede ser menor que la cantidad cubierta."
           );
         }
 
@@ -418,6 +453,7 @@ public class MiEntidadController {
         em.persist(n);
       }
 
+      n.actualizarUnidad(unidad);
       tx.commit();
 
       ctx.json(Map.of("mensaje", "Necesidad guardada."));
@@ -438,9 +474,9 @@ public class MiEntidadController {
 
     try {
       Necesidad n = necesidadPropia(ctx);
-      em.lock(n, LockModeType.PESSIMISTIC_WRITE);
+      em.refresh(n, LockModeType.PESSIMISTIC_WRITE);
 
-      if (vinculada(n) || n.getCantidadCubierta() > 0) {
+      if (vinculada(n) || n.tieneAportes()) {
         throw new ConflictResponse(
             "No se puede eliminar una necesidad "
                 + "con asignaciones o cobertura registrada."
@@ -640,6 +676,8 @@ public class MiEntidadController {
     m.put("objetivo", n.getCantidadObjetivo());
     m.put("cubierta", n.getCantidadCubierta());
     m.put("pendiente", Math.max(0, n.getCantidadPendiente()));
+    m.put("unidad", Objects.toString(n.getUnidadMedida(), ""));
+    m.put("unidadTexto", Objects.toString(n.getUnidadMedida(), "Unidad pendiente"));
 
     var sub = n.getSubcategoria();
 
@@ -656,13 +694,10 @@ public class MiEntidadController {
             : sub.getCategoria().getNombre()
     );
 
-    boolean vinculada = vinculada(n);
+    boolean vinculada = vinculada(n) || n.tieneAportes();
 
     m.put("vinculada", vinculada);
-    m.put(
-        "eliminable",
-        !vinculada && n.getCantidadCubierta() == 0
-    );
+    m.put("eliminable", !vinculada && !n.tieneAportes());
 
     if (n instanceof NecesidadRecurrente r) {
       m.put("tipo", "Recurrente");
@@ -673,7 +708,10 @@ public class MiEntidadController {
       m.put(
           "detalle",
           "Inicio: "
-              + Objects.toString(r.getFechaInicioPeriodo(), "Sin fecha")
+              + Objects.toString(
+              r.inicioPeriodoEn(LocalDate.now()),
+              "Sin fecha"
+          )
               + " · "
               + Objects.toString(
               r.getPeriodicidad(), "Sin periodicidad"

@@ -17,8 +17,7 @@ public class NecesidadExtraordinaria extends Necesidad {
 
   @Override
   public boolean estaSatisfecha() {
-    // Se satisface cuando la cantidad recibida iguala o supera lo requerido
-    return this.cantidadCubierta >= this.cantidadObjetivo;
+    return getCantidadCubierta() >= getCantidadObjetivo();
   }
 
   public String getMotivo() {

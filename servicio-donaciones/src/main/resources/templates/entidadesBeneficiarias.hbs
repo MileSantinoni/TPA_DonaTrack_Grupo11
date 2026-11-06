@@ -187,15 +187,15 @@
                     </span>
 
                     <div class="dt-necesidad-cantidad">
-                        <p>Objetivo: {{objetivo}}</p>
-                        <p>Cubierta: {{cubierta}}</p>
+                        <p>Objetivo: {{objetivo}} {{unidad}}</p>
+                        <p>Cubierta: {{cubierta}} {{unidad}}</p>
 
                         {{#if satisfecha}}
                             <span class="badge dt-badge-entregada">
                                 Cubierta
                             </span>
                         {{else}}
-                            <p>Pendiente: {{pendiente}}</p>
+                            <p>Pendiente: {{pendiente}} {{unidad}}</p>
                         {{/if}}
                     </div>
                 </li>

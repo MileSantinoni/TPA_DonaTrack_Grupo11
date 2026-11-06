@@ -41,6 +41,34 @@ public class AsignacionDonacion {
     this.fechaRecepcion = fechaRecepcion;
   }
 
+  public void registrarRecepcion(LocalDate fecha) {
+    java.util.Objects.requireNonNull(fecha);
+
+    if (fechaRecepcion != null
+        && !fechaRecepcion.equals(fecha)) {
+      throw new IllegalStateException(
+          "La asignación ya tiene otra fecha de recepción."
+      );
+    }
+
+    if (necesidad != null) {
+      if (!necesidad.compatibleCon(donacion)) {
+        throw new IllegalStateException(
+            "La necesidad asignada no coincide con "
+                + "la subcategoría y unidad de la donación."
+        );
+      }
+
+      necesidad.registrarRecepcion(
+          getIdAsString(),
+          donacion.getCantidad(),
+          fecha
+      );
+    }
+
+    fechaRecepcion = fecha;
+  }
+
   public UUID getId() {
     return id;
   }

@@ -99,6 +99,16 @@ public class NecesidadController {
         request.getPeriodicidad()
     );
 
+    try {
+      nuevaNecesidad.actualizarUnidad(
+          request.getUnidadMedida()
+      );
+    } catch (IllegalArgumentException e) {
+      ctx.status(HttpStatus.BAD_REQUEST)
+          .result(e.getMessage());
+      return;
+    }
+
     entidad.registrarNecesidad(nuevaNecesidad);
     repositorio.actualizar(entidad);
     ctx.status(HttpStatus.CREATED).result("Necesidad recurrente registrada exitosamente.");
@@ -159,7 +169,15 @@ public class NecesidadController {
         request.getMotivo()
     );
 
-
+    try {
+      nuevaNecesidad.actualizarUnidad(
+          request.getUnidadMedida()
+      );
+    } catch (IllegalArgumentException e) {
+      ctx.status(HttpStatus.BAD_REQUEST)
+          .result(e.getMessage());
+      return;
+    }
 
     entidad.registrarNecesidad(nuevaNecesidad);
     repositorio.actualizar(entidad);

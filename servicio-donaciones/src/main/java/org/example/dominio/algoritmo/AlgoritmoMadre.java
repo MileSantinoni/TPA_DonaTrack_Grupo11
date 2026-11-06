@@ -42,7 +42,7 @@ public class AlgoritmoMadre {
 
     for (EntidadBeneficiaria entidad : entidades) {
       for (Necesidad necesidad : entidad.getNecesidades()) {
-        if (mismaSubcategoria(donacion, necesidad)) {
+        if (necesidad.puedeRecibir(donacion, java.time.LocalDate.now())) {
           candidaturas.add(new CandidaturaBeneficiaria(donacion, entidad, necesidad));
         }
       }

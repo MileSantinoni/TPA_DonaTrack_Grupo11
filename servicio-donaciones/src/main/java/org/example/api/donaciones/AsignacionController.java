@@ -126,6 +126,23 @@ public class AsignacionController {
                   )
               );
 
+          repoAsignaciones.bloquearDonacion(donacion);
+          repoAsignaciones.bloquearNecesidades(
+              entidad.getNecesidades()
+          );
+
+          if (entidad.getNecesidades().stream().noneMatch(
+              n -> n.puedeRecibir(
+                  donacion,
+                  java.time.LocalDate.now()
+              )
+          )) {
+            throw new IllegalStateException(
+                "La entidad no tiene una necesidad pendiente compatible "
+                    + "con la subcategoría y unidad."
+            );
+          }
+
           // Cambia el estado y crea la asignación sin enviar avisos.
           AsignacionDonacion nueva = donacion.asignarA(entidad);
 

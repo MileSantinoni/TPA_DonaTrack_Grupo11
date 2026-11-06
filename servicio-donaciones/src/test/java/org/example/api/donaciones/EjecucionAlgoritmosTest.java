@@ -129,6 +129,7 @@ public class EjecucionAlgoritmosTest {
         Periodicidad.SEMANAL
     );
 
+    necesidad.actualizarUnidad("unidades");
     entidad.registrarNecesidad(necesidad);
     return entidad;
   }

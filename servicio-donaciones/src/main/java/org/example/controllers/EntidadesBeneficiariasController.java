@@ -134,11 +134,9 @@ public class EntidadesBeneficiariasController {
       item.put("descripcion", necesidad.getDescripcion());
       item.put("objetivo", necesidad.getCantidadObjetivo());
       item.put("cubierta", necesidad.getCantidadCubierta());
-      item.put(
-          "pendiente",
-          Math.max(0, necesidad.getCantidadPendiente())
-      );
+      item.put("pendiente", Math.max(0, necesidad.getCantidadPendiente()));
       item.put("satisfecha", necesidad.estaSatisfecha());
+      item.put("unidad", java.util.Objects.toString(necesidad.getUnidadMedida(), "Unidad pendiente"));
 
       var subcategoria = necesidad.getSubcategoria();
 

@@ -36,9 +36,12 @@ public class SeguimientoLogistico {
       }
 
       EstadoDonacion esperado = switch (evento.tipo()) {
-        case INICIO_TRASLADO -> EstadoDonacion.LISTA_PARA_ENTREGAR;
-        case RECEPCION, NO_RECIBIDA -> EstadoDonacion.EN_TRASLADO;
-        case RETORNO_DEPOSITO -> EstadoDonacion.ENTREGA_FALLIDA;
+        case INICIO_TRASLADO ->
+            EstadoDonacion.LISTA_PARA_ENTREGAR;
+        case RECEPCION, NO_RECIBIDA ->
+            EstadoDonacion.EN_TRASLADO;
+        case RETORNO_DEPOSITO ->
+            EstadoDonacion.ENTREGA_FALLIDA;
       };
 
       EstadoDonacion siguiente = switch (evento.tipo()) {
@@ -51,20 +54,26 @@ public class SeguimientoLogistico {
       List<AsignacionDonacion> disponibles =
           asignaciones.buscarTodas();
 
-      List<AsignacionDonacion> seleccionadas = new ArrayList<>();
+      List<AsignacionDonacion> seleccionadas =
+          new ArrayList<>();
+
       Set<String> ids = new HashSet<>();
 
-      for (EventoLogistico.Referencia referencia : evento.entregas()) {
+      for (EventoLogistico.Referencia referencia
+          : evento.entregas()) {
+
         if (!ids.add(referencia.idDonacion())) {
           throw new IllegalArgumentException(
               "Donacion repetida en el evento"
           );
         }
 
-        List<AsignacionDonacion> candidatas = disponibles.stream()
-            .filter(a -> a.getDonacion().getIdAsString()
-                .equals(referencia.idDonacion()))
-            .toList();
+        List<AsignacionDonacion> candidatas =
+            disponibles.stream()
+                .filter(a -> a.getDonacion()
+                    .getIdAsString()
+                    .equals(referencia.idDonacion()))
+                .toList();
 
         if (candidatas.size() != 1) {
           throw new IllegalStateException(
@@ -74,33 +83,63 @@ public class SeguimientoLogistico {
 
         AsignacionDonacion asignacion = candidatas.get(0);
 
-        if (!asignacion.getEntidad().getIdAsString()
+        if (!asignacion.getEntidad()
+            .getIdAsString()
             .equals(referencia.idEntidad())) {
           throw new IllegalStateException(
               "La entidad destinataria no coincide con la asignacion"
           );
         }
 
-        if (asignacion.getDonacion().getEstadoActual() != esperado) {
-          throw new IllegalStateException(
-              "La donacion debe estar " + esperado
-          );
-        }
-
         seleccionadas.add(asignacion);
       }
 
-      List<NotificacionPendiente> pendientes = new ArrayList<>();
+      asignaciones.bloquearParaEvento(seleccionadas);
+
+      // Otra petición pudo terminar mientras esperábamos el bloqueo.
+      var procesado =
+          asignaciones.buscarEventoProcesado(evento.idOperacion());
+
+      if (procesado.isPresent()) {
+        if (!procesado.get().correspondeA(evento)) {
+          throw new IllegalStateException(
+              "El ID de operación ya se usó con otros datos"
+          );
+        }
+
+        return null;
+      }
+
+      for (AsignacionDonacion asignacion : seleccionadas) {
+        if (asignacion.getDonacion().getEstadoActual() != esperado) {
+          throw new IllegalStateException(
+              "La donación debe estar " + esperado
+          );
+        }
+      }
+
+      List<NotificacionPendiente> pendientes =
+          new ArrayList<>();
 
       for (AsignacionDonacion asignacion : seleccionadas) {
         pendientes.addAll(
-            notificador.prepararEventoLogistico(asignacion, evento)
+            notificador.prepararEventoLogistico(
+                asignacion,
+                evento
+            )
         );
       }
 
       for (AsignacionDonacion asignacion : seleccionadas) {
+        if (evento.tipo() == EventoLogistico.Tipo.RECEPCION) {
+          asignacion.registrarRecepcion(
+              evento.fecha().toLocalDate()
+          );
+        }
+
         asignacion.getDonacion().cambiarEstado(
-            siguiente, evento.motivo()
+            siguiente,
+            evento.motivo()
         );
       }
 

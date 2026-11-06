@@ -178,7 +178,12 @@
         subcategorias(n.subcategoria);
 
         for (const k of [
-            'descripcion', 'objetivo', 'periodicidad', 'inicio', 'motivo'
+            'descripcion',
+            'objetivo',
+            'unidad',
+            'periodicidad',
+            'inicio',
+            'motivo'
         ]) {
             if (n[k] != null) {
                 campo(k).value = n[k];
@@ -193,10 +198,8 @@
 
         campo('categoria').disabled = vinculada;
         campo('subcategoria').disabled = vinculada;
-
-        campo('objetivo').min = String(
-            Math.max(1, n.cubierta || 0)
-        );
+        campo('unidad').disabled = vinculada;
+        campo('objetivo').min = '1';
 
         tipo();
 
@@ -227,7 +230,11 @@
         const data = new FormData(form);
 
         for (const k of [
-            'tipo', 'subcategoria', 'periodicidad', 'inicio'
+            'tipo',
+            'subcategoria',
+            'unidad',
+            'periodicidad',
+            'inicio'
         ]) {
             data.set(k, campo(k).value);
         }
