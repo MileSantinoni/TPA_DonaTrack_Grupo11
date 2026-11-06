@@ -55,6 +55,28 @@ public abstract class Necesidad {
     this.entidadBeneficiaria = entidad;
   }
 
+  public void actualizarDatos(
+      String descripcion,
+      int objetivo,
+      Subcategoria subcategoria
+  ) {
+    if (descripcion == null
+        || descripcion.isBlank()
+        || subcategoria == null
+        || objetivo <= 0
+        || objetivo < cantidadCubierta) {
+      throw new IllegalArgumentException(
+          "La descripción y la subcategoría son obligatorias; "
+              + "el objetivo debe ser positivo y no menor "
+              + "que la cantidad cubierta."
+      );
+    }
+
+    this.descripcion = descripcion.trim();
+    this.cantidadObjetivo = objetivo;
+    this.subcategoria = subcategoria;
+  }
+
   public void registrarDonacion(int cantidad) {
     this.cantidadCubierta += cantidad;
   }

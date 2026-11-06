@@ -30,4 +30,20 @@ public class NecesidadRecurrente extends Necesidad {
     // Nota: en futuras iteraciones, aquí se podría agregar lógica para reiniciar
     // la "cantidadCubierta" cuando cambie el periodo (ej. pasa de semana).
   }
+
+  public LocalDate getFechaInicioPeriodo() {
+    return fechaInicioPeriodo;
+  }
+
+  public void actualizarPeriodo(
+      LocalDate inicio,
+      Periodicidad periodicidad
+  ) {
+    this.fechaInicioPeriodo =
+        java.util.Objects.requireNonNull(inicio);
+
+    this.periodicidad =
+        java.util.Objects.requireNonNull(periodicidad);
+  }
+
 }

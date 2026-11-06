@@ -106,6 +106,9 @@ public class Router {
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
     var adminCamiones = new org.example.controllers.AdminCamionesController();
 
+    var miEntidad = new org.example.controllers.MiEntidadController(entityManagerSupplier);
+    var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
+
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
@@ -128,8 +131,14 @@ public class Router {
     app.post("/administracion/camiones/{patente}/disponibilidad", adminCamiones::cambiarDisponibilidad);
     app.post("/administracion/camiones/{patente}/eliminar", adminCamiones::eliminar);
 
-    // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
-    app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));
+    app.get("/mi-entidad", miEntidad::index);
+    app.get("/mi-entidad/necesidades/{id}", miEntidad::detalleNecesidad);
+    app.post("/mi-entidad/necesidades", miEntidad::guardarNecesidad);
+    app.post("/mi-entidad/necesidades/{id}/editar", miEntidad::guardarNecesidad);
+    app.post("/mi-entidad/necesidades/{id}/eliminar", miEntidad::eliminarNecesidad);
+    app.get("/mi-entidad/donaciones/{id}/seguimiento", miEntidad::seguimiento);
+    app.post("/mi-entidad/donaciones/{id}/recepcion", recepcionesEntidad::confirmar);
+    app.get("/mi-entidad/fotos/{id}/{archivo}", recepcionesEntidad::foto);
 
     // Rutas de Registro
     app.get("/registro", ctx -> ctx.redirect("/registro/donante"));

@@ -38,3 +38,28 @@
     padding: 0 36px 0 12px;
     font-family: inherit;
 }
+
+.be-error {
+    color: #a43f36;
+    white-space: pre-wrap;
+}
+
+.dt-beneficiaria .dt-tab {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dt-beneficiaria [hidden] {
+    display: none !important;
+}
+
+.be-preview {
+    margin-top: 12px;
+}
+
+.be-modal button:disabled {
+    opacity: .6;
+    cursor: wait;
+}

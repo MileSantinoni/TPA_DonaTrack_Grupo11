@@ -66,12 +66,8 @@ public class SeguimientoMapaController {
     respuesta.put("entidad", entrega.getRazonSocial());
     respuesta.put("direccion", entrega.getDireccion());
     respuesta.put("estadoEntrega", entrega.getEstado().name());
-    respuesta.put(
-        "fechaPlanificada",
-        ruta.getFechaPlanificada() == null
-            ? ""
-            : ruta.getFechaPlanificada().toString()
-    );
+    respuesta.put("fechaPlanificada", ruta.getFechaPlanificada() == null ? "" : ruta.getFechaPlanificada().toString());
+    respuesta.put("fotos", entrega.getFotosRecepcion());
 
     var deposito = ruta.getUbicacionDeposito();
 

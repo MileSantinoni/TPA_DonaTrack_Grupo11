@@ -21,5 +21,19 @@ public class NecesidadExtraordinaria extends Necesidad {
     return this.cantidadCubierta >= this.cantidadObjetivo;
   }
 
+  public String getMotivo() {
+    return motivo;
+  }
+
+  public void actualizarMotivo(String motivo) {
+    if (motivo == null || motivo.isBlank()) {
+      throw new IllegalArgumentException(
+          "El motivo es obligatorio."
+      );
+    }
+
+    this.motivo = motivo.trim();
+  }
+
   public String getDescripcion() { return descripcion; }
 }

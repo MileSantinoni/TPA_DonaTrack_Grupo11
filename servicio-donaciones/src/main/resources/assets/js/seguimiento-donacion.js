@@ -134,7 +134,7 @@
                 const id = encodeURIComponent(panel.dataset.seguimientoId);
 
                 const respuesta = await fetch(
-                    `/mis-donaciones/${id}/seguimiento`,
+                    `${panel.dataset.seguimientoBase || "/mis-donaciones"}/${id}/seguimiento`,
                     {
                         headers: { Accept: "application/json" },
                         cache: "no-store",

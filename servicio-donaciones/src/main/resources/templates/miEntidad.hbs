@@ -1,62 +1,339 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mi entidad | DonaTrack</title>
-<link rel="stylesheet" href="/assets/main.css">
-<link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="/assets/css/mis-donaciones.css">
-<link rel="stylesheet" href="/assets/css/mi-entidad.css">
-<link rel="stylesheet" href="/assets/css/marco-compartido.css">
-<script src="/assets/vendor/leaflet/leaflet.js" defer></script>
-<script src="/assets/js/mi-entidad.js" defer></script>
-<link rel="stylesheet" href="/assets/css/footer-panel.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-maps-key" content="{{googleMapsKey}}">
+
+  <title>Mi entidad | DonaTrack</title>
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <link rel="stylesheet" href="/assets/css/mi-entidad.css">
+  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+  <link rel="stylesheet" href="/assets/css/footer-panel.css">
+
+  <script defer src="/assets/js/mi-entidad.js"></script>
+  <script defer src="/assets/js/seguimiento-donacion.js"></script>
 </head>
+
 <body class="dt-donante dt-beneficiaria dt-fondo">
 <div class="dt-pagina dt-marco">
-{{> templates/partials/header-beneficiaria}}
-<main class="dt-contenido">
-<section class="dt-presentacion" aria-labelledby="titulo">
-<p class="dt-eyebrow">MI ENTIDAD BENEFICIARIA</p>
-<h1 class="font-manrope" id="titulo">Tu ayuda llega más lejos.</h1>
-<p class="dt-intro">Gestioná tus necesidades y seguí las donaciones que recibís.</p>
-</section>
-<nav class="dt-tabs" role="tablist" aria-label="Mi entidad">
-<button class="dt-tab dt-tab-activa" role="tab" id="tab-donaciones" aria-selected="true" aria-controls="panel-donaciones" type="button">Donaciones asignadas</button>
-<button class="dt-tab" role="tab" id="tab-necesidades" aria-selected="false" aria-controls="panel-necesidades" tabindex="-1" type="button">Mis necesidades</button>
-</nav>
-<p id="be-aviso" class="dt-aviso" role="status" hidden></p>
-<section id="panel-donaciones" role="tabpanel" aria-labelledby="tab-donaciones">
-<form id="be-filtro-donaciones" class="be-filtros be-filtros-donaciones">
-<label>Estado<select name="estado"><option value="">Todos los estados</option><option value="asignada">Asignada</option><option value="lista">Lista para entregar</option><option value="traslado">En traslado</option><option value="entregada">Entregada</option></select><small>Filtro opcional</small></label>
-<label class="be-busqueda"><span class="be-sr">Buscar donación por producto o código</span><input type="search" name="texto" placeholder="Buscar donación por producto o código…"></label>
-<button class="btn btn-primary-action" type="submit">Buscar</button>
-</form>
-<div class="dt-resultados"><h2 class="font-manrope">Donaciones asignadas</h2><p id="be-total-donaciones" role="status">3 donaciones</p></div>
-<div class="dt-lista">
-<details class="dt-donacion" id="be-donacion-principal" open data-estado="traslado">
-<summary><span class="dt-id">DON-0248</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Alimentos no perecederos</h3><p>20 kg · Alimentos / Arroz · Comedor Los Aromos · 28 oct 2026</p><span class="badge dt-badge-traslado" id="be-estado-principal"><img src="/assets/images/donante/traslado.svg" alt="">En traslado</span></summary>
-{{> templates/partials/seguimiento-beneficiaria}}
-<div class="be-confirmacion" id="be-confirmacion"><p>¿Ya recibiste los bienes? Confirmá la recepción y adjuntá fotos.</p><button class="btn btn-primary-action" type="button" id="be-recibir">Confirmar recepción</button></div>
-</details>
-<details class="dt-donacion" data-estado="asignada"><summary><span class="dt-id">DON-0249</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Frazadas</h3><p>15 unidades · Abrigo / Ropa de cama · Comedor Los Aromos</p><span class="badge badge-info">Asignada</span></summary><div class="dt-detalle-simple"><p>La donación está asignada a tu entidad. El traslado todavía no comenzó.</p></div></details>
-<details class="dt-donacion" data-estado="entregada"><summary><span class="dt-id">DON-0187</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Artículos de higiene</h3><p>10 unidades · Higiene / Jabón · Comedor Los Aromos</p><span class="badge dt-badge-entregada"><img src="/assets/images/donante/entregada.svg" alt="">Entregada</span></summary><div class="dt-detalle-simple"><p>Recepción confirmada. Datos ilustrativos.</p></div></details>
-</div><p id="be-vacio-donaciones" class="dt-vacio" hidden>No hay donaciones que coincidan con estos filtros.</p>
-</section>
-<section id="panel-necesidades" role="tabpanel" aria-labelledby="tab-necesidades" hidden>
-<div class="be-titulo"><h2 class="font-manrope">Mis necesidades</h2><button class="btn btn-primary-action" type="button" id="be-registrar">Registrar necesidad</button></div>
-<form id="be-filtro-necesidades" class="be-filtros be-filtros-necesidades">
-<label>Tipo<select name="tipo"><option value="">Todos los tipos</option><option>Recurrente</option><option>Extraordinaria</option></select><small>Opcional</small></label>
-<label>Cobertura<select name="cobertura"><option value="">Todas</option><option value="pendiente">Pendientes</option><option value="cubierta">Cubiertas</option></select><small>Opcional</small></label>
-<label class="be-busqueda"><span class="be-sr">Buscar por descripción</span><input type="search" name="texto" placeholder="Buscar por descripción…"></label><button class="btn btn-primary-action" type="submit">Buscar</button>
-</form>
-<p id="be-total-necesidades" class="be-total" role="status">3 necesidades registradas</p>
-<div id="be-necesidades" class="dt-lista"></div><p id="be-vacio-necesidades" class="dt-vacio" hidden>No hay necesidades que coincidan con estos filtros.</p>
-<noscript>Activá JavaScript para explorar esta demostración de necesidades.</noscript>
-</section>
-<p class="be-demo">Vista de ejemplo: los cambios y las fotos se conservan solamente hasta recargar la página.</p>
-</main>
-{{> templates/partials/footer-panel}}
+  {{> templates/partials/header-beneficiaria}}
+
+  <main class="dt-contenido">
+    <section class="dt-presentacion" aria-labelledby="titulo">
+      <p class="dt-eyebrow">MI ENTIDAD BENEFICIARIA</p>
+
+      <h1 class="font-manrope" id="titulo">
+        Tu ayuda llega más lejos.
+      </h1>
+
+      <p class="dt-intro">
+        Gestioná tus necesidades y seguí las donaciones que recibís.
+      </p>
+    </section>
+
+    <nav class="dt-tabs" aria-label="Mi entidad">
+      <a
+          class="dt-tab {{#unless esNecesidades}}dt-tab-activa{{/unless}}"
+          href="/mi-entidad"
+          {{#unless esNecesidades}}aria-current="page"{{/unless}}>
+        Donaciones asignadas
+      </a>
+
+      <a
+          class="dt-tab {{#if esNecesidades}}dt-tab-activa{{/if}}"
+          href="/mi-entidad?vista=necesidades"
+          {{#if esNecesidades}}aria-current="page"{{/if}}>
+        Mis necesidades
+      </a>
+    </nav>
+
+    <p id="be-aviso" class="dt-aviso" role="status" hidden></p>
+
+    {{#if esNecesidades}}
+      <section>
+        <div class="be-titulo">
+          <h2 class="font-manrope">Mis necesidades</h2>
+          <button
+              class="btn btn-primary-action"
+              type="button"
+              id="be-registrar">
+            Registrar necesidad
+          </button>
+        </div>
+
+        <form
+            class="be-filtros be-filtros-necesidades"
+            method="get"
+            action="/mi-entidad">
+
+          <input type="hidden" name="vista" value="necesidades">
+
+          <label>
+            Tipo
+            <select name="tipo">
+              <option value="">Todos los tipos</option>
+              {{#each tipos}}
+                <option {{#if elegido}}selected{{/if}}>
+                  {{nombre}}
+                </option>
+              {{/each}}
+            </select>
+            <small>Opcional</small>
+          </label>
+
+          <label>
+            Cobertura
+            <select name="cobertura">
+              <option value="">Todas</option>
+              <option
+                  value="pendiente"
+                  {{#if coberturaPendiente}}selected{{/if}}>
+                Pendientes
+              </option>
+              <option
+                  value="cubierta"
+                  {{#if coberturaCubierta}}selected{{/if}}>
+                Cubiertas
+              </option>
+            </select>
+            <small>Opcional</small>
+          </label>
+
+          <label class="be-busqueda">
+            <span class="be-sr">Buscar por descripción</span>
+            <input
+                type="search"
+                name="q"
+                value="{{q}}"
+                placeholder="Buscar por descripción…">
+          </label>
+
+          <button class="btn btn-primary-action">Buscar</button>
+        </form>
+
+        <p class="be-total">{{total}} necesidades registradas</p>
+
+        <div class="dt-lista">
+          {{#each necesidades}}
+            <article class="be-necesidad">
+              <div class="be-datos">
+                <h3>{{descripcion}}</h3>
+                <p>{{categoria}} / {{subcategoriaNombre}}</p>
+                <p>{{detalle}}</p>
+              </div>
+
+              <span class="be-tipo-texto">{{tipo}}</span>
+
+              <span class="be-vinculada">
+                {{#if vinculada}}Con asignaciones vinculadas{{/if}}
+              </span>
+
+              <div class="be-cobertura">
+                <span>Objetivo: {{objetivo}}</span>
+                <span>Cubierta: {{cubierta}}</span>
+                <span>Pendiente: {{pendiente}}</span>
+              </div>
+
+              <div class="be-card-acciones">
+                <button
+                    class="btn btn-secondary"
+                    type="button"
+                    data-editar-necesidad="{{id}}">
+                  Editar
+                </button>
+
+                <button
+                    class="btn be-peligro"
+                    type="button"
+                    data-eliminar-necesidad="{{id}}"
+                    data-descripcion="{{descripcion}}"
+                    {{#unless eliminable}}
+                      disabled
+                      title="Tiene asignaciones o cobertura registrada"
+                    {{/unless}}>
+                  Eliminar
+                </button>
+              </div>
+            </article>
+          {{else}}
+            <p class="dt-vacio">
+              No hay necesidades que coincidan con estos filtros.
+            </p>
+          {{/each}}
+        </div>
+      </section>
+    {{else}}
+      <section>
+        <form
+            class="be-filtros be-filtros-donaciones"
+            method="get"
+            action="/mi-entidad">
+
+          <label>
+            Estado
+            <select name="estado">
+              <option value="">Todos los estados</option>
+              {{#each estados}}
+                <option value="{{valor}}" {{#if elegido}}selected{{/if}}>
+                  {{nombre}}
+                </option>
+              {{/each}}
+            </select>
+            <small>Filtro opcional</small>
+          </label>
+
+          <label class="be-busqueda">
+            <span class="be-sr">
+              Buscar donación por producto o código
+            </span>
+
+            <input
+                type="search"
+                name="q"
+                value="{{q}}"
+                placeholder="Buscar donación por producto o código…">
+          </label>
+
+          <button class="btn btn-primary-action">Buscar</button>
+        </form>
+
+        <div class="dt-resultados">
+          <h2 class="font-manrope">Donaciones asignadas</h2>
+          <p>{{total}} donaciones</p>
+        </div>
+
+        <div class="dt-lista">
+          {{#each donaciones}}
+            <details class="dt-donacion">
+              <summary>
+                <span class="dt-id">{{id}}</span>
+
+                <span class="dt-toggle">
+                  <span class="dt-ver">Mostrar detalles</span>
+                  <span class="dt-ocultar">Ocultar detalles</span>
+                </span>
+
+                <h3>{{descripcion}}</h3>
+                <p>{{cantidad}} {{unidad}} · {{subcategoria}}</p>
+
+                <span class="badge {{claseEstado}}">
+                  {{estado}}
+                </span>
+              </summary>
+
+              <div class="dt-detalle-simple">
+                <section
+                    class="dt-seguimiento-real"
+                    data-seguimiento-id="{{id}}"
+                    data-seguimiento-base="/mi-entidad/donaciones">
+
+                  <div class="dt-seguimiento-cabecera">
+                    <h4>Seguimiento de la entrega</h4>
+
+                    <button
+                        class="btn btn-secondary dt-actualizar-mapa"
+                        type="button">
+                      Actualizar ubicación
+                    </button>
+                  </div>
+
+                  <p class="dt-seguimiento-mensaje" role="status">
+                    Abrí los detalles para consultar el seguimiento.
+                  </p>
+
+                  <div
+                      class="dt-google-mapa"
+                      aria-label="Mapa de la entrega"
+                      hidden></div>
+
+                  <p class="dt-mapa-leyenda" hidden>
+                    <span>🟠 Depósito</span>
+                    <span>🟢 Destino</span>
+                    <span>🔵 Último reporte del camión</span>
+                  </p>
+
+                  <p class="dt-seguimiento-fecha"></p>
+                </section>
+
+                <h4 class="dt-historial-titulo">
+                  Historial de la donación
+                </h4>
+
+                <ol class="dt-historial-real">
+                  {{#each historial}}
+                    <li>
+                      <strong>{{estado}}</strong>
+                      <span class="dt-fecha">{{fecha}}</span>
+                      <p>{{motivo}}</p>
+                    </li>
+                  {{else}}
+                    <li>Sin cambios registrados.</li>
+                  {{/each}}
+                </ol>
+
+                {{#if recibida}}
+                  <button
+                      class="btn btn-secondary"
+                      type="button"
+                      data-comprobante="{{id}}">
+                    Ver fotos de recepción
+                  </button>
+
+                  <div class="be-preview" data-fotos-recibidas></div>
+                {{/if}}
+              </div>
+
+              {{#if puedeRecibir}}
+                <div class="be-confirmacion">
+                  <p>
+                    ¿Ya recibiste los bienes?
+                    Confirmá la recepción y adjuntá fotos.
+                  </p>
+
+                  <button
+                      class="btn btn-primary-action"
+                      type="button"
+                      data-recibir="{{id}}"
+                      data-descripcion="{{descripcion}} · {{cantidad}} {{unidad}}">
+                    Confirmar recepción
+                  </button>
+                </div>
+              {{/if}}
+            </details>
+          {{else}}
+            <p class="dt-vacio">
+              No hay donaciones que coincidan con estos filtros.
+            </p>
+          {{/each}}
+        </div>
+      </section>
+    {{/if}}
+
+    {{#if hayPaginacion}}
+      <nav class="dt-paginacion" aria-label="Paginación">
+        {{#if anterior}}
+          <a class="btn btn-secondary" href="{{anterior}}">
+            Anterior
+          </a>
+        {{/if}}
+
+        <span>Página {{pagina}} de {{paginas}}</span>
+
+        {{#if siguiente}}
+          <a class="btn btn-secondary" href="{{siguiente}}">
+            Siguiente
+          </a>
+        {{/if}}
+      </nav>
+    {{/if}}
+  </main>
+
+  {{> templates/partials/footer-panel}}
 </div>
+
 {{> templates/partials/modales-beneficiaria}}
-</body></html>
+</body>
+</html>
