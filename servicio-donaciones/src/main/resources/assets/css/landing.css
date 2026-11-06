@@ -264,3 +264,14 @@
     color: var(--palette-bg);
 }
 
+header {
+    /*position: fixed;*/
+    /*top: 0;*/
+    /*width: 100%;*/
+    /*z-index: 1000;*/
+    transition: transform 0.3s ease-in-out; /* Animación suave */
+}
+
+.header-oculto {
+    transform: translateY(-100%); /* Lo mueve hacia arriba fuera de la pantalla */
+}
