@@ -32,8 +32,6 @@ public class AdminPlanificacionController {
   ) {}
 
   public record Pedido(
-      Double latitudDeposito,
-      Double longitudDeposito,
       Map<String, Carga> cargas
   ) {}
 
@@ -59,46 +57,64 @@ public class AdminPlanificacionController {
   }
 
   public void pendientes(Context ctx) {
-    var filas = new ArrayList<Map<String, Object>>();
-    var ids = new HashSet<String>();
+    String id;
 
-    for (var a : asignadas()) {
-      var d = a.getDonacion();
-      var e = a.getEntidad();
-
-      if (!ids.add(d.getIdAsString())) {
-        throw new ConflictResponse(
-            "Hay más de una asignación para la misma donación."
-        );
-      }
-
-      var fila = new HashMap<String, Object>();
-
-      fila.put("id", d.getIdAsString());
-      fila.put("descripcion", d.getDescripcionGeneral());
-      fila.put("entidad", e.getRazonSocial());
-      fila.put("direccion", e.getDireccion());
-
-      fila.put(
-          "ubicada",
-          e.getLatitud() != null && e.getLongitud() != null
+    try {
+      id = UUID.fromString(
+          Objects.toString(
+              ctx.queryParam("idDonacion"),
+              ""
+          )
+      ).toString();
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestResponse(
+          "Indicá la donación que querés planificar."
       );
-
-      fila.put("cantidad", d.getCantidad());
-      fila.put(
-          "unidad",
-          Objects.toString(d.getUnidadMedida(), "")
-      );
-
-      filas.add(fila);
     }
 
+    var candidatas = asignadas().stream()
+        .filter(a ->
+            a.getDonacion().getIdAsString().equals(id)
+        )
+        .toList();
+
+    if (candidatas.size() != 1) {
+      throw new ConflictResponse(
+          "La donación no tiene una asignación pendiente única. "
+              + "Recargá la página y revisá su estado."
+      );
+    }
+
+    var asignacion = candidatas.get(0);
+    var donacion = asignacion.getDonacion();
+    var entidad = asignacion.getEntidad();
+
+    var fila = new HashMap<String, Object>();
+
+    fila.put("id", donacion.getIdAsString());
+    fila.put("descripcion", donacion.getDescripcionGeneral());
+    fila.put("entidad", entidad.getRazonSocial());
+    fila.put("direccion", entidad.getDireccion());
+    fila.put("cantidad", donacion.getCantidad());
+
+    fila.put(
+        "unidad",
+        Objects.toString(donacion.getUnidadMedida(), "")
+    );
+
+    fila.put(
+        "ubicada",
+        coordenada(entidad.getLatitud(), 90)
+            && coordenada(entidad.getLongitud(), 180)
+    );
+
     ctx.header("Cache-Control", "no-store").json(Map.of(
-        "donaciones", filas,
-        "latitud",
-        System.getenv().getOrDefault("DEPOSITO_LATITUD", ""),
-        "longitud",
-        System.getenv().getOrDefault("DEPOSITO_LONGITUD", "")
+        "donacion", fila,
+        "deposito",
+        System.getenv().getOrDefault(
+            "DEPOSITO_DIRECCION",
+            "Depósito de DonaTrack"
+        )
     ));
   }
 
@@ -106,28 +122,29 @@ public class AdminPlanificacionController {
     Pedido pedido = ctx.bodyAsClass(Pedido.class);
 
     if (pedido == null
-        || !coordenada(pedido.latitudDeposito(), 90)
-        || !coordenada(pedido.longitudDeposito(), 180)) {
+        || pedido.cargas() == null
+        || pedido.cargas().size() != 1) {
       throw new BadRequestResponse(
-          "Ingresá coordenadas válidas del depósito."
+          "La planificación debe corresponder "
+              + "a la donación asignada."
       );
     }
 
-    if (pedido.cargas() == null
-        || pedido.cargas().isEmpty()
-        || pedido.cargas().size() > 50) {
-      throw new BadRequestResponse(
-          "Seleccioná entre 1 y 50 donaciones por planificación."
-      );
-    }
+    double latitud = coordenadaDeposito(
+        "DEPOSITO_LATITUD", 90
+    );
+
+    double longitud = coordenadaDeposito(
+        "DEPOSITO_LONGITUD", 180
+    );
 
     var disponibles =
         new HashMap<String, AsignacionDonacion>();
 
-    for (var a : asignadas()) {
-      if (disponibles.put(
-          a.getDonacion().getIdAsString(), a
-      ) != null) {
+    for (var asignacion : asignadas()) {
+      String id = asignacion.getDonacion().getIdAsString();
+
+      if (disponibles.put(id, asignacion) != null) {
         throw new ConflictResponse(
             "Hay más de una asignación para la misma donación."
         );
@@ -135,19 +152,22 @@ public class AdminPlanificacionController {
     }
 
     for (var entrada : pedido.cargas().entrySet()) {
-      var a = disponibles.get(entrada.getKey());
+      var asignacion = disponibles.get(entrada.getKey());
 
-      if (a == null) {
+      if (asignacion == null) {
         throw new ConflictResponse(
-            "Una donación cambió de estado. Recargá la página "
+            "La donación cambió de estado. Recargá la página "
                 + "y consultá Camiones antes de reintentar."
         );
       }
 
-      if (a.getEntidad().getLatitud() == null
-          || a.getEntidad().getLongitud() == null) {
+      var entidad = asignacion.getEntidad();
+
+      if (!coordenada(entidad.getLatitud(), 90)
+          || !coordenada(entidad.getLongitud(), 180)) {
         throw new ConflictResponse(
-            "Faltan las coordenadas de una entidad destinataria."
+            "La dirección de la entidad todavía no tiene "
+                + "una ubicación confirmada en el mapa."
         );
       }
 
@@ -157,8 +177,7 @@ public class AdminPlanificacionController {
           || !positivo(carga.pesoKg())
           || !positivo(carga.volumenM3())) {
         throw new BadRequestResponse(
-            "Todas las donaciones seleccionadas requieren "
-                + "peso y volumen positivos."
+            "La carga requiere peso y volumen positivos."
         );
       }
     }
@@ -166,7 +185,11 @@ public class AdminPlanificacionController {
     reenviar(
         ctx,
         "/planificaciones",
-        json.writeValueAsString(pedido),
+        json.writeValueAsString(Map.of(
+            "latitudDeposito", latitud,
+            "longitudDeposito", longitud,
+            "cargas", pedido.cargas()
+        )),
         300
     );
   }
@@ -291,5 +314,30 @@ public class AdminPlanificacionController {
     return n != null
         && Double.isFinite(n)
         && n > 0;
+  }
+
+  private static double coordenadaDeposito(
+      String variable,
+      int limite
+  ) {
+    try {
+      double valor = Double.parseDouble(
+          Objects.toString(
+              System.getenv(variable),
+              ""
+          ).trim()
+      );
+
+      if (!coordenada(valor, limite)) {
+        throw new NumberFormatException();
+      }
+
+      return valor;
+    } catch (NumberFormatException e) {
+      throw new ServiceUnavailableResponse(
+          "La ubicación del depósito no está configurada "
+              + "correctamente en el servidor."
+      );
+    }
   }
 }

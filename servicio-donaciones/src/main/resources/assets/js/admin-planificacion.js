@@ -12,9 +12,7 @@
     let refrescar = false;
     let foco;
     let ruta;
-    let donaciones = [];
-
-    const campo = nombre => form.elements.namedItem(nombre);
+    let donacion;
 
     async function pedir(url, datos) {
         const respuesta = await fetch(url, {
@@ -30,11 +28,13 @@
                 : JSON.stringify(datos)
         });
 
-        const texto = await respuesta.text();
+        const contenidoTexto = await respuesta.text();
         let contenido;
 
         try {
-            contenido = texto ? JSON.parse(texto) : {};
+            contenido = contenidoTexto
+                ? JSON.parse(contenidoTexto)
+                : {};
         } catch {
             contenido = {};
         }
@@ -56,35 +56,25 @@
         padre.append(p);
     }
 
-    function fila(d, seleccionada) {
-        const contenedor = document.createElement('article');
-        contenedor.className = 'plan-fila';
-        contenedor.dataset.id = d.id;
+    function fila(d) {
+        const tarjeta = document.createElement('article');
+        tarjeta.className = 'plan-fila';
 
-        const label = document.createElement('label');
-        label.className = 'plan-eleccion';
-
-        const check = document.createElement('input');
-        check.type = 'checkbox';
-        check.checked = seleccionada && d.ubicada;
-        check.disabled = !d.ubicada;
-
-        const nombre = document.createElement('span');
+        const nombre = document.createElement('strong');
         nombre.textContent =
-            `${d.descripcion} · ${d.cantidad} ${d.unidad}`
-            + ` → ${d.entidad}`;
+            `${d.descripcion} · ${d.cantidad} ${d.unidad}`;
 
-        label.append(check, nombre);
-        contenedor.append(label);
+        tarjeta.append(nombre);
 
-        texto(contenedor, d.direccion || 'Sin dirección');
+        texto(
+            tarjeta,
+            `Entidad destinataria: ${d.entidad}`
+        );
 
-        if (!d.ubicada) {
-            texto(
-                contenedor,
-                'Faltan las coordenadas de esta entidad.'
-            );
-        }
+        texto(
+            tarjeta,
+            `Dirección de entrega: ${d.direccion || 'Sin dirección'}`
+        );
 
         const medidas = document.createElement('div');
         medidas.className = 'ac-grid';
@@ -93,51 +83,45 @@
             ['pesoKg', 'Peso total (kg)'],
             ['volumenM3', 'Volumen total (m³)']
         ]) {
-            const l = document.createElement('label');
-            l.textContent = titulo;
+            const label = document.createElement('label');
+            label.textContent = titulo;
 
             const input = document.createElement('input');
+            input.name = clave;
             input.type = 'number';
             input.step = 'any';
             input.min = '0.001';
-            input.dataset.medida = clave;
+            input.required = true;
+            input.disabled = !d.ubicada;
 
             if (clave === 'pesoKg'
                 && /^(kg|kilogramos?)$/i.test(d.unidad)) {
                 input.value = d.cantidad;
             }
 
-            l.append(input);
-            medidas.append(l);
+            label.append(input);
+            medidas.append(label);
         }
 
-        const actualizar = () => {
-            medidas.querySelectorAll('input').forEach(i => {
-                i.disabled = !check.checked;
-                i.required = check.checked;
-            });
-        };
+        tarjeta.append(medidas);
 
-        check.addEventListener('change', actualizar);
-        actualizar();
-
-        contenedor.append(medidas);
-
-        return contenedor;
+        return tarjeta;
     }
 
     async function abrir(id) {
-        if (ocupado || modal.open || inicio.open) return;
+        if (!id || ocupado || modal.open || inicio.open) return;
 
         foco = document.activeElement;
         refrescar = false;
+        donacion = null;
 
         form.hidden = false;
         $('plan-resultado').hidden = true;
         $('plan-error').textContent = '';
+        $('plan-deposito').textContent = '';
 
         $('plan-lista').textContent =
-            'Consultando donaciones asignadas…';
+            'Consultando la entidad asignada…';
 
         $('plan-submit').disabled = true;
 
@@ -147,26 +131,26 @@
         try {
             const datos = await pedir(
                 '/administracion/planificaciones/pendientes'
+                + '?idDonacion=' + encodeURIComponent(id)
             );
 
-            donaciones = datos.donaciones;
+            donacion = datos.donacion;
 
-            campo('latitud').value = datos.latitud;
-            campo('longitud').value = datos.longitud;
+            $('plan-deposito').textContent =
+                `Salida desde: ${datos.deposito}`;
 
             $('plan-lista').replaceChildren(
-                ...donaciones.map(d => fila(d, d.id === id))
+                fila(donacion)
             );
 
-            if (!donaciones.length) {
-                texto(
-                    $('plan-lista'),
-                    'No hay donaciones pendientes de planificación.'
-                );
-            }
+            $('plan-submit').disabled = !donacion.ubicada;
 
-            $('plan-submit').disabled =
-                !donaciones.some(d => d.ubicada);
+            if (!donacion.ubicada) {
+                $('plan-error').textContent =
+                    'La dirección de esta entidad todavía no tiene '
+                    + 'una ubicación confirmada en el mapa. '
+                    + 'Confirmala antes de planificar.';
+            }
 
         } catch (e) {
             $('plan-lista').replaceChildren();
@@ -176,17 +160,11 @@
         }
     }
 
-    $('abrir-planificacion')?.addEventListener(
-        'click',
-        () => abrir()
-    );
-
     document.querySelectorAll('[data-planificar-donacion]')
         .forEach(b => {
-            b.addEventListener(
-                'click',
-                () => abrir(b.dataset.planificarDonacion)
-            );
+            b.addEventListener('click', () => {
+                abrir(b.dataset.planificarDonacion);
+            });
         });
 
     modal.querySelectorAll('[data-plan-cerrar]')
@@ -210,40 +188,25 @@
 
     form.addEventListener('submit', async e => {
         e.preventDefault();
-        if (ocupado) return;
 
-        const cargas = {};
+        if (ocupado || !donacion?.ubicada) return;
 
-        $('plan-lista').querySelectorAll('.plan-fila')
-            .forEach(f => {
-                if (f.querySelector('[type=checkbox]').checked) {
-                    cargas[f.dataset.id] = {
-                        pesoKg: Number(
-                            f.querySelector(
-                                '[data-medida=pesoKg]'
-                            ).value
-                        ),
-                        volumenM3: Number(
-                            f.querySelector(
-                                '[data-medida=volumenM3]'
-                            ).value
-                        )
-                    };
-                }
-            });
+        const carga = {
+            pesoKg: Number(
+                form.elements.namedItem('pesoKg').value
+            ),
+            volumenM3: Number(
+                form.elements.namedItem('volumenM3').value
+            )
+        };
 
-        if (!Object.keys(cargas).length
-            || Object.keys(cargas).length > 50) {
+        if (!Object.values(carga).every(
+            n => Number.isFinite(n) && n > 0
+        )) {
             $('plan-error').textContent =
-                'Seleccioná entre 1 y 50 donaciones.';
+                'Ingresá peso y volumen positivos.';
             return;
         }
-
-        const pedido = {
-            latitudDeposito: Number(campo('latitud').value),
-            longitudDeposito: Number(campo('longitud').value),
-            cargas
-        };
 
         ocupado = true;
         refrescar = true;
@@ -254,77 +217,104 @@
         ].map(c => [c, c.disabled]);
 
         controles.forEach(([c]) => c.disabled = true);
+
         $('plan-submit').textContent = 'Planificando…';
 
         try {
             const resultado = await pedir(
                 '/administracion/planificaciones',
-                pedido
+                {
+                    cargas: {
+                        [donacion.id]: carga
+                    }
+                }
             );
 
             const resumen = $('plan-resumen');
             resumen.replaceChildren();
 
-            texto(
-                resumen,
-                `Planificación para ${resultado.fecha}`
-            );
-
             const rutas = (resultado.lotes || [])
-                .flatMap(l => l.rutas || []);
+                .flatMap(l => l.rutas || [])
+                .filter(r =>
+                    r.entregas.includes(donacion.id)
+                );
 
-            const nombre = id =>
-                donaciones.find(d => d.id === id)?.descripcion
-                || id;
+            const enlace = $('plan-ver-camion');
 
-            rutas.forEach(r => {
+            enlace.href = '/administracion/camiones';
+            enlace.textContent = 'Consultar camiones';
+
+            if (rutas.length) {
                 texto(
                     resumen,
-                    `Camión ${r.patente}: `
-                    + r.entregas.map(nombre).join(', ')
+                    `Entrega planificada para ${resultado.fecha}.`
                 );
-            });
 
-            const problemas = [
-                ['Sin ubicación', resultado.sinUbicacion],
-                ['Sin datos de carga', resultado.sinDatosDeCarga],
-                [
-                    'Sin camión disponible',
-                    resultado.sinCamionDisponible
-                ],
-                [
-                    'Sin asignar por el planificador',
-                    (resultado.lotes || [])
-                        .flatMap(l => l.sinAsignar || [])
-                ]
-            ];
+                texto(
+                    resumen,
+                    `Destino: ${donacion.entidad}`
+                    + ` · ${donacion.direccion}`
+                );
 
-            problemas.forEach(([motivo, ids]) => {
-                const elegidas = [...new Set(ids || [])]
-                    .filter(id => Object.hasOwn(cargas, id));
-
-                if (elegidas.length) {
+                rutas.forEach(r => {
                     texto(
                         resumen,
-                        `${motivo}: `
-                        + elegidas.map(nombre).join(', ')
+                        `Camión asignado: ${r.patente}`
+                    );
+                });
+
+                texto(
+                    resumen,
+                    'La donación está lista para entregar. '
+                    + 'Iniciá el traslado cuando el camión '
+                    + 'salga del depósito.'
+                );
+
+                enlace.href +=
+                    '?q=' + encodeURIComponent(rutas[0].patente);
+
+                enlace.textContent =
+                    'Ver camión e iniciar traslado';
+
+            } else {
+                const motivos = [
+                    [
+                        resultado.sinUbicacion,
+                        'Falta confirmar la ubicación de la entidad.'
+                    ],
+                    [
+                        resultado.sinDatosDeCarga,
+                        'Faltan datos de carga.'
+                    ],
+                    [
+                        resultado.sinCamionDisponible,
+                        'No hay camiones disponibles '
+                        + 'sin rutas pendientes.'
+                    ],
+                    [
+                        (resultado.lotes || [])
+                            .flatMap(l => l.sinAsignar || []),
+                        'El planificador no pudo asignar la carga '
+                        + 'a los camiones disponibles.'
+                    ]
+                ];
+
+                let explicado = false;
+
+                motivos.forEach(([ids, mensaje]) => {
+                    if ((ids || []).includes(donacion.id)) {
+                        texto(resumen, mensaje);
+                        explicado = true;
+                    }
+                });
+
+                if (!explicado) {
+                    texto(
+                        resumen,
+                        'No se obtuvo una ruta para esta donación. '
+                        + 'Recargá y revisá si ya aparece planificada.'
                     );
                 }
-            });
-
-            if (!rutas.length) {
-                texto(
-                    resumen,
-                    'No se generaron rutas nuevas. '
-                    + 'Consultá la disponibilidad de camiones '
-                    + 'y los datos de las entregas.'
-                );
-            } else {
-                texto(
-                    resumen,
-                    'Las rutas ya están disponibles. '
-                    + 'El traslado se inicia desde Camiones.'
-                );
             }
 
             form.hidden = true;
@@ -339,7 +329,8 @@
                 c.disabled = deshabilitado;
             });
 
-            $('plan-submit').textContent = 'Planificar rutas';
+            $('plan-submit').textContent =
+                'Confirmar planificación';
         }
     });
 
@@ -375,7 +366,9 @@
         if (ocupado) e.preventDefault();
     });
 
-    inicio.addEventListener('close', () => foco?.focus());
+    inicio.addEventListener('close', () => {
+        foco?.focus();
+    });
 
     $('inicio-ruta-confirmar').addEventListener(
         'click',
@@ -393,8 +386,9 @@
 
             try {
                 const r = await pedir(
-                    `/administracion/rutas/`
-                    + `${encodeURIComponent(ruta)}/iniciar`,
+                    '/administracion/rutas/'
+                    + encodeURIComponent(ruta)
+                    + '/iniciar',
                     {}
                 );
 
@@ -416,7 +410,9 @@
         }
     );
 
-    if ($('abrir-planificacion')) {
+    // Se abre automáticamente después de asignar la entidad.
+    // Ya no depende del botón general que eliminamos.
+    if ($('confirmar-asignacion')) {
         try {
             const id = sessionStorage.getItem(
                 'planificar-donacion'

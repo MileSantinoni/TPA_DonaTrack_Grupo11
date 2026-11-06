@@ -1,6 +1,6 @@
 <dialog id="plan-modal" aria-labelledby="plan-titulo">
   <header>
-    <h2 id="plan-titulo">Planificar entregas</h2>
+    <h2 id="plan-titulo">Planificar la entrega</h2>
 
     <button type="button"
             class="ac-cerrar"
@@ -9,39 +9,20 @@
   </header>
 
   <p>
-    Seleccioná hasta 50 donaciones. El planificador elegirá
-    los camiones disponibles y ordenará sus destinos para mañana.
+    La entidad ya está asignada. Confirmá los datos de la carga
+    para obtener el camión y la ruta.
   </p>
 
-  <form id="plan-form">
-    <div class="ac-grid">
-      <label>
-        Latitud del depósito
-        <input name="latitud"
-               type="number"
-               step="any"
-               min="-90"
-               max="90"
-               required>
-      </label>
+  <p id="plan-deposito" class="ac-ayuda"></p>
 
-      <label>
-        Longitud del depósito
-        <input name="longitud"
-               type="number"
-               step="any"
-               min="-180"
-               max="180"
-               required>
-      </label>
-    </div>
+  <form id="plan-form">
+    <div id="plan-lista" class="plan-lista"></div>
 
     <p class="ac-ayuda">
-      Indicá el peso total en kg y el volumen total en m³
-      de cada donación.
+      El planificador utiliza la dirección confirmada de la entidad
+      y los camiones disponibles.
+      La entrega se programa para mañana.
     </p>
-
-    <div id="plan-lista" class="plan-lista"></div>
 
     <p id="plan-error" class="ac-error" role="alert"></p>
 
@@ -49,13 +30,13 @@
       <button type="button"
               class="btn btn-secondary"
               data-plan-cerrar>
-        Ahora no
+        Continuar más tarde
       </button>
 
       <button id="plan-submit"
               type="submit"
               class="btn btn-primary-action">
-        Planificar rutas
+        Confirmar planificación
       </button>
     </div>
   </form>
@@ -70,9 +51,10 @@
         Cerrar
       </button>
 
-      <a class="btn btn-primary-action"
+      <a id="plan-ver-camion"
+         class="btn btn-primary-action"
          href="/administracion/camiones">
-        Ver camiones y comenzar traslado
+        Ver camión e iniciar traslado
       </a>
     </div>
   </section>
