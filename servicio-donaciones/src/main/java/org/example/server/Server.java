@@ -81,6 +81,24 @@ public final class Server {
           new JavalinRenderer()
               .register("hbs", new JavalinHandlebars())
       );
+
+      config.jetty.modifyServletContextHandler(handler -> {
+        var sesiones = handler.getSessionHandler();
+
+        sesiones.setHttpOnly(true);
+        sesiones.setSameSite(
+            org.eclipse.jetty.http.HttpCookie.SameSite.LAX
+        );
+
+        sesiones.getSessionCookieConfig().setSecure(
+            System.getenv()
+                .getOrDefault(
+                    "LOGTO_REDIRECT_URI",
+                    "http://localhost:8083/auth/callback"
+                )
+                .startsWith("https://")
+        );
+      });
     });
 
     app.before(ctx -> actual.set(factory.createEntityManager()));

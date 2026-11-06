@@ -198,5 +198,16 @@ public class Router {
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
+
+    //LOGTO
+    var logto = new org.example.controllers.LogtoController();
+
+    app.get("/login", logto::login);
+    app.get("/auth/registro", logto::registro);
+    app.get("/auth/callback", logto::callback);
+    app.get("/auth/me", logto::actual);
+    app.get("/logout", logto::confirmarSalida);
+    app.post("/auth/logout", logto::logout);
+
   }
 }
