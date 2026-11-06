@@ -58,6 +58,17 @@ public final class Server {
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     Javalin app = Javalin.create(config -> {
+      config.http.maxRequestSize = 12_000_000L;
+
+      config.jetty.multipartConfig.maxFileSize(
+          10,
+          io.javalin.config.SizeUnit.MB
+      );
+
+      config.jetty.multipartConfig.maxTotalRequestSize(
+          12,
+          io.javalin.config.SizeUnit.MB
+      );
       config.jsonMapper(new JavalinJackson(mapper, false));
 
       config.staticFiles.add(archivos -> {

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <title>Personas donantes | DonaTrack</title>
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/footer-panel.css">
+
+  <script defer src="/assets/js/admin-donantes.js"></script>
+</head>
+
+<body class="dt-donante dt-admin dt-fondo">
+<div class="dt-pagina dt-marco">
+  {{> templates/partials/header-admin}}
+
+  <main class="dt-contenido">
+    <div class="ac-head">
+      <div>
+        <small>ADMINISTRACIÓN</small>
+        <h1>Personas donantes</h1>
+        <p>Consultá las personas registradas e incorporá nuevos donantes.</p>
+      </div>
+    </div>
+
+    <div class="ac-toolbar">
+      <nav class="tabs-admin" aria-label="Secciones de administración">
+        <a href="/administracion/donaciones">Donaciones</a>
+        <a href="/administracion/donantes" aria-current="page">
+          Personas donantes
+        </a>
+        <a href="/administracion#camiones">Camiones</a>
+      </nav>
+
+      <div id="acciones">
+        <button type="button" class="btn btn-secondary" data-csv>
+          Importar CSV
+        </button>
+
+        <button type="button" class="btn btn-primary-action" data-crear>
+          Registrar donante
+        </button>
+      </div>
+    </div>
+
+    <form id="filtros" method="get" action="/administracion/donantes">
+      <label>
+        Tipo de persona
+        <select name="tipo">
+          <option value="">Todas</option>
+          <option value="HUMANA" {{#if humana}}selected{{/if}}>
+            Persona humana
+          </option>
+          <option value="JURIDICA" {{#if juridica}}selected{{/if}}>
+            Persona jurídica
+          </option>
+        </select>
+      </label>
+
+      <label>
+        Buscar por nombre, email o documento
+        <input type="search" name="q" value="{{q}}">
+      </label>
+
+      <button class="btn btn-primary-action">Buscar</button>
+    </form>
+
+    <p id="aviso" role="status"></p>
+    <p class="ac-total">Resultados: {{total}}</p>
+
+    <section id="lista" aria-label="Personas donantes">
+      {{#each donantes}}
+        <article class="ac-card ac-line">
+          <span class="avatar-initials">{{iniciales}}</span>
+
+          <div class="ac-crecer">
+            <h3>{{name}}</h3>
+            <p>{{tipoNombre}} · {{tipoDoc}} {{doc}}</p>
+            <small>
+              {{email}}{{#if phone}} · {{phone}}{{/if}}
+            </small>
+          </div>
+
+          <div class="ac-persona-acciones">
+            <button
+                type="button"
+                class="btn btn-secondary"
+                data-editar="{{id}}">
+              <svg
+                  aria-hidden="true"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6">
+                <path d="M4 16l-1 5 5-1L20 8l-4-4z M14 6l4 4"/>
+              </svg>
+              Editar
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-secondary"
+                data-eliminar="{{id}}"
+                data-nombre="{{name}}">
+              <svg
+                  aria-hidden="true"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6">
+                <path d="M3 6h18 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7"/>
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </article>
+      {{else}}
+        <p>No hay personas donantes con esos filtros.</p>
+      {{/each}}
+    </section>
+
+    {{#if hayPaginacion}}
+      <nav class="ac-paginacion" aria-label="Páginas de donantes">
+        {{#if anterior}}
+          <a class="btn btn-secondary" href="{{anterior}}">Anterior</a>
+        {{/if}}
+
+        <span>Página {{pagina}} de {{paginas}}</span>
+
+        {{#if siguiente}}
+          <a class="btn btn-secondary" href="{{siguiente}}">Siguiente</a>
+        {{/if}}
+      </nav>
+    {{/if}}
+  </main>
+
+  {{> templates/partials/footer-panel}}
+</div>
+
+<dialog id="modal" aria-labelledby="mt">
+  <form id="formulario">
+    <header>
+      <h2 id="mt"></h2>
+      <button type="button" id="cerrar" aria-label="Cerrar">×</button>
+    </header>
+
+    <div id="campos"></div>
+    <p id="error" role="alert"></p>
+
+    <div id="pie">
+      <button type="button" class="btn btn-secondary" id="cancelar">
+        Cancelar
+      </button>
+
+      <button type="submit" class="btn btn-primary-action" id="guardar">
+        Guardar cambios
+      </button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>

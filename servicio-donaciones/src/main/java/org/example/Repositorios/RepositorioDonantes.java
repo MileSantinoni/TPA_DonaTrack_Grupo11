@@ -95,11 +95,18 @@ public class RepositorioDonantes implements WithSimplePersistenceUnit {
   }
 
   public Optional<Donante> buscarPorMail(String mail) {
+    if (mail == null || mail.isBlank()) {
+      return Optional.empty();
+    }
+
     return em().createQuery(
-            "SELECT d FROM Donante d WHERE d.mail = :mail",
+            "SELECT d FROM Donante d WHERE LOWER(d.mail) = :mail",
             Donante.class
         )
-        .setParameter("mail", mail)
+        .setParameter(
+            "mail",
+            mail.trim().toLowerCase(java.util.Locale.ROOT)
+        )
         .setMaxResults(1)
         .getResultStream()
         .findFirst();

@@ -165,3 +165,37 @@
         grid-template-columns: 1fr;
     }
 }
+
+.dt-admin .ac-persona-acciones,
+.dt-admin .ac-paginacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dt-admin .ac-persona-acciones .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dt-admin .ac-paginacion {
+    justify-content: center;
+    margin: 24px 0;
+}
+
+.dt-admin .tabs-admin a:focus {
+    outline: none;
+}
+
+.dt-admin #modal :is(button, input, select):focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-admin.teclado .tabs-admin a:focus-visible,
+.dt-admin.teclado #modal :is(button, input, select):focus-visible {
+    outline: 1px solid #746258;
+    outline-offset: 2px;
+}

@@ -97,14 +97,13 @@ public class Router {
         notificador
     );
 
-
-
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
     RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
     MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
     EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
+    var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
@@ -116,6 +115,12 @@ public class Router {
     app.get("/administracion/donaciones", adminDonaciones::index);
     app.get("/administracion/donaciones/buscar-donantes", adminDonaciones::buscarDonantes);
     app.get("/administracion/donaciones/{id}/propuestas", adminDonaciones::propuestas);
+    app.get("/administracion/donantes", adminDonantes::index);
+    app.get("/administracion/donantes/{id}", adminDonantes::detalle);
+    app.post("/administracion/donantes", adminDonantes::guardar);
+    app.post("/administracion/donantes/{id}/editar", adminDonantes::guardar);
+    app.post("/administracion/donantes/{id}/eliminar", adminDonantes::eliminar);
+    app.post("/administracion/donantes/importar", adminDonantes::importar);
 
     // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
     app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));
