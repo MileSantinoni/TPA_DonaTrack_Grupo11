@@ -99,7 +99,6 @@ public class Router {
 
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
-    RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
     MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
     EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
@@ -110,6 +109,8 @@ public class Router {
     var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
 
     var planificacionAdmin = new org.example.controllers.AdminPlanificacionController(entityManagerSupplier);
+
+
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
@@ -145,14 +146,12 @@ public class Router {
     app.post("/mi-entidad/donaciones/{id}/recepcion", recepcionesEntidad::confirmar);
     app.get("/mi-entidad/fotos/{id}/{archivo}", recepcionesEntidad::foto);
 
-    // Rutas de Registro
-    app.get("/registro", ctx -> ctx.redirect("/registro/donante"));
-    app.get("/registro/donante", registrationController::registroDonante);
-    app.post("/registro/donante", registrationController::crearPersonaHumana);
-    app.get("/registro/donante/juridica", registrationController::registroDonanteJuridica);
-    app.post("/registro/donante/juridica", registrationController::crearPersonaJuridica);
-    app.get("/registro/entidad", registrationController::registroEntidad);
-    app.post("/registro/entidad", registrationController::crearEntidad);
+    // Las cuentas se crean primero en Logto.
+    app.get("/registro", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/donante", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/donante/juridica", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/entidad", ctx -> ctx.redirect("/auth/registro"));
+
     // Rutas Donantes
     app.get("/donantes", donantes::obtenerTodos);
     app.get("/donantes/{id}", donantes::obtenerPorId);
@@ -199,8 +198,17 @@ public class Router {
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
 
-    //LOGTO
+    // Autenticación y perfil local
     var logto = new org.example.controllers.LogtoController();
+    var cuentas = new org.example.controllers.CuentaController(
+        entityManagerSupplier,
+        landingController
+    );
+
+    org.example.seguridad.SesionWeb.configurar(
+        app,
+        entityManagerSupplier
+    );
 
     app.get("/login", logto::login);
     app.get("/auth/registro", logto::registro);
@@ -208,6 +216,10 @@ public class Router {
     app.get("/auth/me", logto::actual);
     app.get("/logout", logto::confirmarSalida);
     app.post("/auth/logout", logto::logout);
+
+    app.get("/cuenta/continuar", cuentas::continuar);
+    app.get("/cuenta/completar", cuentas::formulario);
+    app.post("/cuenta/completar", cuentas::guardar);
 
   }
 }

@@ -27,7 +27,10 @@ public class LandingController {
   }
 
   public void index(Context ctx) {
-    Map<String, Object> model = new HashMap<>();
+    renderizar(ctx, new HashMap<>());
+  }
+
+  public void renderizar(Context ctx, Map<String, Object> model) {
 
     // Datos para el mapa
     List<EntidadBeneficiaria> entidades = repositorioEntidades.buscarTodas();
@@ -35,7 +38,12 @@ public class LandingController {
     List<Donacion> donaciones = repositorioDonaciones.buscarTodas();
 
     model.put("titulo", "Bienvenido");
-    model.put("entidades", entidades);
+    model.put(
+        "entidades",
+        entidades.stream()
+            .filter(e -> e.getLatitud() != null && e.getLongitud() != null)
+            .toList()
+    );
     model.put("asignaciones", asignaciones);
     model.put("donaciones", donaciones);
 

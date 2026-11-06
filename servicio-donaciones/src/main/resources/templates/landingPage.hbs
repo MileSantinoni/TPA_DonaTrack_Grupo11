@@ -22,12 +22,37 @@
             <div class="hero-grid">
                 <div class="hero-content">
                     <div class="section-title-box">
-                        <h1 class="hero-title">Conectando donaciones con necesidades reales</h1>
-                        <p class="hero-subtitle">Una plataforma pública para visualizar entregas, registrar donaciones y gestionar la trazabilidad de bienes de forma transparente.</p>
+                        {{#if sesion.autenticado}}
+                            <h1 class="hero-title">{{sesion.titulo}}</h1>
+                            <p class="hero-subtitle">{{sesion.descripcion}}</p>
+                        {{else}}
+                            <h1 class="hero-title">
+                                Conectando donaciones con necesidades reales
+                            </h1>
+                            <p class="hero-subtitle">
+                                Una plataforma pública para visualizar entregas,
+                                registrar donaciones y gestionar la trazabilidad
+                                de bienes de forma transparente.
+                            </p>
+                        {{/if}}
                     </div>
+
                     <div class="hero-actions">
-                        <a href="#mapa" class="btn btn-primary-marron">Explorar entregas</a>
-                        <a href="/login" class="btn btn-secondary">Iniciar sesión</a>
+                        {{#if sesion.autenticado}}
+                            <a href="{{sesion.destino}}" class="btn btn-primary-marron">
+                                {{sesion.boton}}
+                            </a>
+                            <a href="#mapa" class="btn btn-secondary">
+                                Explorar entregas
+                            </a>
+                        {{else}}
+                            <a href="#mapa" class="btn btn-primary-marron">
+                                Explorar entregas
+                            </a>
+                            <a href="/login" class="btn btn-secondary">
+                                Iniciar sesión
+                            </a>
+                        {{/if}}
                     </div>
                 </div>
                 <div class="hero-image-box">
@@ -222,12 +247,31 @@
         <!-- Call to Action -->
         <section class="section-cta">
             <div class="section-title-box">
-                <h2 class="section-title">¿Querés sumarte a DonaTrack?</h2>
-                <p class="section-subtitle">Registrá tu cuenta para donar o recibir bienes de forma segura. Seguí cada entrega y conocé el impacto de tu ayuda.</p>
+                {{#if sesion.autenticado}}
+                    <h2 class="section-title">{{sesion.titulo}}</h2>
+                    <p class="section-subtitle">{{sesion.descripcion}}</p>
+                {{else}}
+                    <h2 class="section-title">¿Querés sumarte a DonaTrack?</h2>
+                    <p class="section-subtitle">
+                        Creá tu cuenta y después elegí participar como donante
+                        o entidad beneficiaria.
+                    </p>
+                {{/if}}
             </div>
-            <div style="display: flex; gap: 16px;">
-                <a href="/registro/donante" class="btn btn-light">Registro de donante</a>
-                <a href="/registro/entidad" class="btn btn-light">Registro de entidad beneficiaria</a>
+
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                {{#if sesion.autenticado}}
+                    <a href="{{sesion.destino}}" class="btn btn-light">
+                        {{sesion.boton}}
+                    </a>
+                {{else}}
+                    <a href="/auth/registro" class="btn btn-light">
+                        Crear mi cuenta
+                    </a>
+                    <a href="/login" class="btn btn-light">
+                        Iniciar sesión
+                    </a>
+                {{/if}}
             </div>
         </section>
     </main>
@@ -261,6 +305,11 @@
     <script src="/assets/js/landing.js"></script>
 
 </div>
+
+{{#if mostrarPerfil}}
+    {{> templates/partials/modal-perfil}}
+    <script src="/assets/js/modal-perfil.js"></script>
+{{/if}}
 
 </body>
 </html>

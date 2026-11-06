@@ -28,6 +28,7 @@ public class MiEntidadRecepcionController {
 
   public void confirmar(Context ctx) throws IOException {
     String id = panel.donacionPropia(
+        ctx,
         ctx.pathParam("id")
     ).getIdAsString();
 
@@ -37,7 +38,7 @@ public class MiEntidadRecepcionController {
       );
     }
 
-    var seguimiento = panel.seguimientoDatos(id);
+    var seguimiento = panel.seguimientoDatos(ctx, id);
     String estado = seguimiento.path("estadoEntrega").asText();
 
     if (!List.of("EN_TRASLADO", "ENTREGADA").contains(estado)) {
@@ -133,6 +134,7 @@ public class MiEntidadRecepcionController {
 
   public void foto(Context ctx) throws IOException {
     String id = panel.donacionPropia(
+        ctx,
         ctx.pathParam("id")
     ).getIdAsString();
 

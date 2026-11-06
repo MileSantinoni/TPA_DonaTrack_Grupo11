@@ -20,7 +20,9 @@ public class JavalinHandlebars implements FileRenderer {
     Template template = null;
     try {
       template = handlebars.compile("templates/" + path.replace(".hbs",""));
-      return template.apply(model);
+      Map<String, Object> vista = new java.util.HashMap<>(model);
+      org.example.seguridad.SesionWeb.modelo(context, vista);
+      return template.apply(vista);
     } catch (IOException e) {
       e.printStackTrace();
       context.status(HttpStatus.NOT_FOUND);

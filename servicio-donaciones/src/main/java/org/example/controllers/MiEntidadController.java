@@ -33,29 +33,13 @@ public class MiEntidadController {
     this.proveedor = proveedor;
   }
 
-  EntidadBeneficiaria entidadActual() {
-    UUID id;
-
-    try {
-      id = UUID.fromString(
-          Objects.toString(
-              System.getenv("DONATRACK_DEV_ENTIDAD_ID"),
-              ""
-          )
-      );
-    } catch (IllegalArgumentException e) {
-      throw new ServiceUnavailableResponse(
-          "Configurá DONATRACK_DEV_ENTIDAD_ID "
-              + "con el UUID de una entidad existente."
-      );
-    }
-
-    var entidad = proveedor.get()
-        .find(EntidadBeneficiaria.class, id);
+  EntidadBeneficiaria entidadActual(Context ctx) {
+    EntidadBeneficiaria entidad =
+        org.example.seguridad.SesionWeb.cuenta(ctx).entidad;
 
     if (entidad == null) {
-      throw new ServiceUnavailableResponse(
-          "No existe la entidad configurada."
+      throw new io.javalin.http.ForbiddenResponse(
+          "La cuenta no tiene una entidad vinculada."
       );
     }
 
@@ -64,7 +48,7 @@ public class MiEntidadController {
 
   public void index(Context ctx) {
     var em = proveedor.get();
-    var entidad = entidadActual();
+    var entidad = entidadActual(ctx);
 
     boolean necesidades =
         "necesidades".equals(ctx.queryParam("vista"));
@@ -317,7 +301,7 @@ public class MiEntidadController {
   }
 
   public void guardarNecesidad(Context ctx) {
-    var entidad = entidadActual();
+    var entidad = entidadActual(ctx);
     var em = proveedor.get();
 
     String tipo = campo(ctx, "tipo");
@@ -507,7 +491,7 @@ public class MiEntidadController {
       throw new BadRequestResponse("ID inválido.");
     }
 
-    var entidad = entidadActual();
+    var entidad = entidadActual(ctx);
     var n = proveedor.get().find(Necesidad.class, id);
 
     if (n == null
@@ -532,7 +516,7 @@ public class MiEntidadController {
         .getSingleResult() > 0;
   }
 
-  Donacion donacionPropia(String idTexto) {
+  Donacion donacionPropia(Context ctx, String idTexto) {
     UUID id;
 
     try {
@@ -541,7 +525,7 @@ public class MiEntidadController {
       throw new BadRequestResponse("ID inválido.");
     }
 
-    var entidad = entidadActual();
+    var entidad = entidadActual(ctx);
 
     var lista = proveedor.get().createQuery("""
             SELECT DISTINCT a.donacion
@@ -564,12 +548,12 @@ public class MiEntidadController {
 
   public void seguimiento(Context ctx) {
     ctx.header("Cache-Control", "no-store")
-        .json(seguimientoDatos(ctx.pathParam("id")));
+        .json(seguimientoDatos(ctx, ctx.pathParam("id")));
   }
 
-  ObjectNode seguimientoDatos(String id) {
-    var d = donacionPropia(id);
-    var entidad = entidadActual();
+  ObjectNode seguimientoDatos(Context ctx, String id) {
+    var d = donacionPropia(ctx, id);
+    var entidad = entidadActual(ctx);
 
     ObjectNode datos = llamarLogistica(
         "GET",

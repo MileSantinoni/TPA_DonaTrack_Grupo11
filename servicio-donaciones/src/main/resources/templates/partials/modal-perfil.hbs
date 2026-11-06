@@ -1,0 +1,197 @@
+<dialog id="modal-perfil"
+        class="dt-perfil-modal"
+        aria-labelledby="perfil-titulo">
+
+    <header class="dt-perfil-cabecera">
+        <div>
+            <span class="dt-cuenta-etiqueta">BIENVENIDO A DONATRACK</span>
+            <h2 id="perfil-titulo">Completá tu perfil</h2>
+            <p>Tu cuenta ya está creada. Contanos cómo vas a participar.</p>
+        </div>
+
+        <button type="button"
+                class="dt-perfil-cerrar"
+                data-cerrar-perfil
+                aria-label="Cerrar">
+            <svg width="20" height="20" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18"/>
+            </svg>
+        </button>
+    </header>
+
+    <div class="dt-perfil-contenido">
+        {{#if error}}
+            <p class="dt-cuenta-error" role="alert">{{error}}</p>
+        {{/if}}
+
+        {{#if elegir}}
+            <div class="dt-cuenta-opciones">
+                <a class="dt-cuenta-opcion"
+                   href="/cuenta/completar?tipo=DONANTE">
+                    <strong>Soy donante</strong>
+                    <span>Quiero consultar mis donaciones y sus entregas.</span>
+                </a>
+
+                <a class="dt-cuenta-opcion"
+                   href="/cuenta/completar?tipo=ENTIDAD">
+                    <strong>Soy una entidad beneficiaria</strong>
+                    <span>Quiero registrar necesidades y recibir donaciones.</span>
+                </a>
+            </div>
+        {{else}}
+            <nav class="dt-perfil-tipos" aria-label="Tipo de perfil">
+                <a href="/cuenta/completar?tipo=DONANTE"
+                   {{#unless entidad}}aria-current="page"{{/unless}}>
+                    Soy donante
+                </a>
+                <a href="/cuenta/completar?tipo=ENTIDAD"
+                   {{#if entidad}}aria-current="page"{{/if}}>
+                    Soy una entidad
+                </a>
+            </nav>
+
+            <form method="post"
+                  action="/cuenta/completar"
+                  class="dt-cuenta-form">
+
+                <input type="hidden" name="csrf" value="{{sesion.csrf}}">
+
+                {{#if entidad}}
+                    <label>
+                        Razón social
+                        <input name="razonSocial"
+                               maxlength="180"
+                               autocomplete="organization"
+                               required>
+                    </label>
+
+                    <label>
+                        Dirección completa
+                        <input name="direccion"
+                               maxlength="180"
+                               placeholder="Calle, altura, ciudad y provincia"
+                               autocomplete="street-address"
+                               required>
+                    </label>
+
+                    <label>
+                        Teléfono
+                        <input name="telefono"
+                               type="tel"
+                               maxlength="40"
+                               autocomplete="tel"
+                               required>
+                    </label>
+                {{else}}
+                    <label>
+                        Tipo de persona
+                        <select name="persona" id="cuenta-persona">
+                            <option value="humana">Persona humana</option>
+                            <option value="juridica">Persona jurídica</option>
+                        </select>
+                    </label>
+
+                    <fieldset data-persona="humana">
+                        <legend>Datos personales</legend>
+
+                        <label>
+                            Nombre
+                            <input name="nombre"
+                                   maxlength="80"
+                                   autocomplete="given-name"
+                                   required>
+                        </label>
+
+                        <label>
+                            Apellido
+                            <input name="apellido"
+                                   maxlength="80"
+                                   autocomplete="family-name"
+                                   required>
+                        </label>
+
+                        <label>
+                            Edad
+                            <input name="edad"
+                                   type="number"
+                                   min="0"
+                                   max="120"
+                                   step="1"
+                                   required>
+                        </label>
+
+                        <label>
+                            Género
+                            <select name="genero">
+                                <option value="OTRO">Otro / Prefiero no indicar</option>
+                                <option value="FEMENINO">Femenino</option>
+                                <option value="MASCULINO">Masculino</option>
+                            </select>
+                        </label>
+
+                        <label class="dt-cuenta-ancho">
+                            Dirección
+                            <input name="direccion"
+                                   maxlength="180"
+                                   autocomplete="street-address"
+                                   required>
+                        </label>
+                    </fieldset>
+
+                    <fieldset data-persona="juridica" hidden disabled>
+                        <legend>Datos de la organización</legend>
+
+                        <label class="dt-cuenta-ancho">
+                            Razón social
+                            <input name="razonSocial"
+                                   maxlength="180"
+                                   required>
+                        </label>
+
+                        <label>
+                            Tipo de organización
+                            <select name="organizacion">
+                                <option value="EMPRESA">Empresa</option>
+                                <option value="ONG">ONG</option>
+                                <option value="INSTITUCION">Institución</option>
+                                <option value="GUBERNAMENTAL">Gubernamental</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Rubro
+                            <input name="rubro"
+                                   maxlength="180"
+                                   required>
+                        </label>
+                    </fieldset>
+
+                    <label>
+                        DNI / CUIT
+                        <input name="documento"
+                               maxlength="30"
+                               required>
+                    </label>
+                {{/if}}
+
+                <p class="dt-cuenta-ayuda">
+                    Usaremos el correo verificado de tu cuenta de Logto.
+                </p>
+
+                <div class="dt-perfil-acciones">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-cerrar-perfil>
+                        Ahora no
+                    </button>
+
+                    <button class="btn btn-primary-action" type="submit">
+                        Guardar y comenzar
+                    </button>
+                </div>
+            </form>
+        {{/if}}
+    </div>
+</dialog>

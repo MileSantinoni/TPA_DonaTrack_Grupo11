@@ -92,7 +92,7 @@ public class EntidadesBeneficiariasController {
 
     Map<String, Object> modelo = new HashMap<>();
 
-    misDonaciones.agregarDatosDonante(modelo, em);
+    misDonaciones.agregarDatosDonante(modelo, ctx);
 
     modelo.put("entidades", tarjetas);
     modelo.put("nombre", nombre);

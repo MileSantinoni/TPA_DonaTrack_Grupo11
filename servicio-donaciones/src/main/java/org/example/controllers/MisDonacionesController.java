@@ -45,7 +45,7 @@ public class MisDonacionesController {
 
   public void index(Context ctx) {
     EntityManager em = entityManagerSupplier.get();
-    Donante donante = obtenerDonanteDeDesarrollo(em);
+    Donante donante = obtenerDonanteActual(ctx);
 
     String estado = parametro(ctx, "estado");
     String categoria = parametro(ctx, "categoria");
@@ -255,48 +255,17 @@ public class MisDonacionesController {
     return fila;
   }
 
-  private Donante obtenerDonanteDeDesarrollo(EntityManager em) {
-    String configurado = System.getenv("DONATRACK_DEV_DONANTE_ID");
-    Long id;
-
-    try {
-      id = Long.valueOf(configurado);
-    } catch (NumberFormatException e) {
-      throw new ServiceUnavailableResponse(
-          "Configurá DONATRACK_DEV_DONANTE_ID con el ID numérico "
-              + "de un donante existente."
-      );
-    }
-
-    Donante donante = em.find(Donante.class, id);
+  private Donante obtenerDonanteActual(Context ctx) {
+    Donante donante =
+        org.example.seguridad.SesionWeb.cuenta(ctx).donante;
 
     if (donante == null) {
-      throw new ServiceUnavailableResponse(
-          "El donante indicado en DONATRACK_DEV_DONANTE_ID no existe."
+      throw new io.javalin.http.ForbiddenResponse(
+          "La cuenta no tiene un donante vinculado."
       );
     }
 
     return donante;
-  }
-
-  private int obtenerPagina(Context ctx) {
-    String valor = parametro(ctx, "pagina");
-
-    if (valor.isBlank()) {
-      return 1;
-    }
-
-    try {
-      int pagina = Integer.parseInt(valor);
-
-      if (pagina < 1 || pagina > 100000) {
-        throw new NumberFormatException();
-      }
-
-      return pagina;
-    } catch (NumberFormatException e) {
-      throw new BadRequestResponse("Número de página inválido.");
-    }
   }
 
   private String parametro(Context ctx, String nombre) {
@@ -338,9 +307,9 @@ public class MisDonacionesController {
 
   public void agregarDatosDonante(
       Map<String, Object> modelo,
-      EntityManager em
+      Context ctx
   ) {
-    agregarDatosDonante(modelo, obtenerDonanteDeDesarrollo(em));
+    agregarDatosDonante(modelo, obtenerDonanteActual(ctx));
   }
 
   private void agregarDatosDonante(
@@ -366,7 +335,7 @@ public class MisDonacionesController {
     ctx.header("Cache-Control", "no-store");
 
     EntityManager em = entityManagerSupplier.get();
-    Donante donante = obtenerDonanteDeDesarrollo(em);
+    Donante donante = obtenerDonanteActual(ctx);
 
     java.util.UUID id;
 
@@ -494,6 +463,20 @@ public class MisDonacionesController {
           "mensaje",
           "Logística no está disponible. Podés volver a intentar."
       ));
+    }
+  }
+
+  private int obtenerPagina(Context ctx) {
+    String valor = ctx.queryParam("pagina");
+
+    if (valor == null || valor.isBlank()) {
+      return 1;
+    }
+
+    try {
+      return Math.max(1, Integer.parseInt(valor));
+    } catch (NumberFormatException e) {
+      return 1;
     }
   }
 }

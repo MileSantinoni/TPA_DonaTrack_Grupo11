@@ -67,7 +67,7 @@ public class LogtoController {
     iniciar(ctx, false);
   }
 
-  public void registro(Context ctx) {
+  public void registro(Context ctx) throws Exception {
     iniciar(ctx, true);
   }
 
@@ -255,7 +255,7 @@ public class LogtoController {
       session.setAttribute(ID_TOKEN, idToken);
       session.setAttribute(CSRF, aleatorio());
 
-      ctx.redirect("/auth/me");
+      ctx.redirect("/cuenta/continuar");
 
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
@@ -274,15 +274,19 @@ public class LogtoController {
   public void actual(Context ctx) {
     Usuario usuario = usuario(ctx);
 
+    org.example.seguridad.CuentaWeb cuenta =
+        ctx.attribute("cuentaWeb");
+
     ctx.header("Cache-Control", "no-store");
 
     ctx.json(Map.of(
         "autenticado", true,
         "sub", usuario.sub(),
-        "nombre", usuario.nombre(),
+        "nombre", cuenta == null ? usuario.nombre() : cuenta.nombre,
         "email", usuario.email(),
         "emailVerificado", usuario.emailVerificado(),
-        "roles", usuario.roles()
+        "perfilCompleto", cuenta != null,
+        "roles", cuenta == null ? List.of() : List.of(cuenta.rol)
     ));
   }
 
@@ -417,5 +421,21 @@ public class LogtoController {
 
   private static String codificar(String valor) {
     return URLEncoder.encode(valor, StandardCharsets.UTF_8);
+  }
+
+  public static String csrf(Context ctx) {
+    usuario(ctx);
+
+    return (String) ctx.req()
+        .getSession(false)
+        .getAttribute(CSRF);
+  }
+
+  public static void validarCsrf(Context ctx) {
+    if (!iguales(csrf(ctx), ctx.formParam("csrf"))) {
+      throw new ForbiddenResponse(
+          "El formulario venció. Recargá la página."
+      );
+    }
   }
 }
