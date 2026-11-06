@@ -11,7 +11,9 @@
   <link rel="stylesheet" href="/assets/css/marco-compartido.css">
   <link rel="stylesheet" href="/assets/css/admin.css">
   <link rel="stylesheet" href="/assets/css/footer-panel.css">
+  <link rel="stylesheet" href="/assets/css/admin-planificacion.css">
 
+  <script defer src="/assets/js/admin-planificacion.js"></script>
   <script defer src="/assets/js/admin-camiones.js"></script>
   <script defer src="/assets/js/admin-eliminar-camion.js"></script>
 </head>
@@ -168,6 +170,18 @@
 
                 {{#each rutas}}
                   <p>Fecha: {{fecha}}</p>
+                  {{#if iniciable}}
+                      <button type="button"
+                              class="btn btn-primary-action plan-ruta-accion"
+                              data-iniciar-ruta="{{id}}"
+                              data-fecha="{{fecha}}">
+                          Iniciar traslado
+                      </button>
+                  {{/if}}
+
+                  {{#if activa}}
+                      <p>Traslado iniciado</p>
+                  {{/if}}
 
                   <ul class="ac-entregas-camion">
                     {{#each entregas}}
@@ -343,5 +357,6 @@
     </div>
   </form>
 </dialog>
+{{> templates/partials/planificacion-admin}}
 </body>
 </html>

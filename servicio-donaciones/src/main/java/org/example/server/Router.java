@@ -109,6 +109,8 @@ public class Router {
     var miEntidad = new org.example.controllers.MiEntidadController(entityManagerSupplier);
     var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
 
+    var planificacionAdmin = new org.example.controllers.AdminPlanificacionController(entityManagerSupplier);
+
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
@@ -130,6 +132,9 @@ public class Router {
     app.post("/administracion/camiones/{patente}/editar", adminCamiones::guardar);
     app.post("/administracion/camiones/{patente}/disponibilidad", adminCamiones::cambiarDisponibilidad);
     app.post("/administracion/camiones/{patente}/eliminar", adminCamiones::eliminar);
+    app.get("/administracion/planificaciones/pendientes", planificacionAdmin::pendientes);
+    app.post("/administracion/planificaciones", planificacionAdmin::planificar);
+    app.post("/administracion/rutas/{idRuta}/iniciar", planificacionAdmin::iniciar);
 
     app.get("/mi-entidad", miEntidad::index);
     app.get("/mi-entidad/necesidades/{id}", miEntidad::detalleNecesidad);

@@ -10,9 +10,12 @@
     <link rel="stylesheet" href="/assets/css/marco-compartido.css">
     <link rel="stylesheet" href="/assets/css/admin.css">
     <link rel="stylesheet" href="/assets/css/footer-panel.css">
+    <link rel="stylesheet" href="/assets/css/admin-planificacion.css">
 
+    <script defer src="/assets/js/admin-planificacion.js"></script>
     <script defer src="/assets/js/admin-donaciones.js"></script>
 </head>
+
 
 <body class="dt-donante dt-admin dt-fondo">
 <div class="dt-pagina dt-marco">
@@ -41,6 +44,11 @@
                         class="btn btn-primary-action"
                         id="abrir-registro">
                     Registrar donaciones
+                </button>
+                <button type="button"
+                        class="btn btn-secondary"
+                        id="abrir-planificacion">
+                    Planificar rutas
                 </button>
             </div>
         </div>
@@ -114,6 +122,14 @@
                                     class="btn btn-secondary"
                                     data-vencer="{{id}}">
                                 Marcar como vencida
+                            </button>
+                        {{/if}}
+
+                        {{#if planificable}}
+                            <button type="button"
+                                    class="btn btn-primary-action"
+                                    data-planificar-donacion="{{id}}">
+                                Planificar entrega
                             </button>
                         {{/if}}
                     </div>
@@ -412,5 +428,6 @@
         </div>
     </form>
 </dialog>
+{{> templates/partials/planificacion-admin}}
 </body>
 </html>

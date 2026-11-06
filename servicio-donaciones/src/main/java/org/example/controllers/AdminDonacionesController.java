@@ -103,6 +103,7 @@ public class AdminDonacionesController {
       fila.put("puedeVencer", enDeposito && vencida);
       fila.put("estado", etiqueta(d.getEstadoActual()));
       fila.put("clase", "dt-estado-" + d.getEstadoActual().name());
+      fila.put("planificable", d.getEstadoActual() == EstadoDonacion.ASIGNACION_REALIZADA);
 
       var sub = d.getSubcategoria();
 

@@ -1,0 +1,116 @@
+<dialog id="plan-modal" aria-labelledby="plan-titulo">
+  <header>
+    <h2 id="plan-titulo">Planificar entregas</h2>
+
+    <button type="button"
+            class="ac-cerrar"
+            data-plan-cerrar
+            aria-label="Cerrar">×</button>
+  </header>
+
+  <p>
+    Seleccioná hasta 50 donaciones. El planificador elegirá
+    los camiones disponibles y ordenará sus destinos para mañana.
+  </p>
+
+  <form id="plan-form">
+    <div class="ac-grid">
+      <label>
+        Latitud del depósito
+        <input name="latitud"
+               type="number"
+               step="any"
+               min="-90"
+               max="90"
+               required>
+      </label>
+
+      <label>
+        Longitud del depósito
+        <input name="longitud"
+               type="number"
+               step="any"
+               min="-180"
+               max="180"
+               required>
+      </label>
+    </div>
+
+    <p class="ac-ayuda">
+      Indicá el peso total en kg y el volumen total en m³
+      de cada donación.
+    </p>
+
+    <div id="plan-lista" class="plan-lista"></div>
+
+    <p id="plan-error" class="ac-error" role="alert"></p>
+
+    <div class="plan-acciones">
+      <button type="button"
+              class="btn btn-secondary"
+              data-plan-cerrar>
+        Ahora no
+      </button>
+
+      <button id="plan-submit"
+              type="submit"
+              class="btn btn-primary-action">
+        Planificar rutas
+      </button>
+    </div>
+  </form>
+
+  <section id="plan-resultado" hidden aria-live="polite">
+    <div id="plan-resumen"></div>
+
+    <div class="plan-acciones">
+      <button type="button"
+              class="btn btn-secondary"
+              data-plan-cerrar>
+        Cerrar
+      </button>
+
+      <a class="btn btn-primary-action"
+         href="/administracion/camiones">
+        Ver camiones y comenzar traslado
+      </a>
+    </div>
+  </section>
+</dialog>
+
+<dialog id="inicio-ruta-modal"
+        aria-labelledby="inicio-ruta-titulo">
+  <header>
+    <h2 id="inicio-ruta-titulo">Iniciar traslado</h2>
+
+    <button type="button"
+            class="ac-cerrar"
+            data-inicio-cerrar
+            aria-label="Cerrar">×</button>
+  </header>
+
+  <p id="inicio-ruta-texto"></p>
+
+  <p>
+    Confirmá cuando el camión salga del depósito.
+    Las donaciones pasarán a En traslado.
+  </p>
+
+  <p id="inicio-ruta-error"
+     class="ac-error"
+     role="alert"></p>
+
+  <div class="plan-acciones">
+    <button type="button"
+            class="btn btn-secondary"
+            data-inicio-cerrar>
+      Cancelar
+    </button>
+
+    <button type="button"
+            id="inicio-ruta-confirmar"
+            class="btn btn-primary-action">
+      Iniciar traslado
+    </button>
+  </div>
+</dialog>

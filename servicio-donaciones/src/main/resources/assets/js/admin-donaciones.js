@@ -421,7 +421,16 @@
                 idEntidad: new FormData(confirmar).get("idEntidad")
             });
 
-            terminar("Asignación registrada. La planificación de ruta queda pendiente.");
+            try {
+                sessionStorage.setItem(
+                    "planificar-donacion",
+                    idAsignacion
+                );
+            } catch {}
+
+            terminar(
+                "Entidad asignada. Completá los datos para planificar la entrega."
+            );
         });
     });
 

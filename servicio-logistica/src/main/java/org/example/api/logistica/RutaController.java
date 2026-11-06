@@ -33,4 +33,22 @@ public class RutaController {
       ctx.status(404).result("No hay ruta para el camion");
     }
   }
+
+  public void iniciarRutaPorId(Context ctx)
+      throws java.io.IOException, InterruptedException {
+
+    if (monitor.iniciarRutaPorId(
+        ctx.pathParam("idRuta"),
+        donaciones,
+        camiones
+    )) {
+      ctx.json(java.util.Map.of(
+          "mensaje", "Ruta iniciada"
+      ));
+    } else {
+      ctx.status(404).json(java.util.Map.of(
+          "mensaje", "No existe esa ruta"
+      ));
+    }
+  }
 }

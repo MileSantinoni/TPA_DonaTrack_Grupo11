@@ -155,6 +155,8 @@ public class GestionCamionesController {
           "rutas",
           rutas.stream().map(r -> Map.of(
               "id", r.getId(),
+              "iniciable", !r.estaActiva(),
+              "activa", r.estaActiva(),
               "fecha", Objects.toString(
                   r.getFechaPlanificada(),
                   "Sin fecha"
