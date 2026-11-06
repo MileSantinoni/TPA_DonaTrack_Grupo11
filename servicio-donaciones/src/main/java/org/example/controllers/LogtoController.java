@@ -61,14 +61,13 @@ public class LogtoController {
       String nonce,
       String verifier,
       Instant creado
-  ) implements Serializable {
-  }
+  ) implements Serializable {}
 
   public void login(Context ctx) throws Exception {
     iniciar(ctx, false);
   }
 
-  public void registro(Context ctx) throws Exception {
+  public void registro(Context ctx) {
     iniciar(ctx, true);
   }
 
@@ -89,7 +88,7 @@ public class LogtoController {
     var session = ctx.req().getSession(true);
     session.setMaxInactiveInterval(30 * 60);
 
-    var intento = new Intento(
+    Intento intento = new Intento(
         aleatorio(),
         aleatorio(),
         aleatorio(),
@@ -111,7 +110,7 @@ public class LogtoController {
     parametros.put("client_id", appId);
     parametros.put("redirect_uri", redirect);
     parametros.put("response_type", "code");
-    parametros.put("scope", "openid profile email roles");
+    parametros.put("scope", "openid profile email");
     parametros.put("state", intento.state());
     parametros.put("nonce", intento.nonce());
     parametros.put("code_challenge", challenge);
