@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -73,7 +73,7 @@
                     <div class="stat-header">
                         <span>Donaciones recibidas</span>
                     </div>
-                    <span class="stat-number">24</span>
+                    <span class="stat-number">{{stats.donacionesTotales}}</span>
                     <span class="stat-footer">Ejemplo ilustrativo · cajas registradas</span>
                 </article>
 
@@ -81,7 +81,7 @@
                     <div class="stat-header">
                         <span>Entregas realizadas</span>
                     </div>
-                    <span class="stat-number">08</span>
+                    <span class="stat-number">{{stats.entregasActivas}}</span>
                     <span class="stat-footer">Ejemplo ilustrativo · entregas coordinadas</span>
                 </article>
 
@@ -89,7 +89,7 @@
                     <div class="stat-header">
                         <span>Entidades beneficiarias</span>
                     </div>
-                    <span class="stat-number">12</span>
+                    <span class="stat-number">{{stats.entidadesConectadas}}</span>
                     <span class="stat-footer">Ejemplo ilustrativo · organizaciones conectadas</span>
                 </article>
             </div>
@@ -278,29 +278,8 @@
 
     {{> templates/partials/footer}}
 
-    <!-- Datos para el mapa (JSON embebido desde el controlador) -->
     <input type="hidden" id="mapa-center-lat" value="-34.6037">
     <input type="hidden" id="mapa-center-lng" value="-58.3816">
-
-    <script>
-        window.landingData = {
-            entidades: [
-                {{#each entidades}}
-                { id: "{{this.id}}", razonSocial: "{{this.razonSocial}}", direccion: "{{this.direccion}}", telefono: "{{this.telefono}}", latitud: {{this.latitud}}, longitud: {{this.longitud}} },
-                {{/each}}
-            ],
-            asignaciones: [
-                {{#each asignaciones}}
-                { id: "{{this.id}}", entidad: { id: "{{this.entidad.id}}" }, donacion: { id: "{{this.donacion.id}}" } },
-                {{/each}}
-            ],
-            donaciones: [
-                {{#each donaciones}}
-                { id: "{{this.id}}", descripcionGeneral: "{{this.descripcionGeneral}}", cantidad: {{this.cantidad}}, unidadMedida: "{{this.unidadMedida}}", estadoActualTexto: "{{this.estadoActualTexto}}" },
-                {{/each}}
-            ]
-        };
-    </script>
 
     <script src="/assets/js/landing.js"></script>
 
@@ -313,4 +292,6 @@
 
 </body>
 </html>
+
+
 

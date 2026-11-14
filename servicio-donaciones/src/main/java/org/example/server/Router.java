@@ -115,6 +115,7 @@ public class Router {
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
+    app.get("/api/landing", landingController::cargarLanding);
     app.get("/", landingController::index);
     app.get("/mis-donaciones", misDonaciones::index);
     app.get("/mis-donaciones/{id}/seguimiento", misDonaciones::seguimiento);
