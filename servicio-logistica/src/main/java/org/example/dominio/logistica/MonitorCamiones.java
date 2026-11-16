@@ -26,30 +26,52 @@ public class MonitorCamiones {
       RepositorioCamiones camiones
   ) throws java.io.IOException, InterruptedException {
 
-    java.util.Objects.requireNonNull(
-        donaciones, "La conexion con Donaciones es obligatoria"
+    return iniciarRuta(
+        buscarRutaPorPatente(patente),
+        donaciones,
+        camiones
     );
+  }
 
-    Ruta ruta = buscarRutaPorPatente(patente);
+  public synchronized boolean iniciarRutaPorId(
+      String idRuta,
+      Donaciones donaciones,
+      RepositorioCamiones camiones
+  ) throws java.io.IOException, InterruptedException {
+
+    return iniciarRuta(
+        rutas.buscarPorId(idRuta).orElse(null),
+        donaciones,
+        camiones
+    );
+  }
+
+  private boolean iniciarRuta(
+      Ruta ruta,
+      Donaciones donaciones,
+      RepositorioCamiones camiones
+  ) throws java.io.IOException, InterruptedException {
+
+    java.util.Objects.requireNonNull(
+        donaciones,
+        "La conexion con Donaciones es obligatoria"
+    );
 
     if (ruta == null) {
       return false;
     }
 
-    // Preparar y confirmar en la BD el evento antes de enviarlo.
     rutas.enTransaccion(() -> {
       ruta.prepararInicio();
       rutas.actualizar(ruta);
     });
 
-    // Devuelve el evento ya preparado, o null si la ruta estaba activa.
     EventoLogistico evento = ruta.prepararInicio();
 
     if (evento == null) {
       return true;
     }
 
-    // La llamada HTTP se realiza fuera de la transacción de base de datos.
     try {
       donaciones.informar(evento);
     } catch (IllegalArgumentException | IllegalStateException rechazo) {
@@ -60,9 +82,6 @@ public class MonitorCamiones {
 
       throw rechazo;
     }
-
-    // Si hubo IOException o InterruptedException, no llegamos acá:
-    // el evento queda guardado para reintentar con el mismo ID.
 
     rutas.enTransaccion(() -> {
       ruta.confirmarInicio(evento.idOperacion());

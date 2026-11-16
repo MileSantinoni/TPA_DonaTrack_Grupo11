@@ -1,0 +1,57 @@
+.dt-admin #plan-modal {
+    width: min(820px, 94vw);
+}
+
+.dt-admin #plan-modal [hidden] {
+    display: none !important;
+}
+
+.plan-lista {
+    max-height: 42vh;
+    overflow: auto;
+    margin: 18px 0;
+    padding: 2px;
+}
+
+.plan-fila {
+    padding: 16px;
+    border: 1px solid #e7d7c9;
+    border-radius: 10px;
+    margin: 0 0 12px;
+}
+
+.dt-admin .plan-eleccion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.plan-eleccion input {
+    accent-color: #a84e35;
+    flex-shrink: 0;
+}
+
+.plan-fila p {
+    margin: 8px 0 12px;
+    font-size: 13px;
+}
+
+.plan-acciones {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+#plan-modal button:disabled,
+#inicio-ruta-modal button:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+.plan-ruta-accion {
+    margin: 12px 0;
+}

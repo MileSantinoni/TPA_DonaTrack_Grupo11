@@ -360,4 +360,42 @@ public class RepositorioAsignacionesDonacion
       return true;
     });
   }
+
+  public void bloquearDonacion(
+      org.example.dominio.donacion.Donacion donacion
+  ) {
+    em().refresh(donacion, LockModeType.PESSIMISTIC_WRITE);
+  }
+
+  public void bloquearNecesidades(
+      java.util.Collection<
+          org.example.dominio.beneficiario.Necesidad
+          > necesidades
+  ) {
+    necesidades.stream()
+        .distinct()
+        .sorted(java.util.Comparator.comparing(n -> n.getId()))
+        .forEach(n ->
+            em().refresh(n, LockModeType.PESSIMISTIC_WRITE)
+        );
+  }
+
+  public void bloquearParaEvento(
+      List<AsignacionDonacion> seleccionadas
+  ) {
+    seleccionadas.stream()
+        .map(AsignacionDonacion::getDonacion)
+        .distinct()
+        .sorted(java.util.Comparator.comparing(
+            d -> d.getIdAsString()
+        ))
+        .forEach(this::bloquearDonacion);
+
+    bloquearNecesidades(
+        seleccionadas.stream()
+            .map(AsignacionDonacion::getNecesidad)
+            .filter(Objects::nonNull)
+            .toList()
+    );
+  }
 }

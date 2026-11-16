@@ -65,3 +65,152 @@
 .dt-donante :focus-visible {outline:3px solid var(--action-primary);outline-offset:4px}
 @media(max-width:1150px) {.dt-contenido{padding:32px}.dt-filtros{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.dt-filtros .btn{margin-top:0}.dt-toggle{right:24px}.dt-seguimiento-grid{gap:24px}}
 @media(max-width:750px) {.dt-pagina{min-height:100vh}.dt-header{height:auto;min-height:76px;padding:8px 0}.dt-header .navbar-inner{height:auto;flex-wrap:wrap;gap:12px}.dt-header-links{flex-wrap:wrap;gap:12px}.dt-header-links .nav-link{font-size:12px}.dt-nombre{width:auto}.dt-contenido{padding:28px 16px 40px}.dt-presentacion h1{font-size:29px;line-height:1.3}.dt-intro{line-height:1.5}.dt-tabs{margin-top:28px}.dt-filtros{grid-template-columns:1fr;padding:20px;gap:16px}.dt-resultados p{width:auto}.dt-resultados h2{font-size:22px}.dt-toggle{right:16px;top:16px}.dt-donacion summary{padding:16px;gap:12px}.dt-donacion summary p{padding-right:0}.dt-seguimiento{padding:16px}.dt-seguimiento-grid{grid-template-columns:1fr}.dt-timeline{height:314px}.dt-resultados{gap:12px}}
+/* Estados reales de las donaciones. */
+.dt-donante .dt-estado-EN_DEPOSITO {
+    background: #edf4fa;
+    color: #315b78;
+}
+
+.dt-donante .dt-estado-ASIGNACION_REALIZADA {
+    background: #eee8f7;
+    color: #654388;
+}
+
+.dt-donante .dt-estado-LISTA_PARA_ENTREGAR {
+    background: #e5f3f0;
+    color: #28695b;
+}
+
+.dt-donante .dt-estado-EN_TRASLADO {
+    background: #fff3da;
+    color: #805800;
+}
+
+.dt-donante .dt-estado-ENTREGADA {
+    background: #edf4ec;
+    color: #356141;
+}
+
+.dt-donante .dt-estado-ENTREGA_FALLIDA {
+    background: #fbe9e5;
+    color: #a13e2e;
+}
+
+.dt-donante .dt-estado-VENCIDA {
+    background: #ececef;
+    color: #595963;
+}
+
+.dt-donante .dt-historial-titulo {
+    margin-top: 24px;
+}
+
+.dt-donante .dt-historial-real {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+}
+
+.dt-donante .dt-historial-real li {
+    padding: 0 0 18px 16px;
+    border-left: 2px solid var(--border-default);
+}
+
+.dt-donante .dt-historial-real li:last-child {
+    padding-bottom: 0;
+}
+
+.dt-donante .dt-paginacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 28px;
+}
+
+.dt-donante .dt-paginacion span {
+    font-size: 14px;
+}
+
+.dt-donante .dt-donacion .dt-id {
+    padding-right: 190px;
+    overflow-wrap: anywhere;
+}
+
+.dt-donante .dt-filtros :is(select, button, a):focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.dt-donante.dt-teclado .dt-filtros :is(select, button, a):focus-visible {
+    outline: 1px solid var(--text-secondary-accessible);
+    outline-offset: 2px;
+}
+
+@media (max-width: 750px) {
+    .dt-donante .dt-donacion .dt-id {
+        padding-right: 0;
+    }
+
+    .dt-donante .dt-donacion .dt-toggle {
+        position: static;
+        align-self: flex-end;
+    }
+}
+
+.dt-seguimiento-real {
+    margin: 12px 0 28px;
+}
+
+.dt-seguimiento-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.dt-seguimiento-cabecera h4 {
+    margin: 0;
+}
+
+.dt-seguimiento-mensaje,
+.dt-seguimiento-fecha {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary-accessible);
+}
+
+.dt-google-mapa {
+    width: 100%;
+    height: 340px;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #212121;
+}
+
+.dt-mapa-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 12px;
+}
+
+.dt-actualizar-mapa {
+    font-size: 13px;
+}
+
+.dt-actualizar-mapa:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+@media (max-width: 750px) {
+    .dt-google-mapa {
+        height: 280px;
+    }
+}

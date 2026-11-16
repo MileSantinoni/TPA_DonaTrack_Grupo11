@@ -19,5 +19,7 @@ public final class RoutesLogistica {
     app.post("/rutas/{patente}/entregas/{idDonacion}/recepcion", entregas::confirmarRecepcion);
     app.post("/rutas/{patente}/entregas/{idDonacion}/no-recibida", entregas::marcarNoRecibida);
     app.post("/rutas/{patente}/entregas/{idDonacion}/retorno", entregas::registrarRetorno);
+    app.post("/rutas/id/{idRuta}/entregas/{idDonacion}/recepcion", entregas::confirmarRecepcion);
+    app.post("/rutas/id/{idRuta}/iniciar", rutas::iniciarRutaPorId);
   }
 }

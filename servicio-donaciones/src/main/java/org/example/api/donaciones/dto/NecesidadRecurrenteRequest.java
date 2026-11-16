@@ -9,8 +9,10 @@ public class NecesidadRecurrenteRequest {
   private String idSubcategoria;
   private LocalDate fechaInicioPeriodo;
   private Periodicidad periodicidad;
+  private String unidadMedida;
 
-
+  public String getUnidadMedida() {return unidadMedida;}
+  public void setUnidadMedida(String unidadMedida) {this.unidadMedida = unidadMedida;}
   public String getDescripcion() { return descripcion; }
   public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
   public int getCantidadObjetivo() { return cantidadObjetivo; }

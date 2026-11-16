@@ -26,6 +26,8 @@ import org.example.dominio.notificacion.WhatsApp;
 import org.example.api.donaciones.AvisoPlanificacionController;
 import org.example.api.donaciones.UbicacionEntidadController;
 import org.example.integracion.ClienteGeocodificacion;
+import org.example.controllers.MisDonacionesController;
+import org.example.controllers.EntidadesBeneficiariasController;
 
 public class Router {
 
@@ -80,7 +82,12 @@ public class Router {
         repoEntidades,
         RepositorioResultadosAlgoritmos.getInstance(),
         repoAsignaciones,
-        new AlgoritmoMadre(),
+        new AlgoritmoMadre(
+            new org.example.dominio.algoritmo.AlgoritmoCompatibilidadSemantica(),
+            new org.example.dominio.algoritmo.AlgoritmoPrioridadSubAtendidos(
+                repoAsignaciones
+            )
+        ),
         notificador
     );
 
@@ -92,25 +99,61 @@ public class Router {
 
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
-    RegistrationController registrationController = new RegistrationController(repoDonantes, repoEntidades);
+    MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
+    EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
+    var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
+    var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
+    var adminCamiones = new org.example.controllers.AdminCamionesController();
+
+    var miEntidad = new org.example.controllers.MiEntidadController(entityManagerSupplier);
+    var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
+
+    var planificacionAdmin = new org.example.controllers.AdminPlanificacionController(entityManagerSupplier);
+
+
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.render("administracion.hbs", java.util.Map.of()));
     app.get("/health", ctx -> ctx.result("OK"));
+    app.get("/api/landing", landingController::cargarLanding);
     app.get("/", landingController::index);
     app.get("/fotos-publicas", landingController::fotosPublicas);
+    app.get("/mis-donaciones", misDonaciones::index);
+    app.get("/mis-donaciones/{id}/seguimiento", misDonaciones::seguimiento);
+    app.get("/entidades-beneficiarias", entidadesBeneficiarias::index);
+    app.get("/administracion/donaciones", adminDonaciones::index);
+    app.get("/administracion/donaciones/buscar-donantes", adminDonaciones::buscarDonantes);
+    app.get("/administracion/donaciones/{id}/propuestas", adminDonaciones::propuestas);
+    app.get("/administracion/donantes", adminDonantes::index);
+    app.get("/administracion/donantes/{id}", adminDonantes::detalle);
+    app.post("/administracion/donantes", adminDonantes::guardar);
+    app.post("/administracion/donantes/{id}/editar", adminDonantes::guardar);
+    app.post("/administracion/donantes/{id}/eliminar", adminDonantes::eliminar);
+    app.post("/administracion/donantes/importar", adminDonantes::importar);
+    app.get("/administracion/camiones", adminCamiones::index);
+    app.post("/administracion/camiones", adminCamiones::guardar);
+    app.post("/administracion/camiones/{patente}/editar", adminCamiones::guardar);
+    app.post("/administracion/camiones/{patente}/disponibilidad", adminCamiones::cambiarDisponibilidad);
+    app.post("/administracion/camiones/{patente}/eliminar", adminCamiones::eliminar);
+    app.get("/administracion/planificaciones/pendientes", planificacionAdmin::pendientes);
+    app.post("/administracion/planificaciones", planificacionAdmin::planificar);
+    app.post("/administracion/rutas/{idRuta}/iniciar", planificacionAdmin::iniciar);
 
-    // Maqueta del panel beneficiario (sin conexión de formularios al dominio).
-    app.get("/mi-entidad", ctx -> ctx.render("miEntidad.hbs", java.util.Map.of()));
+    app.get("/mi-entidad", miEntidad::index);
+    app.get("/mi-entidad/necesidades/{id}", miEntidad::detalleNecesidad);
+    app.post("/mi-entidad/necesidades", miEntidad::guardarNecesidad);
+    app.post("/mi-entidad/necesidades/{id}/editar", miEntidad::guardarNecesidad);
+    app.post("/mi-entidad/necesidades/{id}/eliminar", miEntidad::eliminarNecesidad);
+    app.get("/mi-entidad/donaciones/{id}/seguimiento", miEntidad::seguimiento);
+    app.post("/mi-entidad/donaciones/{id}/recepcion", recepcionesEntidad::confirmar);
+    app.get("/mi-entidad/fotos/{id}/{archivo}", recepcionesEntidad::foto);
 
-    // Rutas de Registro
-    app.get("/registro", ctx -> ctx.redirect("/registro/donante"));
-    app.get("/registro/donante", registrationController::registroDonante);
-    app.post("/registro/donante", registrationController::crearPersonaHumana);
-    app.get("/registro/donante/juridica", registrationController::registroDonanteJuridica);
-    app.post("/registro/donante/juridica", registrationController::crearPersonaJuridica);
-    app.get("/registro/entidad", registrationController::registroEntidad);
-    app.post("/registro/entidad", registrationController::crearEntidad);
+    // Las cuentas se crean primero en Logto.
+    app.get("/registro", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/donante", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/donante/juridica", ctx -> ctx.redirect("/auth/registro"));
+    app.get("/registro/entidad", ctx -> ctx.redirect("/auth/registro"));
+
     // Rutas Donantes
     app.get("/donantes", donantes::obtenerTodos);
     app.get("/donantes/{id}", donantes::obtenerPorId);
@@ -156,7 +199,29 @@ public class Router {
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
-    app.get("/mis-donaciones", ctx -> ctx.render("misDonaciones.hbs", java.util.Map.of()));
-    app.get("/entidades-beneficiarias", ctx -> ctx.render("entidadesBeneficiarias.hbs", java.util.Map.of()));
+
+    // Autenticación y perfil local
+    var logto = new org.example.controllers.LogtoController();
+    var cuentas = new org.example.controllers.CuentaController(
+        entityManagerSupplier,
+        landingController
+    );
+
+    org.example.seguridad.SesionWeb.configurar(
+        app,
+        entityManagerSupplier
+    );
+
+    app.get("/login", logto::login);
+    app.get("/auth/registro", logto::registro);
+    app.get("/auth/callback", logto::callback);
+    app.get("/auth/me", logto::actual);
+    app.get("/logout", logto::confirmarSalida);
+    app.post("/auth/logout", logto::logout);
+
+    app.get("/cuenta/continuar", cuentas::continuar);
+    app.get("/cuenta/completar", cuentas::formulario);
+    app.post("/cuenta/completar", cuentas::guardar);
+
   }
 }
