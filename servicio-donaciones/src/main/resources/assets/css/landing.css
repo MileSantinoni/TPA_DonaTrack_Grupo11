@@ -203,6 +203,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    z-index: 50;
 }
 
 .map-detail-card {
@@ -210,6 +211,8 @@
     top: 24px;
     right: 24px;
     width: 360px;
+    max-height: calc(100% - 48px);
+    overflow-y: auto;
     padding: 24px;
     background: var(--palette-bg);
     box-shadow: 0px 2px 8px rgba(87, 66, 57, 0.06);
@@ -217,6 +220,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    z-index: 1000;
 }
 
 .map-counter-overlay {

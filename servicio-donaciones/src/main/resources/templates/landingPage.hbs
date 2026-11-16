@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/assets/main.css">
     <link rel="stylesheet" href="/assets/css/landing.css">
     <link rel="stylesheet" href="/assets/css/marco-compartido.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn6kkiOmNeweLEBYEifpyZG5nTSM4yBtA&callback=initMap&loading=async" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn6kkiOmNeweLEBYEifpyZG5nTSM4yBtA&loading=async" async defer></script>
 </head>
 <body class="dt-fondo">
 
@@ -74,7 +74,7 @@
                         <span>Donaciones recibidas</span>
                     </div>
                     <span class="stat-number">{{stats.donacionesTotales}}</span>
-                    <span class="stat-footer">Ejemplo ilustrativo · cajas registradas</span>
+                <!--    <span class="stat-footer">Ejemplo ilustrativo · cajas registradas</span>-->
                 </article>
 
                 <article class="stat-card">
@@ -82,7 +82,7 @@
                         <span>Entregas realizadas</span>
                     </div>
                     <span class="stat-number">{{stats.entregasActivas}}</span>
-                    <span class="stat-footer">Ejemplo ilustrativo · entregas coordinadas</span>
+                 <!--   <span class="stat-footer">Ejemplo ilustrativo · entregas coordinadas</span> -->
                 </article>
 
                 <article class="stat-card">
@@ -90,7 +90,7 @@
                         <span>Entidades beneficiarias</span>
                     </div>
                     <span class="stat-number">{{stats.entidadesConectadas}}</span>
-                    <span class="stat-footer">Ejemplo ilustrativo · organizaciones conectadas</span>
+                   <!-- <span class="stat-footer">Ejemplo ilustrativo · organizaciones conectadas</span> -->
                 </article>
             </div>
         </section>
@@ -100,15 +100,24 @@
             <div class="map-header">
                 <div class="section-title-box">
                     <h2 class="section-title">Mapa de entregas</h2>
-                    <p class="section-subtitle">Visualiza entregas, entidades y donaciones en un mapa interactivo.</p>
+                    <p class="section-subtitle">Visualiza entregas, y entidades en un mapa interactivo.</p>
                 </div>
 
                 <div class="map-filters">
                     <div class="filter-group">
                         <label class="filter-label">Estado</label>
-                        <div class="filter-select">
+                        <div class="filter-select" id="filtro-estado">
                             <span>Todos</span>
-                            <span>▼</span>
+
+                            <span class="filter-options-estado" style="display: none;">
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="EN_DEPOSITO" class="filtro-estado-radio"> EN_DEPOSITO</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="ASIGNACION_REALIZADA" class="filtro-estado-radio"> ASIGNACION_REALIZADA</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="LISTA_PARA_ENTREGAR" class="filtro-estado-radio"> LISTA_PARA_ENTREGAR</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="EN_TRASLADO" class="filtro-estado-radio"> EN_TRASLADO</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="ENTREGADA" class="filtro-estado-radio"> ENTREGADA</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="ENTREGA_FALLIDA" class="filtro-estado-radio"> ENTREGA_FALLIDA</label>
+                                <label class="filter-option"><input type="radio" name="filtro-estado" value="VENCIDA" class="filtro-estado-radio"> VENCIDA</label>
+                            </span>
                         </div>
                         <span class="filter-caption">Filtrar por estado de entrega</span>
                     </div>
@@ -117,7 +126,7 @@
                         <label class="filter-label">Entidad</label>
                         <div class="filter-select">
                             <span>Todas</span>
-                            <span>▼</span>
+
                         </div>
                         <span class="filter-caption">Filtrar por entidad beneficiaria</span>
                         <div class="filter-options" id="filtro-entidades" style="display: none;">
@@ -141,22 +150,27 @@
                         <p>Cargando mapa de entregas...</p>
                     </div>
 
+
                     <!-- Leyenda -->
-                    <!-- <div class="map-legend">
+                    <div class="map-legend">
                          <h4 class="font-manrope">Leyenda</h4>
                          <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--brand-terracota); border-radius:50%;"></span>
-                             <span>Entrega activa</span>
+                             <span style="width:12px; height:12px; background:#1e88e5; border-radius:50%;"></span>
+                             <span>Entidad beneficiaria</span>
                          </div>
                          <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--palette-bg); border:1px solid var(--brand-marron); border-radius:50%;"></span>
-                             <span>Entregada</span>
+                             <span style="width:12px; height:12px; background:#ff8f00; border:1px solid #e65100; border-radius:50%;"></span>
+                             <span>Entrega realizada</span>
                          </div>
                          <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--brand-crema); border-radius:50%;"></span>
+                             <span style="width:12px; height:12px; background:#00acc1; border:1px solid #00838f; border-radius:50%;"></span>
                              <span>En traslado</span>
                          </div>
-                     </div>-->
+                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                             <span style="width:12px; height:12px; background:#ef5350; border:1px solid #c62828; border-radius:50%;"></span>
+                             <span>Entrega activa / pendiente</span>
+                         </div>
+                     </div>
 
                      <!-- Detalle de Entrega Overlay -->
                 <div class="map-detail-card" id="map-detail-card" style="display: none;">
@@ -166,31 +180,16 @@
                     </div>
                     <div id="detalle-contenido"></div>
                     <div class="fotos-detalle" id="fotos-detalle">
-                        <h5 class="font-manrope">Fotos de la entrega</h5>
+                        <!--<h5 class="font-manrope">Fotos de la entrega</h5>-->
                         <div id="galeria-fotos"></div>
                     </div>
                 </div>
 
-                <!-- Contadores Overlay -->
-                <!-- Contadores Overlay -->
-                <div class="map-counter-overlay">
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">08</span>
-                        <span style="font-size: 12px;">entregas activas</span>
-                    </div>
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">12</span>
-                        <span style="font-size: 12px;">en traslado</span>
-                    </div>
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">24</span>
-                        <span style="font-size: 12px;">entregadas</span>
-                    </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- Cómo Funciona -->
+                  </div>
+              </section>
+
+              <!-- Cómo Funciona -->
         <section class="section">
             <div class="section-title-box">
                 <h2 class="section-title">Cómo funciona</h2>
@@ -278,8 +277,8 @@
 
     {{> templates/partials/footer}}
 
-    <input type="hidden" id="mapa-center-lat" value="-34.6037">
-    <input type="hidden" id="mapa-center-lng" value="-58.3816">
+   <!-- <input type="hidden" id="mapa-center-lat" value="-34.6037">
+    <input type="hidden" id="mapa-center-lng" value="-58.3816"> -->
 
     <script src="/assets/js/landing.js"></script>
 

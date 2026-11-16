@@ -53,6 +53,10 @@ public class Donacion {
   @Column(name = "estado_actual")
   private String estadoActualTexto;
 
+  public String getEstadoActualTexto() {
+    return estadoActualTexto;
+  }
+
   @Transient
   private EstadoDonacionState estadoActual;
 
@@ -133,7 +137,16 @@ public class Donacion {
   }
 
   public EstadoDonacion getEstadoActual() {
-    return estadoActual.getNombre();
+    if (estadoActual != null) {
+      return estadoActual.getNombre();
+    }
+    if (estadoActualTexto != null && !estadoActualTexto.isBlank()) {
+      try {
+        return EstadoDonacion.valueOf(estadoActualTexto);
+      } catch (IllegalArgumentException ignored) {
+      }
+    }
+    return EstadoDonacion.EN_DEPOSITO;
   }
 
   public List<RegistroCambioEstado> getHistorialEstados() {

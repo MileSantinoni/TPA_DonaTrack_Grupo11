@@ -1,16 +1,26 @@
-﻿(function() {
+(function() {
     'use strict';
+
     let map;
     let markers = [];
     let currentAssignments = [];
     let currentEntities = [];
     let currentDonations = [];
+
     window.initMap = async function initMap() {
-        if (document.getElementById('mapa-google').offsetWidth === 0) { setTimeout(initMap, 100); return; }
-        const latitude = parseFloat(document.getElementById('mapa-center-lat')?.value || '-34.59837584787982');
-        const longitude = parseFloat(document.getElementById('mapa-center-lng')?.value || '-58.420018200000264');
-        map = new google.maps.Map(document.getElementById('mapa-google'), {
-            center: { lat: latitude, lng: longitude }, zoom: 12,
+        const mapElement = document.getElementById('mapa-google');
+        if (!mapElement) return;
+
+        if (mapElement.offsetWidth === 0) {
+            setTimeout(initMap, 100);
+            return;
+        }
+
+        map = new google.maps.Map(mapElement, {
+            center: { lat: -34.6037, lng: -58.3816 },
+            zoom: 13,
+            mapTypeControl: false,
+            fullscreenControl: false,
             styles: [
                 { elementType: 'geometry', stylers: [{ color: '#212121' }] },
                 { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
@@ -19,8 +29,30 @@
                 { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f0f0f' }] }
             ]
         });
+
+        // Ocultar overlay de carga si existe
+        const loadingOverlay = document.getElementById('map-loading-overlay');
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+        // Cerrar tarjeta de detalle al hacer clic en un área vacía del mapa
+        map.addListener('click', () => {
+            const card = document.getElementById('map-detail-card');
+            if (card) card.style.display = 'none';
+        });
+
+        // Configurar botón cerrar detalle
+        const botonCerrar = document.getElementById('btn-cerrar-detalle');
+        if (botonCerrar) {
+            botonCerrar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = document.getElementById('map-detail-card');
+                if (card) card.style.display = 'none';
+            });
+        }
+
         await cargarDatos();
     };
+
     async function cargarDatos() {
         try {
             const respuesta = await fetch("/api/landing");
@@ -51,27 +83,21 @@
         }
     }
 
-
-
-
-        window.currentData = { asignaciones: currentAssignments, entidades: currentEntities, donaciones: currentDonations };
-
-
-
-    function getEntidadDetails(entidadId) { return currentEntities.find(e => e.id == entidadId) || null; }
-    function getDonacionDetails(donacionId) { return currentDonations.find(d => d.id == donacionId) || null; }
-    function getAsignacionDetails(asignacionId) { return currentAssignments.find(a => a.id == asignacionId) || null; }
-    function getEstadoClass(estado) {
-        if (!estado) return '';
-        const u = estado.toUpperCase();
-        if (u.includes('ENTREGAD')) return 'estado-entregada';
-        if (u.includes('TRASLAD')) return 'estado-traslado';
-        return 'estado-activa';
+    function getEntidadDetails(entidadId) {
+        return currentEntities.find(e => String(e.id) === String(entidadId)) || null;
     }
-    function getFotoUrl(bien) {
-        if (!bien || !bien.foto) return null;
-        return bien.foto.startsWith('http') ? bien.foto : '/assets/fotos/' + bien.foto;
+
+    function getDonacionDetails(donacionId) {
+        return currentDonations.find(d => String(d.id) === String(donacionId)) || null;
     }
+
+    function getFotoUrl(foto) {
+        if (!foto) return null;
+        const url = typeof foto === 'string' ? foto : (foto.url || foto.path);
+        if (!url) return null;
+        return url.startsWith('http') ? url : '/assets/fotos/' + url;
+    }
+
     function getFotoInfo(donacion) {
         if (!donacion) return [];
         if (Array.isArray(donacion.fotos)) return donacion.fotos;
@@ -80,133 +106,329 @@
         }
         return [];
     }
-function addMarkers() {
-    markers.forEach(m => m.setMap(null));
-    markers = [];
-    if (!map) return;
-    const bounds = new google.maps.LatLngBounds();
-    currentAssignments.forEach(asignacion => {
-        const entidad = getEntidadDetails(asignacion.entidadId);
-        if (!entidad || entidad.latitud == null || entidad.longitud == null) return;
-        const donacion = getDonacionDetails(asignacion.donacionId);
-        const estado = donacion ? donacion.estadoActualTexto : 'EN_DEPOSITO';
-        const isEntregada = estado.toUpperCase().includes('ENTREGAD');
-        const isTransito = estado.toUpperCase().includes('TRASLAD');
-        const icon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            strokeColor: isEntregada ? '#e65100' : isTransito ? '#1e88e5' : '#e53935',
-            strokeWeight: 2,
-            fillColor: isEntregada ? '#ff8f00' : isTransito ? '#42a5f5' : '#ef5350',
-            fillOpacity: 0.8,
-            scale: 8
-        };
-        const marker = new google.maps.Marker({
-            position: { lat: entidad.latitud, lng: entidad.longitud },
-            map: map,
-            icon: icon,
-            title: entidad.razonSocial,
-            zIndex: 10
-        });
-        marker.addListener('click', () => showDetail(asignacion, entidad, donacion));
-        markers.push(marker);
-        bounds.extend({ lat: entidad.latitud, lng: entidad.longitud });
-    });
-    map.fitBounds(bounds);
-}
-function showDetail(asignacion, entidad, donacion) {
-    const card = document.getElementById('map-detail-card');
-    const content = document.getElementById('detalle-contenido');
-    if (!card || !content) return;
-    let html = '<div class="detail-header"><span class="badge badge-info">' + escapeHtml(entidad.razonSocial) + '</span></div>';
-    html += '<h3 class="font-manrope">' + escapeHtml(entidad.razonSocial) + '</h3>';
-    html += '<p class="detail-subtitle">' + escapeHtml(entidad.direccion || '-') + '</p>';
-    html += '<p class="detail-subtitle">TelÃ©fono: ' + (entidad.telefono || '-') + '</p>';
-    if (donacion) {
-        html += '<div class="detail-stats">';
-        html += '<div class="stat"><strong>' + (donacion.cantidad || 0) + '</strong><span>' + escapeHtml(donacion.unidadMedida || 'unidades') + '</span></div>';
-        html += '<div class="stat"><strong>' + escapeHtml(donacion.descripcionGeneral || '-') + '</strong></div>';
-        html += '</div>';
-        html += '<p class="detail-status">Estado: <strong>' + escapeHtml(donacion.estadoActualTexto) + '</strong></p>';
-        const fotos = getFotoInfo(donacion);
-        if (fotos.length > 0) {
-            html += '<div class="fotos-grid">';
-            fotos.forEach((foto, i) => {
-                const fotoUrl = getFotoUrl(foto);
-                html += '<a href="' + escapeHtml(fotoUrl) + '" target="_blank" class="foto-link">';
-                html += '<img src="' + escapeHtml(fotoUrl) + '" alt="Foto ' + (i + 1) + '" loading="lazy">';
-                html += '</a>';
-            });
-            html += '</div>';
-        } else {
-            html += '<p class="no-fotos">Sin fotos registradas para esta entrega.</p>';
-        }
+
+    function addMarkers() {
+        renderMarkers([], '');
     }
-    content.innerHTML = html;
-    card.style.display = 'block';
-}
-function escapeHtml(text) {
-    if (!text) return '';
-    return String(text).replace(/[&<>"']/g, function(c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-}
-function openPhoto(url) { window.open(url, '_blank'); }
-function updateCounters() {
-    const active = document.getElementById('contador-activas');
-    const inTransit = document.getElementById('contador-traslado');
-    const delivered = document.getElementById('contador-entregadas');
-    let a = 0, t = 0, d = 0;
-    currentAssignments.forEach(asignacion => {
-        const donacion = getDonacionDetails(asignacion.donacionId);
-        if (!donacion) return;
-        const estado = donacion.estadoActualTexto.toUpperCase();
-        if (estado.includes('EN_DEPOSITO') || estado.includes('LISTA')) a++;
-        else if (estado.includes('TRASLAD')) t++;
-        else if (estado.includes('ENTREGAD')) d++;
-    });
-    if (active) active.textContent = a;
-    if (inTransit) inTransit.textContent = t;
-    if (delivered) delivered.textContent = d;
-}
-document.addEventListener('click', function(e) {
-    const card = document.getElementById('map-detail-card');
-    if (card && card.style.display === 'block') {
-        const rect = card.getBoundingClientRect();
-        if (!rect.contains(e.clientX, e.clientY)) {
-            card.style.display = 'none';
-        }
-    }
-});
-document.addEventListener('click', function(e) {
-    const filtroEntidades = document.getElementById('filtro-entidades');
-    if (filtroEntidades && e.target === filtroEntidades) {
-        filtroEntidades.style.display = filtroEntidades.style.display === 'none' ? 'block' : 'none';
-    }
-});
-document.getElementById('btn-filtros-mapa')?.addEventListener('click', function() {
-    const checkboxes = document.querySelectorAll('.filtro-entidad-checkbox:checked');
-    const selectedEntidades = Array.from(checkboxes).map(cb => cb.value);
-    if (selectedEntidades.length === 0) { addMarkers(); return; }
-    const filtered = currentAssignments.filter(asignacion => {
-        return selectedEntidades.includes(asignacion.entidadId);
-    });
-    if (filtered.length === 0) {
+
+    function renderMarkers(filtroEntidades = [], filtroEstado = '') {
         markers.forEach(m => m.setMap(null));
         markers = [];
-        return;
+        if (!map) return;
+
+        const bounds = new google.maps.LatLngBounds();
+        let hasMarkers = false;
+
+        // Agrupar asignaciones por entidad para calcular offsets y evitar solapamientos
+        const asignacionesPorEntidad = {};
+        currentAssignments.forEach(asig => {
+            const key = String(asig.entidadId);
+            if (!asignacionesPorEntidad[key]) {
+                asignacionesPorEntidad[key] = [];
+            }
+            asignacionesPorEntidad[key].push(asig);
+        });
+
+        // 1. Marcadores de TODAS las Entidades Beneficiarias registradas
+        currentEntities.forEach(entidad => {
+            const lat = parseFloat(entidad.latitud);
+            const lng = parseFloat(entidad.longitud);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            // Filtro por entidad si fue seleccionada
+            if (filtroEntidades.length > 0 && !filtroEntidades.includes(String(entidad.id))) {
+                return;
+            }
+
+            const asignacionesEntidad = asignacionesPorEntidad[String(entidad.id)] || [];
+
+            // Si hay un filtro de estado activo, verificar si la entidad tiene alguna entrega con ese estado
+            if (filtroEstado) {
+                const coincide = asignacionesEntidad.some(a => {
+                    const donacion = getDonacionDetails(a.donacionId);
+                    const estado = (donacion && donacion.estadoActualTexto) ? donacion.estadoActualTexto : (a.estado || '');
+                    return estado.toUpperCase() === filtroEstado.toUpperCase();
+                });
+                if (!coincide) {
+                    return;
+                }
+            }
+
+            // Marcador de entidad beneficiaria (círculo azul sólido con borde)
+            const iconEntidad = {
+                path: google.maps.SymbolPath.CIRCLE,
+                strokeColor: '#0d47a1',
+                strokeWeight: 2.5,
+                fillColor: '#1e88e5',
+                fillOpacity: 0.95,
+                scale: 9
+            };
+
+            const entityMarker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                map: map,
+                icon: iconEntidad,
+                title: 'Entidad: ' + (entidad.razonSocial || 'Entidad Beneficiaria'),
+                zIndex: 10
+            });
+
+            entityMarker.entidadId = entidad.id;
+            entityMarker.tipo = 'entidad';
+            entityMarker.addListener('click', () => {
+                showEntidadDetail(entidad);
+            });
+
+            markers.push(entityMarker);
+            bounds.extend({ lat: lat, lng: lng });
+            hasMarkers = true;
+        });
+
+        // 2. Marcadores de TODAS las Entregas (Asignaciones)
+        currentAssignments.forEach(asignacion => {
+            // Filtro por entidad si fue seleccionada
+            if (filtroEntidades.length > 0 && !filtroEntidades.includes(String(asignacion.entidadId))) {
+                return;
+            }
+
+            const entidad = getEntidadDetails(asignacion.entidadId);
+            if (!entidad) return;
+
+            const baseLat = parseFloat(entidad.latitud);
+            const baseLng = parseFloat(entidad.longitud);
+            if (isNaN(baseLat) || isNaN(baseLng)) return;
+
+            const donacion = getDonacionDetails(asignacion.donacionId);
+            const estado = donacion && donacion.estadoActualTexto ? donacion.estadoActualTexto : (asignacion.estado || 'EN_DEPOSITO');
+            const estadoUpper = estado.toUpperCase();
+
+            // Filtro por estado
+            if (filtroEstado && estadoUpper !== filtroEstado.toUpperCase()) {
+                return;
+            }
+
+            // Calcular posición con offset radial para no tapar a la entidad ni a otras entregas
+            const listaHermana = asignacionesPorEntidad[String(asignacion.entidadId)] || [asignacion];
+            const indice = listaHermana.findIndex(a => String(a.id) === String(asignacion.id));
+            const total = listaHermana.length;
+
+            const radio = 0.00045; // ~50 metros
+            const angulo = (2 * Math.PI * (indice >= 0 ? indice : 0)) / (total > 0 ? total : 1) + (Math.PI / 4);
+            const entregaLat = baseLat + radio * Math.cos(angulo);
+            const entregaLng = baseLng + radio * Math.sin(angulo);
+
+            let strokeColor = '#c62828';
+            let fillColor = '#ef5350';
+
+            if (estadoUpper.includes('ENTREGAD')) {
+                strokeColor = '#e65100'; // Naranja (Entrega realizada)
+                fillColor = '#ff8f00';
+            } else if (estadoUpper.includes('TRASLAD')) {
+                strokeColor = '#00838f'; // Cyan (En traslado)
+                fillColor = '#00acc1';
+            } else {
+                strokeColor = '#c62828'; // Rojo (Entrega activa / pendiente / en depósito)
+                fillColor = '#ef5350';
+            }
+
+            const iconEntrega = {
+                path: google.maps.SymbolPath.CIRCLE,
+                strokeColor: strokeColor,
+                strokeWeight: 2,
+                fillColor: fillColor,
+                fillOpacity: 0.9,
+                scale: 7
+            };
+
+            const entregaMarker = new google.maps.Marker({
+                position: { lat: entregaLat, lng: entregaLng },
+                map: map,
+                icon: iconEntrega,
+                title: 'Entrega: ' + (donacion?.descripcionGeneral || 'Donación') + ' (' + entidad.razonSocial + ')',
+                zIndex: 25
+            });
+
+            entregaMarker.asignacionId = asignacion.id;
+            entregaMarker.tipo = 'entrega';
+            entregaMarker.addListener('click', () => {
+                showDetail(asignacion, entidad, donacion);
+            });
+
+            markers.push(entregaMarker);
+            bounds.extend({ lat: entregaLat, lng: entregaLng });
+            hasMarkers = true;
+        });
+
+        if (hasMarkers) {
+            map.fitBounds(bounds);
+        }
     }
-    const filteredMarkers = markers.filter(m => {
-        return selectedEntidades.includes(m.asignacionEntidadId);
+
+    function showEntidadDetail(entidad) {
+        const card = document.getElementById('map-detail-card');
+        const content = document.getElementById('detalle-contenido');
+        if (!card || !content) return;
+
+        let html = '<div class="detail-header"></div>';
+        html += '<h3 class="font-manrope">' + escapeHtml(entidad.razonSocial) + '</h3><br>';
+        html += '<p class="detail-subtitle"><strong>Dirección: </strong>' + escapeHtml(entidad.direccion || '-') + '</p>';
+        html += '<p class="detail-subtitle"><strong>Teléfono: </strong>' + escapeHtml(entidad.telefono || '-') + '</p><br>';
+        html += '<p class="detail-status"><strong>Tipo: </strong>Entidad beneficiaria registrada</p><br>';
+
+        const asignacionesEntidad = currentAssignments.filter(a => String(a.entidadId) === String(entidad.id));
+
+        if (asignacionesEntidad.length > 0) {
+            html += '<h5 class="font-manrope" style="margin-top: 8px; margin-bottom: 8px;">Entregas asignadas a esta entidad (' + asignacionesEntidad.length + ')</h5>';
+            asignacionesEntidad.forEach((asig, idx) => {
+                const donacion = getDonacionDetails(asig.donacionId);
+                const estado = donacion && donacion.estadoActualTexto ? donacion.estadoActualTexto : (asig.estado || 'EN_DEPOSITO');
+                html += '<div style="padding: 10px; margin-bottom: 10px; background: rgba(0,0,0,0.04); border-radius: 8px;">';
+                html += '<p style="margin: 0;"><strong>Entrega #' + (idx + 1) + '</strong> - Estado: <strong>' + escapeHtml(estado) + '</strong></p>';
+                if (donacion) {
+                    html += '<p style="margin: 4px 0; font-size: 13px;"><strong>Cantidad: </strong>' + (donacion.cantidad || 0) + ' ' + escapeHtml(donacion.unidadMedida || 'unidades') + '</p>';
+                    html += '<p style="margin: 4px 0; font-size: 13px;"><strong>Descripción: </strong>' + escapeHtml(donacion.descripcionGeneral || '-') + '</p>';
+                }
+                html += '</div>';
+            });
+        } else {
+            html += '<p><em>No hay entregas asociadas registradas actualmente para esta entidad.</em></p>';
+        }
+
+        content.innerHTML = html;
+        card.style.display = 'block';
+    }
+
+    function showDetail(asignacion, entidad, donacion) {
+        const card = document.getElementById('map-detail-card');
+        const content = document.getElementById('detalle-contenido');
+        if (!card || !content) return;
+
+        let html = '<div class="detail-header"></div>';
+        html += '<h3 class="font-manrope">' + escapeHtml(entidad?.razonSocial || 'Entidad Beneficiaria') + '</h3><br>';
+        html += '<p class="detail-subtitle"><strong>Destino: </strong>' + escapeHtml(entidad?.direccion || '-') + '</p>';
+        html += '<p class="detail-subtitle"><strong>Teléfono: </strong>' + escapeHtml(entidad?.telefono || '-') + '</p><br>';
+
+        if (donacion) {
+            html += '<div class="detail-stats">';
+            html += '<div class="stat"><strong>Cantidad: </strong>' + (donacion.cantidad || 0) + ' <span>' + escapeHtml(donacion.unidadMedida || 'unidades') + '</span></div><br>';
+            html += '<div class="stat"><strong>Descripción: </strong>' + escapeHtml(donacion.descripcionGeneral || '-') + '</div>';
+            html += '</div><br>';
+            html += '<p class="detail-status"><strong>Estado de entrega: </strong>' + escapeHtml(donacion.estadoActualTexto || asignacion?.estado || 'EN_DEPOSITO') + '</p><br>';
+
+            if (asignacion?.fechaRecepcion) {
+                html += '<p class="detail-subtitle"><strong>Fecha de recepción: </strong>' + escapeHtml(asignacion.fechaRecepcion) + '</p><br>';
+            }
+
+            const fotos = getFotoInfo(donacion);
+            if (fotos.length > 0) {
+                html += '<h5 class="font-manrope">Fotos de la entrega</h5>';
+                html += '<div class="fotos-grid">';
+                fotos.forEach((foto, i) => {
+                    const fotoUrl = getFotoUrl(foto);
+                    if (fotoUrl) {
+                        html += '<a href="' + escapeHtml(fotoUrl) + '" target="_blank" class="foto-link">';
+                        html += '<img src="' + escapeHtml(fotoUrl) + '" alt="Foto ' + (i + 1) + '" loading="lazy">';
+                        html += '</a>';
+                    }
+                });
+                html += '</div>';
+            } else {
+                html += '<h5>Sin fotos registradas para esta entrega</h5>';
+            }
+        }
+
+        content.innerHTML = html;
+        card.style.display = 'block';
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function updateCounters() {
+        const active = document.getElementById('contador-activas');
+        const inTransit = document.getElementById('contador-traslado');
+        const delivered = document.getElementById('contador-entregadas');
+        let a = 0, t = 0, d = 0;
+
+        currentAssignments.forEach(asignacion => {
+            const donacion = getDonacionDetails(asignacion.donacionId);
+            const estado = (donacion && donacion.estadoActualTexto) ? donacion.estadoActualTexto : (asignacion.estado || '');
+            const estadoUpper = estado.toUpperCase();
+            if (estadoUpper.includes('EN_DEPOSITO') || estadoUpper.includes('LISTA') || estadoUpper.includes('ASIGNACION')) a++;
+            else if (estadoUpper.includes('TRASLAD')) t++;
+            else if (estadoUpper.includes('ENTREGAD')) d++;
+        });
+
+        if (active) active.textContent = a;
+        if (inTransit) inTransit.textContent = t;
+        if (delivered) delivered.textContent = d;
+    }
+
+    // Cerrar el detalle únicamente cuando se hace clic fuera del mapa y fuera del detalle
+    document.addEventListener('click', function(e) {
+        const card = document.getElementById('map-detail-card');
+        const mapContainer = document.getElementById('mapa-google');
+        if (card && card.style.display === 'block') {
+            if (!card.contains(e.target) && !mapContainer?.contains(e.target)) {
+                card.style.display = 'none';
+            }
+        }
     });
-    filteredMarkers.forEach(m => m.setMap(m.map));
-    markers = filteredMarkers;
-    document.getElementById('map-detail-card').style.display = 'none';
-});
-window.addEventListener('load', function() {
-    if (window.google && window.google.maps) { initMap(); }
-    else { setTimeout(function() { window.addEventListener('load', initMap); }, 200); }
-});
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    window.dispatchEvent(new Event('load'));
-}
+
+    // Toggle para opciones del filtro de estados
+    const filtroEstadoDiv = document.getElementById('filtro-estado');
+    if (filtroEstadoDiv) {
+        filtroEstadoDiv.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                const opciones = this.querySelector('.filter-options-estado');
+                if (opciones) {
+                    opciones.style.display = opciones.style.display === 'none' ? 'block' : 'none';
+                }
+            }
+        });
+    }
+
+    // Toggle para opciones del filtro de entidades
+    const filtroEntidadesGroup = document.querySelector('.filter-group:nth-child(2) .filter-select');
+    if (filtroEntidadesGroup) {
+        filtroEntidadesGroup.addEventListener('click', function(e) {
+            const opciones = document.getElementById('filtro-entidades');
+            if (opciones) {
+                opciones.style.display = opciones.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+    }
+
+    // Botón de aplicar filtros
+    document.getElementById('btn-filtros-mapa')?.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('.filtro-entidad-checkbox:checked');
+        const selectedEntidades = Array.from(checkboxes).map(cb => cb.value);
+
+        const selectedEstadoRadio = document.querySelector('input.filtro-estado-radio:checked');
+        const selectedEstado = selectedEstadoRadio ? selectedEstadoRadio.value : '';
+
+        renderMarkers(selectedEntidades, selectedEstado);
+
+        const card = document.getElementById('map-detail-card');
+        if (card) card.style.display = 'none';
+    });
+
+    window.addEventListener('load', function() {
+        if (window.google && window.google.maps) {
+            initMap();
+        } else {
+            setTimeout(function() {
+                if (window.google && window.google.maps) {
+                    initMap();
+                }
+            }, 300);
+        }
+    });
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        window.dispatchEvent(new Event('load'));
+    }
 })();
