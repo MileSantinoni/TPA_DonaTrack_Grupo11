@@ -117,6 +117,7 @@ public class Router {
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/api/landing", landingController::cargarLanding);
     app.get("/", landingController::index);
+    app.get("/fotos-publicas", landingController::fotosPublicas);
     app.get("/mis-donaciones", misDonaciones::index);
     app.get("/mis-donaciones/{id}/seguimiento", misDonaciones::seguimiento);
     app.get("/entidades-beneficiarias", entidadesBeneficiarias::index);

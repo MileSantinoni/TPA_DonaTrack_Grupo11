@@ -1,0 +1,73 @@
+<a href="#mapa" class="btn btn-primary-marron">Explorar entregas</a>
+                        <a href="javascript:showRegistrationPopup()" class="btn btn-secondary">Registrarse</a>
+                        <a href="/login" class="btn btn-secondary">Iniciar sesión</a>
+
+                        <!-- Registration Popup -->
+<div id="registrationPopup" class="registration-popup" style="display: none;">
+    <div class="popup-content">
+        <button class="popup-close-btn" onclick="hideRegistrationPopup()">&times;</button>
+        <div class="popup-tabs">
+            <button class="popup-tab active" onclick="switchTab('humana')">Persona humana</button>
+            <button class="popup-tab" onclick="switchTab('juridica')">Persona jurídica</button>
+        </div>
+        
+        <form id="registrationForm">
+            <div class="popup-form-section">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Apellido</label>
+                    <input type="text" id="apellido" name="apellido" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de documento</label>
+                    <select id="tipoDocumento" name="tipoDocumento">
+                        <option value="DNI">DNI</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Número de documento</label>
+                    <input type="text" id="numDocumento" name="numDocumento" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="tel" id="telefono" name="telefono" required>
+                </div>
+                <div class="form-group">
+                    <label>Edad</label>
+                    <input type="number" id="edad" name="edad" required>
+                </div>
+                <div class="form-group">
+                    <label>Género</label>
+                    <select id="genero" name="genero">
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="direccion" name="direccion" required>
+                </div>
+            </div>
+            
+            <div class="popup-form-section" id="humanaSection" style="display: block;">
+                <p>Registro como donante persona humana</p>
+            </div>
+            <div class="popup-form-section" id="juridicaSection" style="display: none;">
+                <p>Registro como donante persona jurídica</p>
+            </div>
+            
+            <div class="popup-bottom-buttons">
+                <button type="button" class="btn btn-cancelar" onclick="hideRegistrationPopup()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" onclick="event.preventDefault(); submitRegistration('humana')">Registrar donante</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="/views/landing.js"></script>

@@ -10,7 +10,7 @@
         const latitude = parseFloat(document.getElementById('mapa-center-lat')?.value || '-34.59837584787982');
         const longitude = parseFloat(document.getElementById('mapa-center-lng')?.value || '-58.420018200000264');
         map = new google.maps.Map(document.getElementById('mapa-google'), {
-            center: { lat: latitude, lng: longitude }, zoom: 12,
+            center: { lat: latitude, lng: longitude }, zoom: 10,
             styles: [
                 { elementType: 'geometry', stylers: [{ color: '#212121' }] },
                 { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
@@ -68,10 +68,11 @@
         if (u.includes('TRASLAD')) return 'estado-traslado';
         return 'estado-activa';
     }
-    function getFotoUrl(bien) {
-        if (!bien || !bien.foto) return null;
-        return bien.foto.startsWith('http') ? bien.foto : '/assets/fotos/' + bien.foto;
-    }
+   // function getFotoUrl(bien) {
+     //   if (!bien || !bien.foto) return null;
+       // return bien.foto.startsWith('http') ? bien.foto : '/assets/fotos/' + bien.foto;
+    //}
+
     function getFotoInfo(donacion) {
         if (!donacion) return [];
         if (Array.isArray(donacion.fotos)) return donacion.fotos;
@@ -139,6 +140,15 @@ function showDetail(asignacion, entidad, donacion) {
             html += '</div>';
         } else {
             html += '<p class="no-fotos">Sin fotos registradas para esta entrega.</p>';
+        }
+        const btnCerrar = document.getElementById('btn-cerrar-detalle');
+        const detailCard = document.getElementById('map-detail-card');
+
+
+        if (btnCerrar && detailCard) {
+            btnCerrar.addEventListener('click', () => {
+                detailCard.style.display = 'none';
+            });
         }
     }
     content.innerHTML = html;

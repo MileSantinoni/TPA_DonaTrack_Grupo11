@@ -109,4 +109,10 @@ public class LandingController {
 
     ctx.render("landingPage.hbs", model);
   }
+
+  public void fotosPublicas(Context ctx) {
+    Map<String, Object> model = new HashMap<>();
+    model.put("titulo", "Fotos de Donaciones Entregadas");
+    ctx.render("fotos-publicas.hbs", model);
+  }
 }
