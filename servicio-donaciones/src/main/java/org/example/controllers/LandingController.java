@@ -33,36 +33,59 @@ public class LandingController {
   }
 
   public void cargarLanding(Context ctx) {
-    List<EntidadBeneficiaria> entidades = repositorioEntidades.buscarTodas();
-    List<AsignacionDonacion> asignaciones = repositorioAsignaciones.buscarTodas();
-    List<Donacion> donaciones = repositorioDonaciones.buscarTodas();
+    List<EntidadBeneficiaria> entidades =
+        repositorioEntidades.buscarTodas();
+
+    List<AsignacionDonacion> asignaciones =
+        repositorioAsignaciones.buscarTodas();
+
+    List<Donacion> donaciones =
+        repositorioDonaciones.buscarTodas();
 
     ctx.json(Map.of(
         "entidades", entidades.stream()
-            .filter(e -> e.getLatitud() != null && e.getLongitud() != null)
+            .filter(e ->
+                e.getLatitud() != null
+                    && e.getLongitud() != null
+            )
             .map(e -> Map.of(
                 "id", e.getIdAsString(),
-                "razonSocial", e.getRazonSocial(),
-                "direccion", e.getDireccion(),
-                "telefono", e.getTelefono(),
+                "razonSocial", java.util.Objects.toString(
+                    e.getRazonSocial(), ""
+                ),
+                "direccion", java.util.Objects.toString(
+                    e.getDireccion(), ""
+                ),
+                "telefono", java.util.Objects.toString(
+                    e.getTelefono(), ""
+                ),
                 "latitud", e.getLatitud(),
                 "longitud", e.getLongitud()
             ))
             .toList(),
+
         "asignaciones", asignaciones.stream()
+            .filter(a ->
+                a.getEntidad() != null && a.getDonacion() != null
+            )
             .map(a -> Map.of(
                 "id", a.getIdAsString(),
                 "entidadId", a.getEntidad().getIdAsString(),
                 "donacionId", a.getDonacion().getIdAsString()
             ))
             .toList(),
+
         "donaciones", donaciones.stream()
             .map(d -> Map.of(
                 "id", d.getIdAsString(),
-                "descripcionGeneral", d.getDescripcionGeneral(),
+                "descripcionGeneral", java.util.Objects.toString(
+                    d.getDescripcionGeneral(), ""
+                ),
                 "cantidad", d.getCantidad(),
-                "unidadMedida", d.getUnidadMedida()
-//                "estadoActualTexto", d.getEstadoActualTexto()
+                "unidadMedida", java.util.Objects.toString(
+                    d.getUnidadMedida(), ""
+                ),
+                "estadoActualTexto", d.getEstadoActual().name()
             ))
             .toList()
     ));
