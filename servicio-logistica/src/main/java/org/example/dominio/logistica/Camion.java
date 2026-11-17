@@ -51,6 +51,27 @@ public class Camion {
     }
   }
 
+  public void actualizarCaracteristicas(
+      double volumen,
+      double altura,
+      double carga
+  ) {
+    if (!Double.isFinite(volumen)
+        || !Double.isFinite(altura)
+        || !Double.isFinite(carga)
+        || volumen <= 0
+        || altura <= 0
+        || carga <= 0) {
+      throw new IllegalArgumentException(
+          "Las medidas del camión deben ser positivas."
+      );
+    }
+
+    this.capacidadVolumen = volumen;
+    this.altura = altura;
+    this.capacidadCarga = carga;
+  }
+
   public void establecerUbicacionInicial(UbicacionCamion ubicacionInicial) {
     actualizarUbicacion(ubicacionInicial);
   }

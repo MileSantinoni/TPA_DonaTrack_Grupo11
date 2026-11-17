@@ -138,6 +138,7 @@ public class AlgoritmoMadreTest {
         Periodicidad.SEMANAL
     );
 
+    necesidad.actualizarUnidad("kg");
     entidad.registrarNecesidad(necesidad);
     return entidad;
   }

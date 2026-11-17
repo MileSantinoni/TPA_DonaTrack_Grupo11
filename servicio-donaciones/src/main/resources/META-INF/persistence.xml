@@ -35,6 +35,9 @@
         <class>org.example.dominio.beneficiario.NecesidadRecurrente</class>
         <class>org.example.dominio.beneficiario.NecesidadExtraordinaria</class>
 
+        <!-- Seguridad -->
+        <class>org.example.seguridad.CuentaWeb</class>
+
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/donatrack_donaciones"/>

@@ -1,60 +1,235 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mis donaciones | DonaTrack</title>
-  <link rel="stylesheet" href="/assets/main.css">
-  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
-  <script src="/assets/vendor/leaflet/leaflet.js" defer></script>
-  <script src="/assets/js/mis-donaciones.js" defer></script>
-  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
-  <link rel="stylesheet" href="/assets/css/footer-panel.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="google-maps-key" content="{{googleMapsKey}}">
+    <script defer src="/assets/js/seguimiento-donacion.js"></script>
+
+    <title>Mis donaciones | DonaTrack</title>
+
+    <link rel="stylesheet" href="/assets/main.css">
+    <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+    <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+    <link rel="stylesheet" href="/assets/css/footer-panel.css">
+
+    <script defer src="/assets/js/mis-donaciones.js"></script>
 </head>
+
 <body class="dt-donante dt-fondo">
 <div class="dt-pagina dt-marco">
-  {{> templates/partials/header-donante}}
-  <main class="dt-contenido">
-    <section class="dt-presentacion" aria-labelledby="titulo">
-      <p class="dt-eyebrow">MI ESPACIO DONANTE</p>
-      <h1 id="titulo" class="font-manrope">Cada donación cuenta.</h1>
-      <p class="dt-intro">Consultá tus donaciones y conocé las necesidades de las entidades beneficiarias.</p>
-    </section>
-    <nav class="dt-tabs" aria-label="Mi espacio donante">
-      <a href="/mis-donaciones" class="dt-tab dt-tab-activa" aria-current="page">Mis donaciones</a>
-      <a class="dt-tab" href="/entidades-beneficiarias">Entidades beneficiarias</a>
-    </nav>
-    <p id="dt-aviso" class="dt-aviso" role="status" hidden></p>
-    <form class="dt-filtros" id="dt-filtros" aria-label="Filtrar donaciones de ejemplo">
-      <label>Estado<select name="estado"><option value="">Todos los estados</option><option value="traslado">En traslado</option><option value="entregada">Entregada</option><option value="deposito">En depósito</option></select><small>Opcional</small></label>
-      <label>Categoría<select name="categoria"><option value="">Todas las categorías</option><option>Alimentos</option><option>Indumentaria</option><option>Higiene</option></select><small>Opcional</small></label>
-      <label>Subcategoría<select name="subcategoria"><option value="">Todas las subcategorías</option><option>Arroz</option><option>Abrigos</option><option>Jabón</option></select><small>Opcional</small></label>
-      <button class="btn btn-primary-action" type="submit">Buscar</button>
-      <button class="btn btn-light dt-limpiar" type="reset">Limpiar filtros</button>
-    </form>
-    <section aria-labelledby="tus-donaciones">
-      <div class="dt-resultados"><h2 class="font-manrope" id="tus-donaciones">Tus donaciones</h2><p id="dt-contador" role="status">3 donaciones</p></div>
-      <div class="dt-lista">
-        <details class="dt-donacion" open data-estado="traslado" data-categoria="Alimentos" data-subcategoria="Arroz">
-          <summary><span class="dt-id">DON-0248</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Alimentos no perecederos</h3><p>20 kg · Alimentos / Arroz · Comedor Los Aromos · 28 oct 2026</p><span class="badge dt-badge-traslado"><img src="/assets/images/donante/traslado.svg" alt="">En traslado</span></summary>
-          {{> templates/partials/seguimiento-donante}}
-        </details>
-        <details class="dt-donacion" data-estado="entregada" data-categoria="Indumentaria" data-subcategoria="Abrigos">
-          <summary><span class="dt-id">DON-0192</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Abrigos de invierno</h3><p>12 unidades · Indumentaria / Abrigos · Hogar Esperanza</p><span class="badge dt-badge-entregada"><img src="/assets/images/donante/entregada.svg" alt="">Entregada</span></summary>
-          <div class="dt-detalle-simple"><h4>Donación entregada</h4><p>Destino: Hogar Esperanza.</p><p>Este detalle es ilustrativo. El comprobante y el historial se conectarán más adelante.</p></div>
-        </details>
-        <details class="dt-donacion" data-estado="deposito" data-categoria="Higiene" data-subcategoria="Jabón">
-          <summary><span class="dt-id">DON-0187</span><span class="dt-toggle"><span class="dt-ver">Ver detalle ↓</span><span class="dt-ocultar">Ocultar detalle ↑</span></span><h3>Artículos de higiene</h3><p>8 unidades · Higiene / Jabón · Sin entidad asignada</p><span class="badge badge-info"><img src="/assets/images/donante/deposito.svg" alt="">En depósito</span></summary>
-          <div class="dt-detalle-simple"><h4>Pendiente de asignación</h4><p>Los bienes se encuentran en el depósito. Todavía no hay un traslado para mostrar.</p></div>
-        </details>
-      </div>
-      <p id="dt-vacio" class="dt-vacio" hidden>No hay donaciones que coincidan con estos filtros.</p>
-    </section>
-  </main>
-  {{> templates/partials/footer-panel}}
+
+    {{> templates/partials/header-donante}}
+
+    <main class="dt-contenido">
+        <section class="dt-presentacion" aria-labelledby="titulo">
+            <p class="dt-eyebrow">MI ESPACIO DONANTE</p>
+
+            <h1 id="titulo" class="font-manrope">
+                Cada donación cuenta.
+            </h1>
+
+            <p class="dt-intro">
+                Consultá tus donaciones y conocé las necesidades
+                de las entidades beneficiarias.
+            </p>
+        </section>
+
+        <nav class="dt-tabs" aria-label="Mi espacio donante">
+            <a href="/mis-donaciones"
+               class="dt-tab dt-tab-activa"
+               aria-current="page">
+                Mis donaciones
+            </a>
+
+            <a href="/entidades-beneficiarias" class="dt-tab">
+                Entidades beneficiarias
+            </a>
+        </nav>
+
+        <form class="dt-filtros"
+              id="dt-filtros"
+              action="/mis-donaciones"
+              method="get">
+
+            <label>
+                Estado
+                <select name="estado">
+                    <option value="">Todos los estados</option>
+                    {{#each estados}}
+                        <option value="{{valor}}" {{#if elegido}}selected{{/if}}>
+                            {{nombre}}
+                        </option>
+                    {{/each}}
+                </select>
+                <small>Opcional</small>
+            </label>
+
+            <label>
+                Categoría
+                <select name="categoria">
+                    <option value="">Todas las categorías</option>
+                    {{#each categorias}}
+                        <option value="{{nombre}}" {{#if elegido}}selected{{/if}}>
+                            {{nombre}}
+                        </option>
+                    {{/each}}
+                </select>
+                <small>Opcional</small>
+            </label>
+
+            <label>
+                Subcategoría
+                <select name="subcategoria">
+                    <option value="">Todas las subcategorías</option>
+                    {{#each subcategorias}}
+                        <option value="{{nombre}}" {{#if elegido}}selected{{/if}}>
+                            {{nombre}}
+                        </option>
+                    {{/each}}
+                </select>
+                <small>Opcional</small>
+            </label>
+
+            <button type="submit" class="btn btn-primary-action">
+                Buscar
+            </button>
+
+            <a href="/mis-donaciones"
+               class="btn btn-secondary dt-limpiar">
+                Limpiar filtros
+            </a>
+        </form>
+
+        <div class="dt-resultados">
+            <h2>Tus donaciones</h2>
+            <p>{{total}} donaciones</p>
+        </div>
+
+        <div class="dt-lista">
+            {{#each donaciones}}
+                <details class="dt-donacion">
+                    <summary>
+                        <span class="dt-id">{{id}}</span>
+
+                        <span class="dt-toggle">
+                            <span class="dt-ver">Mostrar detalles</span>
+                            <span class="dt-ocultar">Ocultar detalles</span>
+                        </span>
+
+                        <h3>{{descripcion}}</h3>
+
+                        <p>
+                            {{cantidad}} {{unidad}}
+                            · {{categoria}} / {{subcategoria}}
+                            · {{fecha}}
+                        </p>
+
+                        <span class="badge {{claseEstado}}">
+                            {{estado}}
+                        </span>
+                    </summary>
+
+                    <div class="dt-detalle-simple">
+                        <section class="dt-seguimiento-real"
+                                 data-seguimiento-id="{{id}}"
+                                 aria-label="Seguimiento de la entrega">
+
+                            <div class="dt-seguimiento-cabecera">
+                                <h4>Seguimiento de la entrega</h4>
+
+                                <button type="button"
+                                        class="btn btn-secondary dt-actualizar-mapa">
+                                    Actualizar ubicación
+                                </button>
+                            </div>
+
+                            <p class="dt-seguimiento-mensaje" role="status">
+                                Abrí los detalles para consultar el seguimiento.
+                            </p>
+
+                            <div class="dt-google-mapa"
+                                 aria-label="Mapa de la entrega"
+                                 hidden></div>
+
+                            <p class="dt-mapa-leyenda" hidden>
+                                <span>🟠 Depósito</span>
+                                <span>🟢 Destino</span>
+                                <span>🔵 Último reporte del camión</span>
+                            </p>
+
+                            <p class="dt-seguimiento-fecha"></p>
+                        </section>
+                        <h4>Entidades asociadas</h4>
+
+                        {{#each entidades}}
+                            <p>{{this}}</p>
+                        {{else}}
+                            <p>Sin entidad asignada.</p>
+                        {{/each}}
+
+                        <h4 class="dt-historial-titulo">
+                            Historial de la donación
+                        </h4>
+
+                        <ol class="dt-historial-real">
+                            {{#each historial}}
+                                <li>
+                                    <strong>{{estado}}</strong>
+                                    <span class="dt-fecha">{{fecha}}</span>
+
+                                    {{#if motivo}}
+                                        <p>{{motivo}}</p>
+                                    {{/if}}
+                                </li>
+                            {{else}}
+                                <li>Sin cambios registrados.</li>
+                            {{/each}}
+                        </ol>
+                    </div>
+                </details>
+            {{else}}
+                <div class="dt-vacio">
+                    No hay donaciones que coincidan con esta búsqueda.
+                </div>
+            {{/each}}
+        </div>
+
+        {{#if hayPaginacion}}
+            <form action="/mis-donaciones"
+                  method="get"
+                  class="dt-paginacion"
+                  aria-label="Paginación de donaciones">
+
+                <input type="hidden" name="estado" value="{{estado}}">
+                <input type="hidden" name="categoria" value="{{categoria}}">
+                <input type="hidden" name="subcategoria" value="{{subcategoria}}">
+
+                {{#if anterior}}
+                    <button type="submit"
+                            name="pagina"
+                            value="{{anterior}}"
+                            class="btn btn-secondary">
+                        Anterior
+                    </button>
+                {{/if}}
+
+                <span>Página {{pagina}} de {{paginas}}</span>
+
+                {{#if siguiente}}
+                    <button type="submit"
+                            name="pagina"
+                            value="{{siguiente}}"
+                            class="btn btn-secondary">
+                        Siguiente
+                    </button>
+                {{/if}}
+            </form>
+        {{/if}}
+    </main>
+
+    {{> templates/partials/footer-panel}}
+
 </div>
 </body>
 </html>
-
-

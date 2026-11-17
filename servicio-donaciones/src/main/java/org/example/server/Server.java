@@ -58,6 +58,17 @@ public final class Server {
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     Javalin app = Javalin.create(config -> {
+      config.http.maxRequestSize = 32_000_000L;
+
+      config.jetty.multipartConfig.maxFileSize(
+          10,
+          io.javalin.config.SizeUnit.MB
+      );
+
+      config.jetty.multipartConfig.maxTotalRequestSize(
+          30,
+          io.javalin.config.SizeUnit.MB
+      );
       config.jsonMapper(new JavalinJackson(mapper, false));
 
       config.staticFiles.add(archivos -> {
@@ -70,6 +81,24 @@ public final class Server {
           new JavalinRenderer()
               .register("hbs", new JavalinHandlebars())
       );
+
+      config.jetty.modifyServletContextHandler(handler -> {
+        var sesiones = handler.getSessionHandler();
+
+        sesiones.setHttpOnly(true);
+        sesiones.setSameSite(
+            org.eclipse.jetty.http.HttpCookie.SameSite.LAX
+        );
+
+        sesiones.getSessionCookieConfig().setSecure(
+            System.getenv()
+                .getOrDefault(
+                    "LOGTO_REDIRECT_URI",
+                    "http://localhost:8083/auth/callback"
+                )
+                .startsWith("https://")
+        );
+      });
     });
 
     app.before(ctx -> actual.set(factory.createEntityManager()));

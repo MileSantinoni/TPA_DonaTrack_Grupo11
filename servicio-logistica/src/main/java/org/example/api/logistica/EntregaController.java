@@ -37,6 +37,21 @@ public class EntregaController {
     Ruta ruta = ruta(ctx);
     Entrega entrega = entrega(ctx, ruta);
 
+    if (entrega.getEstado() == EstadoEntrega.ENTREGADA) {
+      boolean mismoComprobante =
+          new java.util.HashSet<>(entrega.getFotosRecepcion())
+              .equals(new java.util.HashSet<>(fotos));
+
+      if (!mismoComprobante) {
+        throw new IllegalStateException(
+            "La recepción ya está confirmada con otro comprobante."
+        );
+      }
+
+      ctx.status(204);
+      return;
+    }
+
     ejecutar(
         ruta,
         () -> {
@@ -126,7 +141,9 @@ public class EntregaController {
   }
 
   private Ruta ruta(Context ctx) {
-    Ruta ruta = monitor.rutaDe(ctx.pathParam("patente"));
+    Ruta ruta = ctx.pathParamMap().containsKey("idRuta")
+        ? rutas.buscarPorId(ctx.pathParam("idRuta")).orElse(null)
+        : monitor.rutaDe(ctx.pathParam("patente"));
 
     if (ruta == null) {
       throw new NotFoundResponse("No hay ruta para el camion");
