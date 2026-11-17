@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DonaTrack · Fotos de Donaciones Entregadas</title>
+    <link rel="stylesheet" href="/assets/main.css">
+    <link rel="stylesheet" href="/assets/css/landing.css">
+    <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn6kkiOmNeweLEBYEifpyZG5nTSM4yBtA&callback=initMap&loading=async" async defer></script>
+</head>
+<body class="dt-fondo">
+
+<div class="landing-container dt-marco">
+
+    <!-- Header / Nav -->
+    {{> templates/partials/header-publico}}
+
+    <main>
+        <!-- Section: Fotos de Donaciones -->
+        <section class="section">
+            <div class="section-title-box">
+                <h2 class="section-title">Fotos de Donaciones Entregadas</h2>
+                <p class="section-subtitle">Visualiza las fotos de las entregaciones realizadas. Acceso público sin necesidad de iniciar sesión.</p>
+            </div>
+
+            <div class="cards-grid">
+                <article class="stat-card">
+                    <div class="stat-header">
+                        <span>Total de entregas con fotos</span>
+                    </div>
+                    <span class="stat-number">08</span>
+                    <span class="stat-footer">Ejemplo ilustrativo · entregas con documentación fotográfica</span>
+                </article>
+            </div>
+
+            <div id="mapa" class="section">
+                <div class="map-header">
+                    <div class="section-title-box">
+                        <h2 class="section-title">Mapa de Entregas</h2>
+                        <p class="section-subtitle">Visualiza la ubicación de las entregaciones</p>
+                    </div>
+                </div>
+                <div class="map-viewport">
+                    <!-- Mapa de Google Maps -->
+                </div>
+                <div class="map-attribution">
+                    Map data © OpenStreetMap contributors
+                </div>
+            </div>
+        </section>
+    </main>
+
+    {{> templates/partials/footer}}
+
+    <!-- Datos para el mapa (JSON embebido desde el controlador) -->
+    <input type="hidden" id="mapa-center-lat" value="-34.6037">
+    <input type="hidden" id="mapa-center-lng" value="-58.3816">
+
+    <script>
+        window.landingData = {
+            entidades: [],
+            asignaciones: [],
+            donaciones: []
+        };
+    </script>
+
+    <script src="/assets/js/landing.js"></script>
+
+</div>
+
+</body>
+</html>
