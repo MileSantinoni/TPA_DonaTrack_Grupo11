@@ -109,93 +109,77 @@
             <div class="map-header">
                 <div class="section-title-box">
                     <h2 class="section-title">Mapa de entregas</h2>
-                    <p class="section-subtitle">Visualiza entregas en un mapa interactivo.</p>
+                    <p class="section-subtitle">Visualiza entregas, y entidades en un mapa interactivo.</p>
                 </div>
 
                 <div class="map-filters">
-                    <div class="filter-group">
-                        <label class="filter-label">Estado</label>
-                        <div class="filter-select">
-                            <span>Todos</span>
-                            <span>▼</span>
+                    <div class="filters-row">
+                        <div class="filter-group">
+                            <label class="filter-label">Estado</label>
+                            <select class="filter-select" id="filtro-estado">
+                                <option value="">Todos</option>
+                                {{#each estados}}
+                                    <option value="{{this.clave}}">{{this.nombre}}</option>
+                                {{/each}}
+                            </select>
+                            <span class="filter-caption">Filtrar por estado de entrega</span>
                         </div>
-                        <span class="filter-caption">Filtrar por estado de entrega</span>
-                    </div>
 
-                    <div class="filter-group">
-                        <label class="filter-label">Entidad</label>
-                        <div class="filter-select">
-                            <span>Todas</span>
-                            <span>▼</span>
-                        </div>
-                        <span class="filter-caption">Filtrar por entidad beneficiaria</span>
-                        <div class="filter-options" id="filtro-entidades" style="display: none;">
-                            {{#each entidades}}
-                            <label class="filter-option">
-                                <input type="checkbox" value="{{this.id}}" class="filtro-entidad-checkbox">
-                                {{this.razonSocial}}
-                            </label>
-                            {{/each}}
+                        <div class="filter-group">
+                            <label class="filter-label">Entidad</label>
+                            <select class="filter-select" id="filtro-entidad">
+                                <option value="">Todas</option>
+                                {{#each entidades}}
+                                    <option value="{{this.id}}">{{this.razonSocial}}</option>
+                                {{/each}}
+                            </select>
+                            <span class="filter-caption">Filtrar por entidad beneficiaria</span>
                         </div>
                     </div>
 
                     <button class="btn btn-secondary-salvia" id="btn-filtros-mapa">Filtrar</button>
+                </div>
+            </div>
+
+            <div class="map-viewport">
+                <div id="mapa-google" style="height: 100%; width: 100%; display: block;"></div>
+                <div class="loading-overlay" id="map-loading-overlay">
+                    <div class="loading-spinner"></div>
+                    <p>Cargando mapa de entregas...</p>
+                </div>
+
+
+                <!-- Leyenda -->
+                <div class="map-legend">
+                   <!-- <h4 class="font-manrope">Leyenda</h4> -->
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:#1e88e5; border-radius:50%;"></span>
+                        <span>Entidad beneficiaria</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:#ff8f00; border:1px solid #e65100; border-radius:50%;"></span>
+                        <span>Entrega realizada</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:#00acc1; border:1px solid #00838f; border-radius:50%;"></span>
+                        <span>En traslado</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:#ef5350; border:1px solid #c62828; border-radius:50%;"></span>
+                        <span>Entrega activa / pendiente</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
+                        <span style="width:12px; height:12px; background:#b95f45; border:1px solid #574239; border-radius:2px;"></span>
+                        <span>Depósito central</span>
                     </div>
                 </div>
 
-                <div class="map-viewport">
-                    <div id="mapa-google" style="height: 100%; width: 100%; display: block;"></div>
-                    <div class="loading-overlay" id="map-loading-overlay">
-                        <div class="loading-spinner"></div>
-                        <p>Cargando mapa de entregas...</p>
-                    </div>
-
-                    <!-- Leyenda -->
-                    <!-- <div class="map-legend">
-                         <h4 class="font-manrope">Leyenda</h4>
-                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--brand-terracota); border-radius:50%;"></span>
-                             <span>Entrega activa</span>
-                         </div>
-                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--palette-bg); border:1px solid var(--brand-marron); border-radius:50%;"></span>
-                             <span>Entregada</span>
-                         </div>
-                         <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                             <span style="width:12px; height:12px; background:var(--brand-crema); border-radius:50%;"></span>
-                             <span>En traslado</span>
-                         </div>
-                     </div>-->
-
-                     <!-- Detalle de Entrega Overlay -->
-                <div class="map-detail-card" id="map-detail-card" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 class="font-manrope">Detalle de entrega</h4>
-                        <button class="btn btn-small" id="btn-cerrar-detalle">Cerrar</button>
-                    </div>
+                <!-- Detalle de Entrega Overlay -->
+                <div class="map-detail-card" id="map-detail-card" style="display: none;" role="dialog" aria-modal="false" aria-label="Detalle del mapa">
                     <div id="detalle-contenido"></div>
-                    <div class="fotos-detalle" id="fotos-detalle"> <br>
-                        <h5 class="font-manrope">Fotos de la entrega</h5>
-                        <div id="galeria-fotos"></div>
-                    </div>
                 </div>
 
-                <!-- Contadores Overlay -->
-                <!-- Contadores Overlay -->
-                <div class="map-counter-overlay">
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">08</span>
-                        <span style="font-size: 12px;">entregas activas</span>
-                    </div>
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">12</span>
-                        <span style="font-size: 12px;">en traslado</span>
-                    </div>
-                    <div class="counter-chip">
-                        <span class="counter-chip-num">24</span>
-                        <span style="font-size: 12px;">entregadas</span>
-                    </div>
-                </div>
+
             </div>
         </section>
 
@@ -287,8 +271,8 @@
 
     {{> templates/partials/footer}}
 
-    <input type="hidden" id="mapa-center-lat" value="-34.6037">
-    <input type="hidden" id="mapa-center-lng" value="-58.3816">
+    <!-- <input type="hidden" id="mapa-center-lat" value="-34.6037">
+     <input type="hidden" id="mapa-center-lng" value="-58.3816"> -->
 
     <script src="/assets/js/landing.js"></script>
 
@@ -301,6 +285,3 @@
 
 </body>
 </html>
-
-
-

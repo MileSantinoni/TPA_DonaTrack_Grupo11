@@ -136,12 +136,26 @@
 
 .map-filters {
     display: flex;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
     gap: 12px;
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    justify-content: space-between;
+}
+
+.filters-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
 }
 
 .filter-group {
-    width: 220px;
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -156,14 +170,21 @@
     padding: 0 12px;
     border-radius: 8px;
     border: 1px solid var(--brand-salvia);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    color: var(--text-secondary-accessible, #333);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--brand-terracota, #c14a2e);
 }
 
 .filter-caption {
     font-size: 12px;
+    color: var(--text-secondary-accessible, #666);
 }
 
 .map-viewport {
@@ -203,20 +224,380 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    z-index: 50;
 }
 
 .map-detail-card {
     position: absolute;
     top: 24px;
     right: 24px;
-    width: 360px;
-    padding: 24px;
+    width: 380px;
+    max-height: calc(100% - 48px);
+    overflow-y: auto;
+    padding: 18px 20px 22px;
     background: var(--palette-bg);
-    box-shadow: 0px 2px 8px rgba(87, 66, 57, 0.06);
-    border-radius: 20px;
+    border: 1px solid var(--border-default);
+    box-shadow: 0 10px 30px rgba(87, 66, 57, 0.16);
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.map-detail-card::-webkit-scrollbar {
+    width: 6px;
+}
+
+.map-detail-card::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.map-detail-card::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 3px;
+}
+
+.map-detail-card::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+#detalle-contenido {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Cabecera de la tarjeta: distribución simétrica con Grid para alineación perfecta */
+.detail-header {
+    display: grid;
+    grid-template-columns: 34px 1fr 34px;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border-default);
+}
+
+.detail-header-spacer {
+    width: 34px;
+    height: 34px;
+    visibility: hidden;
+    flex-shrink: 0;
+}
+
+.detail-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand-marron);
+    text-align: center;
+    margin: 0;
+    line-height: 1.25;
+}
+
+/* Botones de acción tipo icono (Cerrar / Volver) según manual de marca */
+.detail-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    background: var(--surface-white);
+    color: var(--brand-marron);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.detail-btn-icon:hover {
+    background: var(--brand-crema);
+    color: var(--brand-terracota);
+    border-color: var(--brand-terracota);
+    transform: translateY(-1px);
+}
+
+.detail-btn-icon:active {
+    transform: translateY(0);
+}
+
+.detail-btn-icon:focus-visible {
+    outline: 2px solid var(--brand-terracota);
+    outline-offset: 2px;
+}
+
+.detail-btn-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+}
+
+/* Contenedores y tipografía de datos */
+.detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.detail-info-card,
+.detail-stats-card {
+    background: var(--surface-white);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-info-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary-accessible);
+}
+
+.detail-info-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    color: var(--brand-marron);
+    font-weight: 500;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+/* Badges de estado */
+.detail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    width: fit-content;
+}
+
+.detail-badge-entidad {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.detail-badge-entregada {
+    background: #edf4ec;
+    color: var(--brand-salvia);
+    border: 1px solid #c9d8c6;
+}
+
+.detail-badge-traslado {
+    background: var(--info-bg);
+    color: var(--info-fg);
+    border: 1px solid #c5d9e8;
+}
+
+.detail-badge-deposito {
+    background: #fff8e1;
+    color: #b78103;
+    border: 1px solid #ffe082;
+}
+
+.detail-badge-alerta {
+    background: #fbede9;
+    color: var(--action-primary);
+    border: 1px solid #f6cfc7;
+}
+
+/* Cantidad destacada */
+.detail-qty-box {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.detail-qty-number {
+    font-family: 'Manrope', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--brand-terracota);
+    line-height: 1;
+}
+
+.detail-qty-unit {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary-accessible);
+}
+
+/* Sección de listado de entregas asociadas a la entidad */
+.detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-section-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--brand-marron);
+    margin: 2px 0 0 0;
+}
+
+.detail-entregas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.detail-entregas-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.detail-entregas-list::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 2px;
+}
+
+.detail-entrega-card {
+    background: var(--surface-white);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.detail-entrega-card:hover {
+    border-color: var(--brand-terracota);
+    background: #fffdfb;
+    box-shadow: 0 2px 8px rgba(87, 66, 57, 0.08);
+    transform: translateY(-1px);
+}
+
+.detail-entrega-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-entrega-id {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand-marron);
+}
+
+.detail-entrega-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-entrega-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--brand-marron);
+    line-height: 1.35;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.detail-entrega-qty {
+    font-family: 'Inter', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--brand-terracota);
+}
+
+.detail-entrega-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-terracota);
+    margin-top: 2px;
+}
+
+/* Fotos de la entrega */
+.detail-fotos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.detail-foto-card {
+    display: block;
+    height: 90px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    background: var(--surface-white);
+    transition: all 0.2s ease;
+}
+
+.detail-foto-card:hover {
+    border-color: var(--brand-terracota);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(87, 66, 57, 0.12);
+}
+
+.detail-foto-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.detail-empty-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--text-secondary-accessible);
+    margin: 2px 0;
+}
+
+@media (max-width: 640px) {
+    .map-detail-card {
+        top: 16px;
+        right: 16px;
+        left: 16px;
+        width: auto;
+        max-height: calc(100% - 32px);
+        padding: 16px;
+    }
 }
 
 .map-counter-overlay {
@@ -264,3 +645,14 @@
     color: var(--palette-bg);
 }
 
+header {
+    /*position: fixed;*/
+    /*top: 0;*/
+    /*width: 100%;*/
+    /*z-index: 1000;*/
+    transition: transform 0.3s ease-in-out; /* Animación suave */
+}
+
+.header-oculto {
+    transform: translateY(-100%); /* Lo mueve hacia arriba fuera de la pantalla */
+}
