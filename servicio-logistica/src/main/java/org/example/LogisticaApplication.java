@@ -105,7 +105,12 @@ public class LogisticaApplication {
     var planificador = new org.example.planificacion.PlanificacionController(entityManagerActual::get, clienteDonaciones, urlDonaciones);
     var seguimientoMapa = new org.example.api.logistica.SeguimientoMapaController(entityManagerActual::get);
     var gestionCamiones = new org.example.api.logistica.GestionCamionesController(entityManagerActual::get);
+    var reportes = new org.example.api.logistica.ReportesUbicacionController(entityManagerActual::get);
+    var monitoreo = new org.example.api.logistica.MonitoreoController(entityManagerActual::get);
 
+    app.get("/interno/monitoreo", monitoreo::consultar);
+    app.post("/camiones/ubicacion", reportes::recibir);
+    app.get("/integracion/rutas/{idRuta}/recorrido", reportes::recorrido);
     app.get("/interno/donaciones/{idDonacion}/seguimiento", seguimientoMapa::consultar);
     app.post("/planificaciones", planificador::ejecutar);
     app.post("/interno/planificaciones/resultado", planificador::callback);

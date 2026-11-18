@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="geoapify-key" content="{{geoapifyKey}}">
+  <title>Monitoreo de camiones | DonaTrack</title>
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/css/mis-donaciones.css">
+  <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/footer-panel.css">
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/assets/css/admin-monitoreo.css">
+
+  <script defer
+          src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="/assets/js/admin-monitoreo.js"></script>
+</head>
+
+<body class="dt-donante dt-admin dt-fondo">
+<div class="dt-pagina dt-marco">
+  {{> templates/partials/header-admin}}
+
+  <main class="dt-contenido">
+    <small>ADMINISTRACIÓN</small>
+    <h1>Monitoreo de camiones</h1>
+    <p>Seguí la ubicación de la flota y el avance de sus entregas.</p>
+
+    <div class="ac-toolbar">
+      <nav class="tabs-admin" aria-label="Secciones de administración">
+        <a href="/administracion/donaciones">Donaciones</a>
+        <a href="/administracion/donantes">Personas donantes</a>
+        <a href="/administracion/camiones">Camiones</a>
+        <a href="/administracion/monitoreo" aria-current="page">Monitoreo</a>
+      </nav>
+    </div>
+
+    <div class="mon-toolbar">
+      <p id="mon-aviso" role="status">Consultando flota…</p>
+      <button id="mon-todos" class="btn btn-secondary" type="button">
+        Ver todos
+      </button>
+    </div>
+
+    <section class="mon-layout" aria-label="Monitoreo de la flota">
+      <div class="mon-map-card">
+        <div id="mon-mapa" aria-label="Mapa de camiones"></div>
+        <div class="mon-leyenda" aria-label="Referencias del mapa">
+          <span><i class="mon-punto mon-punto-azul"></i>Camión</span>
+          <span><i class="mon-punto mon-punto-gris"></i>Sin reportes recientes</span>
+          <span><i class="mon-punto mon-punto-deposito"></i>Depósito</span>
+          <span><i class="mon-linea"></i>Recorrido</span>
+        </div>
+      </div>
+
+      <aside class="mon-panel" aria-label="Camiones registrados">
+        <h2>Tu flota <span id="mon-total"></span></h2>
+        <div id="mon-lista"></div>
+      </aside>
+    </section>
+
+    <section id="mon-detalle" class="mon-detalle" hidden>
+      <h2 id="mon-titulo"></h2>
+      <p id="mon-ruta"></p>
+      <ol id="mon-paradas"></ol>
+    </section>
+  </main>
+
+  {{> templates/partials/footer-panel}}
+</div>
+</body>
+</html>

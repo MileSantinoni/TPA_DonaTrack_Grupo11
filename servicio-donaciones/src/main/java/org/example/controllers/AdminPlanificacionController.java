@@ -57,64 +57,52 @@ public class AdminPlanificacionController {
   }
 
   public void pendientes(Context ctx) {
-    String id;
+    var filas = new ArrayList<Map<String, Object>>();
+    var ids = new HashSet<String>();
 
-    try {
-      id = UUID.fromString(
-          Objects.toString(
-              ctx.queryParam("idDonacion"),
-              ""
-          )
-      ).toString();
-    } catch (IllegalArgumentException e) {
-      throw new BadRequestResponse(
-          "Indicá la donación que querés planificar."
+    for (var asignacion : asignadas()) {
+      var donacion = asignacion.getDonacion();
+      var entidad = asignacion.getEntidad();
+      String id = donacion.getIdAsString();
+
+      if (!ids.add(id)) {
+        throw new ConflictResponse(
+            "Hay más de una asignación para la misma donación."
+        );
+      }
+
+      var fila = new HashMap<String, Object>();
+
+      fila.put("id", id);
+      fila.put("descripcion", donacion.getDescripcionGeneral());
+      fila.put("entidad", entidad.getRazonSocial());
+      fila.put(
+          "direccion",
+          Objects.toString(entidad.getDireccion(), "")
       );
-    }
-
-    var candidatas = asignadas().stream()
-        .filter(a ->
-            a.getDonacion().getIdAsString().equals(id)
-        )
-        .toList();
-
-    if (candidatas.size() != 1) {
-      throw new ConflictResponse(
-          "La donación no tiene una asignación pendiente única. "
-              + "Recargá la página y revisá su estado."
+      fila.put("cantidad", donacion.getCantidad());
+      fila.put(
+          "unidad",
+          Objects.toString(donacion.getUnidadMedida(), "")
       );
+      fila.put(
+          "ubicada",
+          coordenada(entidad.getLatitud(), 90)
+              && coordenada(entidad.getLongitud(), 180)
+      );
+
+      filas.add(fila);
     }
-
-    var asignacion = candidatas.get(0);
-    var donacion = asignacion.getDonacion();
-    var entidad = asignacion.getEntidad();
-
-    var fila = new HashMap<String, Object>();
-
-    fila.put("id", donacion.getIdAsString());
-    fila.put("descripcion", donacion.getDescripcionGeneral());
-    fila.put("entidad", entidad.getRazonSocial());
-    fila.put("direccion", entidad.getDireccion());
-    fila.put("cantidad", donacion.getCantidad());
-
-    fila.put(
-        "unidad",
-        Objects.toString(donacion.getUnidadMedida(), "")
-    );
-
-    fila.put(
-        "ubicada",
-        coordenada(entidad.getLatitud(), 90)
-            && coordenada(entidad.getLongitud(), 180)
-    );
 
     ctx.header("Cache-Control", "no-store").json(Map.of(
-        "donacion", fila,
-        "deposito",
-        System.getenv().getOrDefault(
+        "donaciones", filas,
+        "deposito", System.getenv().getOrDefault(
             "DEPOSITO_DIRECCION",
             "Depósito de DonaTrack"
-        )
+        ),
+        "fecha", java.time.LocalDate.now(
+            java.time.ZoneId.of("America/Argentina/Buenos_Aires")
+        ).plusDays(1).toString()
     ));
   }
 
@@ -123,10 +111,10 @@ public class AdminPlanificacionController {
 
     if (pedido == null
         || pedido.cargas() == null
-        || pedido.cargas().size() != 1) {
+        || pedido.cargas().isEmpty()
+        || pedido.cargas().size() > 48) {
       throw new BadRequestResponse(
-          "La planificación debe corresponder "
-              + "a la donación asignada."
+          "Seleccioná entre 1 y 48 donaciones para esta ejecución."
       );
     }
 

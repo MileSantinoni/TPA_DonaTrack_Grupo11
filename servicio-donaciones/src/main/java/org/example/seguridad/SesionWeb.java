@@ -2,10 +2,13 @@ package org.example.seguridad;
 
 import io.javalin.Javalin;
 import io.javalin.http.*;
+
 import java.net.URI;
 import java.util.*;
 import java.util.function.Supplier;
+
 import javax.persistence.EntityManager;
+
 import org.example.controllers.LogtoController;
 import org.example.controllers.LogtoController.Usuario;
 
@@ -22,16 +25,102 @@ public final class SesionWeb {
     }
   }
 
+  public static boolean esAdmin(Usuario usuario) {
+    return usuario != null
+        && usuario.roles() != null
+        && usuario.roles().contains("ADMIN");
+  }
+
   public static CuentaWeb cuenta(Context ctx) {
     CuentaWeb cuenta = ctx.attribute("cuentaWeb");
 
     if (cuenta == null) {
-      throw new ForbiddenResponse(
-          "Completá tu perfil desde la página de inicio."
-      );
+      throw new ForbiddenResponse("Completá el registro.");
     }
 
     return cuenta;
+  }
+
+  public static String destino(Context ctx) {
+    Usuario usuario = LogtoController.usuario(ctx);
+
+    if (esAdmin(usuario)) {
+      return "/administracion/donaciones";
+    }
+
+    CuentaWeb cuenta = ctx.attribute("cuentaWeb");
+
+    if (cuenta == null) {
+      return "/auth/registro";
+    }
+
+    if (!cuenta.completa()) {
+      return "/cuenta/completar";
+    }
+
+    return "ENTIDAD".equals(cuenta.rol)
+        ? "/mi-entidad"
+        : "/mis-donaciones";
+  }
+
+  public static void registrarTipo(
+      Context ctx,
+      Usuario usuario,
+      String tipo
+  ) {
+    if (esAdmin(usuario) || tipo == null) {
+      return;
+    }
+
+    if (!Set.of("DONANTE", "ENTIDAD").contains(tipo)) {
+      throw new BadRequestResponse(
+          "Tipo de registro inválido."
+      );
+    }
+
+    EntityManager em = ctx.attribute("cuenta.em");
+
+    if (em == null) {
+      throw new IllegalStateException(
+          "Falta el contexto de persistencia."
+      );
+    }
+
+    String id = CuentaWeb.clave(usuario);
+
+    // Una cuenta existente conserva su elección original.
+    if (em.find(CuentaWeb.class, id) != null) {
+      return;
+    }
+
+    var tx = em.getTransaction();
+    tx.begin();
+
+    try {
+      CuentaWeb cuenta = new CuentaWeb();
+
+      cuenta.id = id;
+      cuenta.rol = tipo;
+      cuenta.nombre = usuario.nombre().isBlank()
+          ? usuario.email()
+          : usuario.nombre();
+
+      if (cuenta.nombre.isBlank()) {
+        cuenta.nombre = "Registro pendiente";
+      }
+
+      em.persist(cuenta);
+      tx.commit();
+
+      ctx.attribute("cuentaWeb", cuenta);
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      em.clear();
+      throw e;
+    }
   }
 
   public static void configurar(
@@ -39,31 +128,77 @@ public final class SesionWeb {
       Supplier<EntityManager> proveedor
   ) {
     app.exception(UnauthorizedResponse.class, (e, ctx) -> {
-      boolean pagina = ctx.method() == HandlerType.GET
-          && Objects.toString(ctx.header("Accept"), "")
-          .contains("text/html");
-
-      if (pagina) {
+      if (pagina(ctx)) {
         ctx.redirect("/login");
       } else {
-        ctx.status(401).json(
-            Map.of("mensaje", "Iniciá sesión para continuar.")
-        );
+        ctx.status(401).json(Map.of(
+            "mensaje",
+            "Iniciá sesión para continuar."
+        ));
       }
     });
 
     app.beforeMatched(ctx -> {
+      ctx.attribute("cuenta.em", proveedor.get());
+
+      // Estas rutas no utilizan la sesión web.
+      // Conservan sus propios controles de integración.
+      if (ctx.path().equals("/graphql")
+          || prefijo(ctx.path(), "/interno")
+          || ctx.path().equals("/health")
+          || prefijo(ctx.path(), "/assets")) {
+        return;
+      }
+
       Usuario usuario = opcional(ctx);
+      CuentaWeb cuenta = null;
 
       if (usuario != null) {
         ctx.header("Cache-Control", "no-store");
 
-        CuentaWeb cuenta = proveedor.get().find(
-            CuentaWeb.class,
-            CuentaWeb.clave(usuario)
-        );
+        if (esAdmin(usuario)) {
+          // Representación para esta petición.
+          // ADMIN no se guarda como autorización local.
+          cuenta = new CuentaWeb();
+          cuenta.id = CuentaWeb.clave(usuario);
+          cuenta.rol = "ADMIN";
+          cuenta.nombre = usuario.nombre().isBlank()
+              ? usuario.email()
+              : usuario.nombre();
+        } else {
+          cuenta = proveedor.get().find(
+              CuentaWeb.class,
+              CuentaWeb.clave(usuario)
+          );
+        }
 
         ctx.attribute("cuentaWeb", cuenta);
+
+        boolean pendiente = !esAdmin(usuario)
+            && (cuenta == null || !cuenta.completa());
+
+        boolean permitida =
+            prefijo(ctx.path(), "/auth")
+                || ctx.path().equals("/login")
+                || ctx.path().equals("/logout")
+                || prefijo(ctx.path(), "/cuenta");
+
+        if (pendiente && !permitida) {
+          String destino = cuenta == null
+              ? "/auth/registro"
+              : "/cuenta/completar";
+
+          if (pagina(ctx)) {
+            ctx.redirect(destino);
+            ctx.skipRemainingHandlers();
+          } else {
+            throw new ForbiddenResponse(
+                "Completá tu registro para continuar."
+            );
+          }
+
+          return;
+        }
       }
 
       String rol = rolRequerido(ctx.path());
@@ -78,7 +213,10 @@ public final class SesionWeb {
         );
       }
 
-      if (!rol.equals(cuenta(ctx).rol)) {
+      if (cuenta == null
+          || !rol.equals(cuenta.rol)
+          || ("ADMIN".equals(rol) && !esAdmin(usuario))) {
+
         throw new ForbiddenResponse(
             "Tu perfil no tiene acceso a esta pantalla."
         );
@@ -89,6 +227,12 @@ public final class SesionWeb {
         validarOrigen(ctx);
       }
     });
+  }
+
+  private static boolean pagina(Context ctx) {
+    return ctx.method() == HandlerType.GET
+        && Objects.toString(ctx.header("Accept"), "")
+        .contains("text/html");
   }
 
   private static String rolRequerido(String ruta) {
@@ -110,11 +254,9 @@ public final class SesionWeb {
       return "DONANTE";
     }
 
-    if (prefijo(ruta, "/mi-entidad")) {
-      return "ENTIDAD";
-    }
-
-    return null;
+    return prefijo(ruta, "/mi-entidad")
+        ? "ENTIDAD"
+        : null;
   }
 
   private static boolean prefijo(String ruta, String base) {
@@ -129,7 +271,10 @@ public final class SesionWeb {
     }
 
     try {
-      URI recibido = URI.create(Objects.toString(origen, ""));
+      URI recibido = URI.create(
+          Objects.toString(origen, "")
+      );
+
       URI esperado = URI.create(
           System.getenv("LOGTO_REDIRECT_URI")
       );
@@ -137,8 +282,7 @@ public final class SesionWeb {
       if (!Objects.equals(
           recibido.getScheme(),
           esperado.getScheme()
-      )
-          || !Objects.equals(
+      ) || !Objects.equals(
           recibido.getAuthority(),
           esperado.getAuthority()
       )) {
@@ -166,9 +310,9 @@ public final class SesionWeb {
 
     CuentaWeb cuenta = ctx.attribute("cuentaWeb");
 
-    String nombre = cuenta != null
-        ? cuenta.nombre
-        : usuario.nombre();
+    String nombre = cuenta == null
+        ? usuario.nombre()
+        : cuenta.nombre;
 
     if (nombre == null || nombre.isBlank()) {
       nombre = usuario.email();
@@ -184,48 +328,20 @@ public final class SesionWeb {
         "inicial",
         nombre.substring(0, 1).toUpperCase(Locale.ROOT)
     );
+
     sesion.put("csrf", LogtoController.csrf(ctx));
+    sesion.put("destino", destino(ctx));
+    sesion.put("titulo", "Tu espacio en DonaTrack");
+    sesion.put(
+        "descripcion",
+        "Consultá y gestioná tu actividad."
+    );
 
-    String titulo = "Completá tu cuenta de DonaTrack";
-    String descripcion =
-        "Elegí tu perfil y completá tus datos para empezar.";
-    String boton = "Completar mi perfil";
-    String destino = "/cuenta/completar";
-
-    if (cuenta != null) {
-      switch (cuenta.rol) {
-        case "ADMIN" -> {
-          titulo = "Administrá las donaciones y entregas";
-          descripcion =
-              "Organizá las donaciones, las personas donantes "
-                  + "y los camiones desde tu panel.";
-          boton = "Ir al panel administrador";
-          destino = "/administracion/donaciones";
-        }
-
-        case "DONANTE" -> {
-          titulo = "Cada donación cuenta";
-          descripcion =
-              "Revisá tus donaciones y conocé "
-                  + "el recorrido de tu ayuda.";
-          boton = "Ver mis donaciones";
-          destino = "/mis-donaciones";
-        }
-
-        case "ENTIDAD" -> {
-          titulo = "Gestioná las necesidades de tu entidad";
-          descripcion =
-              "Actualizá tus necesidades y seguí "
-                  + "las entregas destinadas a tu entidad.";
-          boton = "Ir a mi entidad";
-          destino = "/mi-entidad";
-        }
-      }
-    }
-
-    sesion.put("titulo", titulo);
-    sesion.put("descripcion", descripcion);
-    sesion.put("boton", boton);
-    sesion.put("destino", destino);
+    sesion.put(
+        "boton",
+        esAdmin(usuario)
+            ? "Ir a Administración"
+            : "Ir a mi panel"
+    );
   }
 }

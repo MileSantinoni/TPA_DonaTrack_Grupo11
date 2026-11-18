@@ -16,7 +16,7 @@ public class PlanificacionController {
   private final Supplier<EntityManager> actual;
   private final ClienteDonaciones donaciones;
   private final String urlDonaciones;
-  private static final int MAX_TRABAJOS = 50; // limite conservador inferior al máximo de la consigna
+  private static final int MAX_TRABAJOS = 48; // limite conservador inferior al máximo de la consigna
   private static final int MAX_CAMIONES = 3;
 
   public PlanificacionController(Supplier<EntityManager> actual, ClienteDonaciones donaciones,String urlDonaciones) {
@@ -37,6 +37,24 @@ public class PlanificacionController {
   public synchronized void ejecutar(Context ctx) throws Exception {
     token();
     Pedido pedido=ctx.bodyAsClass(Pedido.class);
+    if (pedido == null
+        || pedido.cargas() == null
+        || pedido.cargas().isEmpty()
+        || pedido.cargas().size() > MAX_TRABAJOS) {
+      throw new IllegalArgumentException(
+          "Seleccioná entre 1 y " + MAX_TRABAJOS + " donaciones."
+      );
+    }
+
+    for (var carga : pedido.cargas().values()) {
+      if (carga == null) {
+        throw new IllegalArgumentException("Faltan datos de carga.");
+      }
+
+      // Reutiliza las validaciones y unidades del optimizador.
+      unidades(carga.pesoKg(), 1000, true);
+      unidades(carga.volumenM3(), 1000, true);
+    }
     if(pedido==null||pedido.latitudDeposito()==null||pedido.longitudDeposito()==null
         ||!Double.isFinite(pedido.latitudDeposito())||!Double.isFinite(pedido.longitudDeposito())
         ||Math.abs(pedido.latitudDeposito())>90||Math.abs(pedido.longitudDeposito())>180)
@@ -76,6 +94,9 @@ public class PlanificacionController {
     var enRuta=new HashSet<String>();
     anteriores.forEach(r->r.getEntregas().forEach(e->enRuta.add(e.getIdDonacion())));
     for(var a:asignaciones) {
+      if (!pedido.cargas().containsKey(a.idDonacion())) {
+        continue;
+      }
       if(!"ASIGNACION_REALIZADA".equals(a.estadoDonacion())||enRuta.contains(a.idDonacion())
           ||intentadas.contains(a.idDonacion())) continue;
       if(!vistas.add(a.idDonacion())) throw new IllegalStateException("Asignacion duplicada: "+a.idDonacion());
@@ -183,6 +204,16 @@ public class PlanificacionController {
         throw new IllegalStateException("El camion ya no esta disponible: "+patente);
       var ruta=new Ruta(camion,new UbicacionCamion(l.latitud(),l.longitud(),0,LocalDateTime.now()));
       ruta.programarPara(LocalDate.parse(l.fecha()));
+
+      var geometria = rr.path("geometry");
+
+      if (!geometria.isTextual() || geometria.asText().isBlank()) {
+        throw new IllegalArgumentException(
+            "El resultado de planificación no contiene el recorrido."
+        );
+      }
+
+      ruta.guardarGeometriaPlanificada(geometria.asText());
       var ids=new ArrayList<String>();
       for(var paso:rr.path("steps")) {
         String tipo=paso.path("type").asText();
@@ -195,7 +226,30 @@ public class PlanificacionController {
             .setParameter("id",a.idDonacion()).getSingleResult()>0)
           throw new IllegalStateException("Ya existe entrega para "+a.idDonacion());
         ids.add(a.idDonacion());
-        ruta.agregarEntrega(new Entrega(a.idDonacion(),a.idEntidad(),a.razonSocial(),a.direccion(),a.telefono(),ids.size()));
+
+        var entrega = new Entrega(
+            a.idDonacion(),
+            a.idEntidad(),
+            a.razonSocial(),
+            a.direccion(),
+            a.telefono(),
+            ids.size()
+        );
+
+        JsonNode geometriaEntrega = paso.path("geometriaHastaEntrega");
+
+        if (!geometriaEntrega.isTextual()
+            || geometriaEntrega.asText().isBlank()) {
+          throw new IllegalArgumentException(
+              "Falta el recorrido hasta la entrega " + a.idDonacion()
+          );
+        }
+
+        entrega.guardarGeometriaHastaEntrega(
+            geometriaEntrega.asText()
+        );
+
+        ruta.agregarEntrega(entrega);
       }
       if(ids.isEmpty())continue;
       camion.marcarNoDisponible();em.persist(ruta);

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="google-maps-key" content="{{googleMapsKey}}">
-
+  <meta name="geoapify-key" content="{{geoapifyKey}}">
   <title>Mi entidad | DonaTrack</title>
 
   <link rel="stylesheet" href="/assets/main.css">
@@ -12,9 +12,13 @@
   <link rel="stylesheet" href="/assets/css/mi-entidad.css">
   <link rel="stylesheet" href="/assets/css/marco-compartido.css">
   <link rel="stylesheet" href="/assets/css/footer-panel.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
   <script defer src="/assets/js/mi-entidad.js"></script>
   <script defer src="/assets/js/seguimiento-donacion.js"></script>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="/assets/js/direccion-entidad.js"></script>
+
 </head>
 
 <body class="dt-donante dt-beneficiaria dt-fondo">
@@ -51,6 +55,80 @@
     </nav>
 
     <p id="be-aviso" class="dt-aviso" role="status" hidden></p>
+
+    {{#if ubicacionGuardada}}
+        <p role="status">
+            La dirección de entrega se guardó correctamente.
+        </p>
+    {{/if}}
+
+    <details class="dt-direccion-card" {{#if ubicacionPendiente}}open{{/if}}>
+        <summary class="dt-direccion-resumen">
+            <span class="dt-direccion-icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                        d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"
+                        stroke="currentColor"
+                        stroke-width="1.7"/>
+                    <circle
+                        cx="12"
+                        cy="10"
+                        r="2.5"
+                        stroke="currentColor"
+                        stroke-width="1.7"/>
+                </svg>
+            </span>
+
+            <span class="dt-direccion-textos">
+                <span class="dt-direccion-etiqueta">
+                    PUNTO DE ENTREGA
+                </span>
+
+                <span class="dt-direccion-actual">
+                    {{#if direccionActual}}
+                        {{direccionActual}}
+                    {{else}}
+                        Configurá tu dirección de entrega
+                    {{/if}}
+                </span>
+
+                <span class="dt-direccion-descripcion">
+                    {{#if ubicacionPendiente}}
+                        Configurá tu ubicación para que podamos planificar las entregas.
+                    {{else}}
+                        Usaremos esta ubicación para organizar tus entregas.
+                    {{/if}}
+                </span>
+            </span>
+
+            <span class="dt-direccion-modificar">
+                <span class="dt-direccion-abrir">Modificar</span>
+                <span class="dt-direccion-cerrar">Cerrar</span>
+                <span class="dt-direccion-flecha" aria-hidden="true">⌄</span>
+            </span>
+        </summary>
+
+        <form
+            method="post"
+            action="/mi-entidad/ubicacion"
+            class="dt-direccion-formulario">
+
+            <input type="hidden" name="csrf" value="{{sesion.csrf}}">
+
+            <div class="dt-direccion-intro">
+                <h3>¿Dónde recibís las donaciones?</h3>
+                <p>Seleccioná tu dirección y revisá el punto en el mapa antes de guardar.</p>
+            </div>
+
+            {{> templates/partials/direccion-entidad}}
+
+            <div class="dt-direccion-pie">
+                <button type="submit" class="btn btn-primary-action">
+                    Guardar dirección
+                </button>
+            </div>
+        </form>
+    </details>
 
     {{#if esNecesidades}}
       <section>
@@ -232,12 +310,6 @@
 
                   <div class="dt-seguimiento-cabecera">
                     <h4>Seguimiento de la entrega</h4>
-
-                    <button
-                        class="btn btn-secondary dt-actualizar-mapa"
-                        type="button">
-                      Actualizar ubicación
-                    </button>
                   </div>
 
                   <p class="dt-seguimiento-mensaje" role="status">

@@ -175,6 +175,11 @@ public class MisDonacionesController {
         System.getenv().getOrDefault("GOOGLE_MAPS_API_KEY", "")
     );
 
+    modelo.put(
+        "geoapifyKey",
+        System.getenv().getOrDefault("GEOAPIFY_API_KEY", "")
+    );
+
     ctx.render("misDonaciones.hbs", modelo);
   }
 

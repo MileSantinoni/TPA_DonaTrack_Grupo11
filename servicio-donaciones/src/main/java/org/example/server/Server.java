@@ -69,6 +69,7 @@ public final class Server {
           30,
           io.javalin.config.SizeUnit.MB
       );
+
       config.jsonMapper(new JavalinJackson(mapper, false));
 
       config.staticFiles.add(archivos -> {
@@ -85,7 +86,11 @@ public final class Server {
       config.jetty.modifyServletContextHandler(handler -> {
         var sesiones = handler.getSessionHandler();
 
+        sesiones.getSessionCookieConfig()
+            .setName("DONATRACK_SESSION");
+
         sesiones.setHttpOnly(true);
+
         sesiones.setSameSite(
             org.eclipse.jetty.http.HttpCookie.SameSite.LAX
         );
@@ -101,7 +106,9 @@ public final class Server {
       });
     });
 
-    app.before(ctx -> actual.set(factory.createEntityManager()));
+    app.before(ctx ->
+        actual.set(factory.createEntityManager())
+    );
 
     app.after(ctx -> {
       EntityManager em = actual.get();
@@ -127,6 +134,9 @@ public final class Server {
     });
 
     new Router(actual::get).configure(app);
+
+    new org.example.api.donaciones.DonacionesGraphQL(actual::get)
+        .registrar(app);
 
     return app;
   }

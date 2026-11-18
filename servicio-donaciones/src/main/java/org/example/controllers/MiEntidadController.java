@@ -292,6 +292,26 @@ public class MiEntidadController {
         System.getenv().getOrDefault("GOOGLE_MAPS_API_KEY", "")
     );
 
+    modelo.put(
+        "geoapifyKey",
+        System.getenv().getOrDefault("GEOAPIFY_API_KEY", "")
+    );
+
+    modelo.put(
+        "direccionActual",
+        java.util.Objects.toString(entidad.getDireccion(), "")
+    );
+
+    modelo.put(
+        "ubicacionGuardada",
+        "1".equals(ctx.queryParam("ubicacionGuardada"))
+    );
+
+    modelo.put(
+        "ubicacionPendiente",
+        entidad.getLatitud() == null || entidad.getLongitud() == null
+    );
+
     ctx.header("Cache-Control", "no-store")
         .render("miEntidad.hbs", modelo);
   }
@@ -789,5 +809,49 @@ public class MiEntidadController {
       case ENTREGA_FALLIDA -> "Entrega fallida";
       case VENCIDA -> "Vencida";
     };
+  }
+
+  public void guardarUbicacion(Context ctx) {
+    LogtoController.validarCsrf(ctx);
+
+    var ubicacion = UbicacionFormulario.leer(ctx);
+    var propia = entidadActual(ctx);
+
+    var em = proveedor.get();
+    var tx = em.getTransaction();
+
+    try {
+      tx.begin();
+
+      var entidad = em.find(
+          EntidadBeneficiaria.class,
+          propia.getId(),
+          javax.persistence.LockModeType.PESSIMISTIC_WRITE
+      );
+
+      if (entidad == null) {
+        throw new io.javalin.http.NotFoundResponse(
+            "La entidad no existe."
+        );
+      }
+
+      entidad.setDireccion(ubicacion.direccion());
+
+      entidad.confirmarUbicacion(
+          ubicacion.latitud(),
+          ubicacion.longitud()
+      );
+
+      tx.commit();
+
+      ctx.redirect("/mi-entidad?ubicacionGuardada=1");
+
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      throw e;
+    }
   }
 }

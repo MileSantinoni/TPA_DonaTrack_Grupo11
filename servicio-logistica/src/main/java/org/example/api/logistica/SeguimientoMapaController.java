@@ -60,6 +60,11 @@ public class SeguimientoMapaController {
 
     Map<String, Object> respuesta = new HashMap<>();
 
+    boolean seguimientoFinalizado =
+        entrega.llegoADestino() || entrega.fueResuelta();
+
+    respuesta.put("seguimientoFinalizado", seguimientoFinalizado);
+    respuesta.put("llegoADestino", entrega.llegoADestino());
     respuesta.put("idRuta", ruta.getId());
     respuesta.put("patente", ruta.getCamion().getPatente());
     respuesta.put("idEntidad", entrega.getIdEntidad());
@@ -83,7 +88,8 @@ public class SeguimientoMapaController {
      * terminada: podría estar realizando otra ruta.
      */
     if (ruta.estaActiva()
-        && entrega.getEstado() == EstadoEntrega.EN_TRASLADO) {
+        && entrega.getEstado() == EstadoEntrega.EN_TRASLADO
+        && !seguimientoFinalizado) {
 
       long rutasEnTraslado = em.createQuery(
               """
@@ -102,10 +108,8 @@ public class SeguimientoMapaController {
       var ubicacion = ruta.getCamion().getUltimaUbicacion();
 
       boolean fechaCompatible = ubicacion != null
-          && ubicacion.getFechaYHora() != null
-          && (ruta.getFechaPlanificada() == null
-          || !ubicacion.getFechaYHora().toLocalDate()
-          .isBefore(ruta.getFechaPlanificada()));
+          && ubicacion.getFechaReporteUtc() != null
+          && ruta.getId().equals(ubicacion.getRutaReporteId());
 
       if (rutasEnTraslado == 1 && fechaCompatible) {
         respuesta.put("camion", Map.of(
@@ -114,6 +118,12 @@ public class SeguimientoMapaController {
             "fecha", ubicacion.getFechaYHora().toString()
         ));
       }
+    }
+
+    String geometria = entrega.getGeometriaHastaEntrega();
+
+    if (geometria != null && !geometria.isBlank()) {
+      respuesta.put("geometriaPlanificada", geometria);
     }
 
     ctx.json(respuesta);

@@ -22,20 +22,23 @@ public class CuentaController {
   }
 
   public void continuar(Context ctx) {
-    ctx.redirect(buscar(ctx) == null ? "/cuenta/completar" : "/");
+    ctx.redirect(org.example.seguridad.SesionWeb.destino(ctx));
   }
 
   public void formulario(Context ctx) {
-    if (buscar(ctx) != null) {
-      ctx.redirect("/");
+    var usuario = LogtoController.usuario(ctx);
+    CuentaWeb cuenta = buscar(ctx);
+
+    if (org.example.seguridad.SesionWeb.esAdmin(usuario)
+        || cuenta != null && cuenta.completa()) {
+
+      continuar(ctx);
       return;
     }
 
-    String tipo = ctx.queryParam("tipo");
-
-    if (tipo != null) {
-      validarTipo(tipo);
-      ctx.sessionAttribute("registro.tipo", tipo);
+    if (cuenta == null) {
+      ctx.redirect("/auth/registro");
+      return;
     }
 
     mostrar(ctx, "");
@@ -45,63 +48,73 @@ public class CuentaController {
     var usuario = LogtoController.usuario(ctx);
     LogtoController.validarCsrf(ctx);
 
-    if (buscar(ctx) != null) {
-      ctx.redirect("/");
-      return;
-    }
-
-    if (!usuario.emailVerificado() || usuario.email().isBlank()) {
-      ctx.status(400);
-      mostrar(
-          ctx,
-          "Verificá tu correo en Logto y volvé a iniciar sesión."
-      );
+    if (org.example.seguridad.SesionWeb.esAdmin(usuario)) {
+      continuar(ctx);
       return;
     }
 
     EntityManager em = proveedor.get();
+    var tx = em.getTransaction();
 
     try {
-      String tipo = ctx.sessionAttribute("registro.tipo");
-      validarTipo(tipo);
+      tx.begin();
 
-      CuentaWeb cuenta = new CuentaWeb();
-      cuenta.id = CuentaWeb.clave(usuario);
-      cuenta.rol = tipo;
+      CuentaWeb cuenta = em.find(
+          CuentaWeb.class,
+          CuentaWeb.clave(usuario),
+          javax.persistence.LockModeType.PESSIMISTIC_WRITE
+      );
 
-      em.getTransaction().begin();
-
-      try {
-        if ("ENTIDAD".equals(tipo)) {
-          cuenta.nombre = campo(ctx, "razonSocial");
-
-          cuenta.entidad = new EntidadBeneficiaria(
-              cuenta.nombre,
-              campo(ctx, "direccion"),
-              campo(ctx, "telefono")
-          );
-
-          em.persist(cuenta.entidad);
-        } else {
-          crearDonante(ctx, usuario, cuenta, em);
-        }
-
-        em.persist(cuenta);
-        em.getTransaction().commit();
-
-      } catch (RuntimeException e) {
-        if (em.getTransaction().isActive()) {
-          em.getTransaction().rollback();
-        }
-
-        em.clear();
-        throw e;
+      if (cuenta == null) {
+        throw new BadRequestResponse(
+            "Primero elegí el botón de registro."
+        );
       }
 
-      ctx.sessionAttribute("registro.tipo", null);
-      ctx.redirect("/");
+      if (cuenta.completa()) {
+        tx.commit();
+        continuar(ctx);
+        return;
+      }
+
+      if (!usuario.emailVerificado()
+          || usuario.email().isBlank()) {
+
+        throw new BadRequestResponse(
+            "Verificá tu correo en Logto, "
+                + "cerrá sesión y volvé a ingresar."
+        );
+      }
+
+      validarTipo(cuenta.rol);
+
+      if ("ENTIDAD".equals(cuenta.rol)) {
+        cuenta.nombre = campo(ctx, "razonSocial");
+
+        cuenta.entidad = new EntidadBeneficiaria(
+            cuenta.nombre,
+            "",
+            campo(ctx, "telefono", 40)
+        );
+
+        em.persist(cuenta.entidad);
+
+      } else {
+        crearDonante(ctx, usuario, cuenta, em);
+      }
+
+      tx.commit();
+
+      ctx.attribute("cuentaWeb", cuenta);
+      continuar(ctx);
 
     } catch (BadRequestResponse | IllegalArgumentException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      em.clear();
+      ctx.attribute("cuentaWeb", buscar(ctx));
       ctx.status(400);
 
       mostrar(
@@ -110,6 +123,13 @@ public class CuentaController {
               ? e.getMessage()
               : "Revisá los datos del formulario."
       );
+
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      throw e;
     }
   }
 
@@ -204,13 +224,29 @@ public class CuentaController {
   }
 
   private void mostrar(Context ctx, String error) {
-    String tipo = ctx.sessionAttribute("registro.tipo");
+    CuentaWeb cuenta = buscar(ctx);
+
+    if (cuenta == null) {
+      ctx.redirect("/auth/registro");
+      return;
+    }
 
     Map<String, Object> modelo = new HashMap<>();
+
     modelo.put("mostrarPerfil", true);
-    modelo.put("elegir", tipo == null);
-    modelo.put("entidad", "ENTIDAD".equals(tipo));
+    modelo.put("entidad", "ENTIDAD".equals(cuenta.rol));
     modelo.put("error", Objects.toString(error, ""));
+
+    if (!List.of("DONANTE", "ENTIDAD").contains(cuenta.rol)) {
+      modelo.put("bloqueado", true);
+
+      modelo.put(
+          "error",
+          "Esta cuenta necesita revisión. "
+              + "Si era administradora, asignale ADMIN en Logto "
+              + "y volvé a ingresar."
+      );
+    }
 
     landing.renderizar(ctx, modelo);
   }

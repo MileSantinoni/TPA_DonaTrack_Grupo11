@@ -44,6 +44,12 @@ public class Entrega {
   @OrderColumn(name = "orden_foto")
   private List<FotoRecepcion> fotosRecepcion = new ArrayList<>();
 
+  @Column(name = "geometria_hasta_entrega", columnDefinition = "text")
+  private String geometriaHastaEntrega;
+
+  @Column(name = "llegada_destino_utc")
+  private java.time.Instant llegadaDestinoUtc;
+
   protected Entrega() {
     // Utilizado por JPA.
   }
@@ -225,5 +231,111 @@ public class Entrega {
     }
 
     return eventoPendiente;
+  }
+
+  public String getGeometriaHastaEntrega() {
+    return geometriaHastaEntrega;
+  }
+
+  public void guardarGeometriaHastaEntrega(String geometria) {
+    if (geometria == null || geometria.isBlank()) {
+      throw new IllegalArgumentException(
+          "Falta el recorrido hasta la entrega."
+      );
+    }
+
+    this.geometriaHastaEntrega = geometria;
+  }
+
+  public boolean llegoADestino() {
+    return llegadaDestinoUtc != null;
+  }
+
+  public void registrarLlegadaSiCorresponde(
+      double latitud,
+      double longitud,
+      java.time.Instant fechaReporte
+  ) {
+    if (llegoADestino()
+        || estado != EstadoEntrega.EN_TRASLADO
+        || geometriaHastaEntrega == null
+        || geometriaHastaEntrega.isBlank()) {
+      return;
+    }
+
+    double[] destino = obtenerUltimoPunto(geometriaHastaEntrega);
+
+    double lat1 = Math.toRadians(latitud);
+    double lat2 = Math.toRadians(destino[0]);
+    double diferenciaLat = lat2 - lat1;
+    double diferenciaLon = Math.toRadians(destino[1] - longitud);
+
+    double a =
+        Math.sin(diferenciaLat / 2) * Math.sin(diferenciaLat / 2)
+            + Math.cos(lat1) * Math.cos(lat2)
+            * Math.sin(diferenciaLon / 2) * Math.sin(diferenciaLon / 2);
+
+    double distanciaMetros = 6371000 * 2
+        * Math.atan2(
+        Math.sqrt(Math.max(0, Math.min(1, a))),
+        Math.sqrt(Math.max(0, 1 - Math.min(1, a)))
+    );
+
+    if (distanciaMetros <= 100) {
+      llegadaDestinoUtc = fechaReporte;
+    }
+  }
+
+  private static double[] obtenerUltimoPunto(String geometria) {
+    int[] indice = {0};
+    long latitud = 0;
+    long longitud = 0;
+
+    while (indice[0] < geometria.length()) {
+      latitud += leerComponente(geometria, indice);
+      longitud += leerComponente(geometria, indice);
+    }
+
+    double lat = latitud / 100000.0;
+    double lon = longitud / 100000.0;
+
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      throw new IllegalArgumentException(
+          "El recorrido contiene coordenadas inválidas."
+      );
+    }
+
+    return new double[]{lat, lon};
+  }
+
+  private static long leerComponente(String geometria, int[] indice) {
+    long resultado = 0;
+    int desplazamiento = 0;
+
+    while (true) {
+      if (indice[0] >= geometria.length() || desplazamiento > 30) {
+        throw new IllegalArgumentException(
+            "El recorrido guardado es inválido."
+        );
+      }
+
+      int valor = geometria.charAt(indice[0]++) - 63;
+
+      if (valor < 0 || valor > 63) {
+        throw new IllegalArgumentException(
+            "El recorrido guardado es inválido."
+        );
+      }
+
+      resultado |= (long) (valor & 31) << desplazamiento;
+
+      if (valor < 32) {
+        return (resultado & 1) != 0
+            ? ~(resultado >> 1)
+            : resultado >> 1;
+      }
+
+      desplazamiento += 5;
+    }
   }
 }

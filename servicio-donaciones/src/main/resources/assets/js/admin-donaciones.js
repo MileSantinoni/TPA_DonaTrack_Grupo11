@@ -421,15 +421,8 @@
                 idEntidad: new FormData(confirmar).get("idEntidad")
             });
 
-            try {
-                sessionStorage.setItem(
-                    "planificar-donacion",
-                    idAsignacion
-                );
-            } catch {}
-
             terminar(
-                "Entidad asignada. Completá los datos para planificar la entrega."
+                "Donación asignada a la entidad. Quedó pendiente de planificación."
             );
         });
     });

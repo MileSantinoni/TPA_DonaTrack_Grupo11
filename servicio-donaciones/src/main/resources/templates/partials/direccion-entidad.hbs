@@ -1,0 +1,37 @@
+<div data-direccion-entidad>
+    <label>
+        Dirección de entrega
+        <input
+            data-direccion-busqueda
+            type="search"
+            maxlength="180"
+            autocomplete="off"
+            placeholder="Calle, altura y localidad"
+            required>
+    </label>
+
+    <div data-direccion-resultados
+         aria-label="Direcciones sugeridas"
+         hidden></div>
+
+    <input type="hidden" name="direccion">
+    <input type="hidden" name="latitud">
+    <input type="hidden" name="longitud">
+    <input type="hidden" name="ubicacionConfirmada" value="false">
+
+    <p data-direccion-estado
+       role="status"
+       aria-live="polite"
+       hidden></p>
+
+    <div data-direccion-mapa
+         hidden
+         style="height:260px;width:100%;border-radius:10px;"></div>
+
+    <small style="display:block;margin-top:8px;">
+        Direcciones por
+        <a href="https://www.geoapify.com/"
+           target="_blank"
+           rel="noopener">Geoapify</a>
+    </small>
+</div>

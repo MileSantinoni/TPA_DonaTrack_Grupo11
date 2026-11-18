@@ -30,6 +30,11 @@ public class CuentaWeb {
   public CuentaWeb() {
   }
 
+  public boolean completa() {
+    return "DONANTE".equals(rol) && donante != null
+        || "ENTIDAD".equals(rol) && entidad != null;
+  }
+
   public static String clave(Usuario usuario) {
     return usuario.issuer() + "|" + usuario.sub();
   }
