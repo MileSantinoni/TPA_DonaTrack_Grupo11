@@ -189,6 +189,90 @@
         }
     }
 
+    function fechaEntrega(valor) {
+        if (!valor) return "Sin fecha";
+
+        const partes = valor.split("-");
+        return partes.length === 3
+            ? `${partes[2]}/${partes[1]}/${partes[0]}`
+            : valor;
+    }
+
+    function crearParada(entrega, indice) {
+        const estados = {
+            PENDIENTE: {
+                texto: "Pendiente",
+                icono: "◷",
+                clase: "pendiente"
+            },
+            EN_TRASLADO: {
+                texto: "En traslado",
+                icono: "→",
+                clase: "traslado"
+            },
+            ENTREGADA: {
+                texto: "Entregada",
+                icono: "✓",
+                clase: "entregada"
+            },
+            NO_RECIBIDA: {
+                texto: "No recibida",
+                icono: "!",
+                clase: "no-recibida"
+            }
+        };
+
+        const estado = estados[entrega.estado] || {
+            texto: "Sin información",
+            icono: "•",
+            clase: "pendiente"
+        };
+
+        const fila = elemento("li", "", "mon-parada");
+        const numero = elemento(
+            "span",
+            String(indice + 1).padStart(2, "0"),
+            "mon-parada-numero"
+        );
+
+        const informacion = elemento("div", "", "mon-parada-info");
+
+        const nombre = elemento(
+            "strong",
+            entrega.entidad || "Entidad beneficiaria",
+            "mon-parada-nombre"
+        );
+
+        const direccion = elemento("div", "", "mon-parada-direccion");
+
+        const iconoDireccion = elemento("span", "⌖", "mon-direccion-icono");
+        iconoDireccion.setAttribute("aria-hidden", "true");
+
+        direccion.append(
+            iconoDireccion,
+            elemento("span", entrega.direccion || "Sin dirección registrada")
+        );
+
+        informacion.append(nombre, direccion);
+
+        const etiqueta = elemento(
+            "span",
+            "",
+            `mon-entrega-estado mon-entrega-${estado.clase}`
+        );
+
+        const iconoEstado = elemento("span", estado.icono);
+        iconoEstado.setAttribute("aria-hidden", "true");
+
+        etiqueta.append(
+            iconoEstado,
+            document.createTextNode(estado.texto)
+        );
+
+        fila.append(numero, informacion, etiqueta);
+        return fila;
+    }
+
     function renderizar() {
         if (seleccion && !camiones.some(c => c.patente === seleccion)) {
             seleccion = null;
@@ -202,20 +286,18 @@
         const visibles = elegido ? [elegido] : camiones;
 
         $("mon-detalle").hidden = !elegido;
-        $("mon-mapa-aviso").textContent = "";
+
 
         if (elegido) {
-            $("mon-titulo").textContent = `Camión ${elegido.patente}`;
-            $("mon-ruta").textContent = elegido.idRuta
-                ? `Ruta: ${elegido.idRuta} · Fecha: ${elegido.fecha}`
-                : "Este camión no tiene un recorrido único para mostrar.";
+            $("mon-titulo").textContent =
+                `Entregas del camión ${elegido.patente}`;
+
+            $("mon-ruta").textContent =
+                `Programadas para el ${fechaEntrega(elegido.fecha)}`
+                + ` · ${elegido.completadas} de ${elegido.total} entregadas`;
 
             $("mon-paradas").replaceChildren(
-                ...elegido.entregas.map(e => elemento(
-                    "li",
-                    `${e.entidad} · ${e.direccion} · `
-                    + e.estado.replaceAll("_", " ")
-                ))
+                ...elegido.entregas.map(crearParada)
             );
 
             if (elegido.geometria) {
@@ -229,17 +311,11 @@
                     }).addTo(capas);
 
                 } catch (error) {
-                    $("mon-mapa-aviso").textContent =
-                        "No se pudo dibujar el recorrido guardado.";
+                    console.warn("No se pudo dibujar el recorrido guardado.", error);
                 }
             }
 
             punto(posicion(elegido.deposito), "#d58b40", "Depósito");
-
-            if (!elegido.ubicacion) {
-                $("mon-mapa-aviso").textContent +=
-                    " Este camión todavía no tiene ubicación reportada.";
-            }
         }
 
         for (const camion of visibles) {
@@ -261,11 +337,6 @@
                 animate: false
             });
             necesitaEncuadre = false;
-        }
-
-        if (!elegido && !limites.isValid()) {
-            $("mon-mapa-aviso").textContent =
-                "No hay ubicaciones reportadas para mostrar.";
         }
     }
 
@@ -309,13 +380,13 @@
 
             if (!paginaActiva || document.hidden) return;
 
-            camiones = datos.camiones;
+            camiones = datos.camiones.filter(c => c.estado === "En ruta");
             renderizar();
 
             aviso.textContent = camiones.length
                 ? "Actualización automática · Última consulta: "
                 + new Date().toLocaleTimeString("es-AR")
-                : "Todavía no hay camiones. Registralos desde la pestaña Camiones.";
+                : "No hay camiones en ruta en este momento.";
 
         } catch (error) {
             if (paginaActiva && !document.hidden) {

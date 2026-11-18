@@ -29,12 +29,14 @@
     <h1>Monitoreo de camiones</h1>
     <p>Seguí la ubicación de la flota y el avance de sus entregas.</p>
 
-    <nav class="tabs-admin" aria-label="Secciones de administración">
-      <a href="/administracion/donaciones">Donaciones</a>
-      <a href="/administracion/donantes">Personas donantes</a>
-      <a href="/administracion/camiones">Camiones</a>
-      <a href="/administracion/monitoreo" aria-current="page">Monitoreo</a>
-    </nav>
+    <div class="ac-toolbar">
+      <nav class="tabs-admin" aria-label="Secciones de administración">
+        <a href="/administracion/donaciones">Donaciones</a>
+        <a href="/administracion/donantes">Personas donantes</a>
+        <a href="/administracion/camiones">Camiones</a>
+        <a href="/administracion/monitoreo" aria-current="page">Monitoreo</a>
+      </nav>
+    </div>
 
     <div class="mon-toolbar">
       <p id="mon-aviso" role="status">Consultando flota…</p>
@@ -46,10 +48,11 @@
     <section class="mon-layout" aria-label="Monitoreo de la flota">
       <div class="mon-map-card">
         <div id="mon-mapa" aria-label="Mapa de camiones"></div>
-        <p id="mon-mapa-aviso"></p>
-        <div class="mon-leyenda">
-          <span>🔵 Reporte reciente</span>
-          <span>⚪ Última ubicación sin reportes recientes</span>
+        <div class="mon-leyenda" aria-label="Referencias del mapa">
+          <span><i class="mon-punto mon-punto-azul"></i>Camión</span>
+          <span><i class="mon-punto mon-punto-gris"></i>Sin reportes recientes</span>
+          <span><i class="mon-punto mon-punto-deposito"></i>Depósito</span>
+          <span><i class="mon-linea"></i>Recorrido</span>
         </div>
       </div>
 
