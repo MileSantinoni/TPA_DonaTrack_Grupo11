@@ -302,4 +302,69 @@ public class AdminCamionesController {
         )
     );
   }
+
+  public void monitoreo(Context ctx) {
+    exigirAdministrador(ctx);
+
+    ctx.header("Cache-Control", "no-store")
+        .render("adminMonitoreo.hbs", Map.of(
+            "geoapifyKey",
+            System.getenv().getOrDefault("GEOAPIFY_API_KEY", "")
+        ));
+  }
+
+  public void datosMonitoreo(Context ctx) {
+    exigirAdministrador(ctx);
+
+    String token = System.getenv("PLANIFICACION_TOKEN");
+
+    if (token == null || token.isBlank()) {
+      throw new ServiceUnavailableResponse(
+          "Falta configurar PLANIFICACION_TOKEN."
+      );
+    }
+
+    var pedido = HttpRequest.newBuilder(
+            URI.create(logistica + "/interno/monitoreo")
+        )
+        .timeout(Duration.ofSeconds(10))
+        .header("Accept", "application/json")
+        .header("X-Planificacion-Token", token)
+        .GET()
+        .build();
+
+    try {
+      var respuesta = http.send(
+          pedido,
+          HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+      );
+
+      if (respuesta.statusCode() != 200) {
+        ctx.status(502).json(Map.of(
+            "mensaje", "Logística no pudo devolver el monitoreo."
+        ));
+        return;
+      }
+
+      ctx.header("Cache-Control", "no-store")
+          .contentType("application/json")
+          .result(respuesta.body());
+
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ServiceUnavailableResponse("Consulta interrumpida.");
+    } catch (IOException e) {
+      throw new BadGatewayResponse(
+          "No se pudo conectar con Logística."
+      );
+    }
+  }
+
+  private static void exigirAdministrador(Context ctx) {
+    if (!org.example.seguridad.SesionWeb.esAdmin(
+        org.example.seguridad.SesionWeb.opcional(ctx)
+    )) {
+      throw new ForbiddenResponse("Acceso exclusivo de administración.");
+    }
+  }
 }

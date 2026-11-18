@@ -11,7 +11,6 @@ public final class RoutesLogistica {
   public static void registrar(Javalin app, CamionController camiones,
                                RutaController rutas, EntregaController entregas) {
     app.post("/camiones", camiones::registrarCamion);
-    app.post("/camiones/ubicacion", camiones::recibirUbicacion);
     app.get("/camiones/{patente}/ubicacion", camiones::ubicacionActual);
     app.get("/camiones/{patente}/avance", camiones::avanceDeRuta);
     app.post("/rutas", rutas::registrarRuta);

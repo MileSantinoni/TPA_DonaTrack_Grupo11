@@ -88,13 +88,29 @@
         const fecha = panel.querySelector(".dt-seguimiento-fecha");
         const contenedor = panel.querySelector(".dt-google-mapa");
         const leyenda = panel.querySelector(".dt-mapa-leyenda");
-        const boton = panel.querySelector(".dt-actualizar-mapa");
 
 
         let mapa;
         let marcadores;
         let recorrido;
         let consultando = false;
+        let temporizador;
+        let encuadreInicial = false;
+        let seguimientoFinalizado = false;
+
+        function estaVisible() {
+            return panel.isConnected
+                && !document.hidden
+                && (!detalle || detalle.open);
+        }
+
+        function programarActualizacion() {
+            clearTimeout(temporizador);
+
+            if (estaVisible() && !seguimientoFinalizado) {
+                temporizador = setTimeout(actualizar, 5000);
+            }
+        }
 
         function crearMapa() {
             if (mapa) return;
@@ -167,23 +183,16 @@
         }
 
         async function actualizar() {
-            if (consultando) return;
+            clearTimeout(temporizador);
+
+            if (consultando || !estaVisible()) return;
 
             consultando = true;
-            boton.disabled = true;
 
-            mensaje.textContent = "Consultando seguimiento…";
-            fecha.textContent = "";
-
-            marcadores?.clearLayers();
-            if (recorrido) {
-                recorrido.remove();
-                recorrido = null;
+            if (!mapa) {
+                mensaje.textContent = "Consultando seguimiento…";
             }
-            leyenda.replaceChildren();
 
-            contenedor.hidden = true;
-            leyenda.hidden = true;
 
             const abortador = new AbortController();
             const timeout = setTimeout(() => abortador.abort(), 15000);
@@ -228,8 +237,10 @@
                     );
                 }
 
+                seguimientoFinalizado = datos.seguimientoFinalizado === true;
+
                 // El usuario pudo cerrar los detalles durante la consulta.
-                if (detalle && !detalle.open) return;
+                if (!estaVisible()) return;
 
                 const puntos = [
                     {
@@ -273,7 +284,8 @@
                     avisos.push("El destino no tiene coordenadas registradas.");
                 }
 
-                if (datos.estadoEntrega === "EN_TRASLADO"
+                if (!seguimientoFinalizado
+                    && datos.estadoEntrega === "EN_TRASLADO"
                     && !coordenadas(datos.camion)) {
                     avisos.push(
                         "Todavía no hay un reporte de ubicación del camión "
@@ -292,10 +304,20 @@
                 // Esperamos a que el navegador le asigne tamaño al mapa.
                 await new Promise(resolve => requestAnimationFrame(resolve));
 
-                if (detalle && !detalle.open) return;
+                if (!estaVisible()) return;
 
                 crearMapa();
                 mapa.invalidateSize({ animate: false });
+
+                marcadores.clearLayers();
+
+                if (recorrido) {
+                    recorrido.remove();
+                    recorrido = null;
+                }
+
+                leyenda.replaceChildren();
+                fecha.textContent = "";
 
                 puntos.forEach(agregarPunto);
 
@@ -364,15 +386,28 @@
                 leyenda.hidden = false;
 
                 requestAnimationFrame(() => {
-                    if (detalle && !detalle.open) return;
+                    if (!estaVisible()) return;
 
-                    mapa.invalidateSize();
+                    mapa.invalidateSize({ animate: false });
 
-                    mapa.fitBounds(limites, {
-                        padding: [40, 40],
-                        maxZoom: 16
-                    });
+                    if (!encuadreInicial && limites.isValid()) {
+                        mapa.fitBounds(limites, {
+                            padding: [40, 40],
+                            maxZoom: 16,
+                            animate: false
+                        });
+
+                        encuadreInicial = true;
+                    }
                 });
+
+                if (seguimientoFinalizado) {
+                    avisos.push(
+                        datos.llegoADestino
+                            ? "El camión llegó al destino. El seguimiento de ubicación finalizó."
+                            : "El seguimiento de esta entrega finalizó."
+                    );
+                }
 
                 mensaje.textContent = avisos.join(" ");
 
@@ -383,26 +418,40 @@
                 }
 
             } catch (error) {
-                marcadores?.clearLayers();
-                contenedor.hidden = true;
-                leyenda.hidden = true;
-
-                mensaje.textContent = error.name === "AbortError"
-                    ? "La consulta tardó demasiado. Volvé a intentar."
-                    : error.message;
+                if (estaVisible()) {
+                    mensaje.textContent =
+                        (error.name === "AbortError"
+                            ? "La consulta tardó demasiado."
+                            : error.message)
+                        + (mapa
+                            ? " Se conserva la última información mostrada."
+                            : "")
+                        + " Reintentaremos automáticamente.";
+                }
             } finally {
                 clearTimeout(timeout);
                 consultando = false;
-                boton.disabled = false;
+                programarActualizacion();
             }
         }
 
-        detalle?.addEventListener("toggle", () => {
-            if (detalle.open) actualizar();
+        function cambiarVisibilidad() {
+            clearTimeout(temporizador);
+
+            if (estaVisible()) {
+                actualizar();
+            }
+        }
+
+        detalle?.addEventListener("toggle", cambiarVisibilidad);
+        document.addEventListener("visibilitychange", cambiarVisibilidad);
+
+        window.addEventListener("pagehide", () => {
+            clearTimeout(temporizador);
         });
 
-        boton.addEventListener("click", actualizar);
+        window.addEventListener("pageshow", cambiarVisibilidad);
 
-        if (!detalle || detalle.open) actualizar();
+        if (estaVisible()) actualizar();
     }
 })();

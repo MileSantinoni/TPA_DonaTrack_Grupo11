@@ -138,6 +138,8 @@ public class Router {
     app.get("/administracion/planificaciones/pendientes", planificacionAdmin::pendientes);
     app.post("/administracion/planificaciones", planificacionAdmin::planificar);
     app.post("/administracion/rutas/{idRuta}/iniciar", planificacionAdmin::iniciar);
+    app.get("/administracion/monitoreo", adminCamiones::monitoreo);
+    app.get("/administracion/monitoreo/datos", adminCamiones::datosMonitoreo);
 
     app.get("/mi-entidad", miEntidad::index);
     app.get("/mi-entidad/necesidades/{id}", miEntidad::detalleNecesidad);

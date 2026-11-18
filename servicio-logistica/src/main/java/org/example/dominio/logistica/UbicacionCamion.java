@@ -16,6 +16,12 @@ public class UbicacionCamion {
   @JoinColumn(name = "patente_camion", nullable = false, unique = true)
   private Camion camion;
 
+  @Column(name = "ruta_reporte_id")
+  private String rutaReporteId;
+
+  @Column(name = "fecha_reporte_utc")
+  private java.time.Instant fechaReporteUtc;
+
   private double latitud;
   private double longitud;
   private double velocidad; // km/h
@@ -41,6 +47,8 @@ public class UbicacionCamion {
     this.longitud = nueva.longitud;
     this.velocidad = nueva.velocidad;
     this.fechaYHora = nueva.fechaYHora;
+    this.rutaReporteId = nueva.rutaReporteId;
+    this.fechaReporteUtc = nueva.fechaReporteUtc;
   }
 
   public double getLatitud() {
@@ -57,5 +65,21 @@ public class UbicacionCamion {
 
   public LocalDateTime getFechaYHora() {
     return fechaYHora;
+  }
+
+  public String getRutaReporteId() {
+    return rutaReporteId;
+  }
+
+  public java.time.Instant getFechaReporteUtc() {
+    return fechaReporteUtc;
+  }
+
+  public void identificarReporte(
+      String idRuta,
+      java.time.Instant fecha
+  ) {
+    this.rutaReporteId = idRuta;
+    this.fechaReporteUtc = fecha;
   }
 }
