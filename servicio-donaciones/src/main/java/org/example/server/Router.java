@@ -1,3 +1,4 @@
+
 package org.example.server;
 
 import io.javalin.Javalin;
@@ -100,7 +101,8 @@ public class Router {
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
     MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
-    EntidadesBeneficiariasController entidadesBeneficiarias = new EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
+    EntidadesBeneficiariasController entidadesBeneficiarias = new 
+EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
     var adminCamiones = new org.example.controllers.AdminCamionesController();
@@ -117,7 +119,6 @@ public class Router {
     app.get("/health", ctx -> ctx.result("OK"));
     app.get("/api/landing", landingController::cargarLanding);
     app.get("/", landingController::index);
-    app.get("/fotos-publicas", landingController::fotosPublicas);
     app.get("/mis-donaciones", misDonaciones::index);
     app.get("/mis-donaciones/{id}/seguimiento", misDonaciones::seguimiento);
     app.get("/entidades-beneficiarias", entidadesBeneficiarias::index);
@@ -188,7 +189,7 @@ public class Router {
     app.post("/asignaciones/confirmar", asignaciones::confirmarAsignacion);
     app.post("/asignaciones/rechazar", asignaciones::rechazarAsignacion);
 
-    // Rutas Integración Logística
+    // Rutas IntegraciÃ³n LogÃ­stica
     app.post("/interno/logistica/eventos", integracion::registrarEvento);
     app.get("/interno/asignaciones", integracion::listarAsignaciones);
     app.get("/interno/asignaciones/{id}", integracion::buscarAsignacion);
@@ -200,7 +201,7 @@ public class Router {
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
 
-    // Autenticación y perfil local
+    // AutenticaciÃ³n y perfil local
     var logto = new org.example.controllers.LogtoController();
     var cuentas = new org.example.controllers.CuentaController(
         entityManagerSupplier,
@@ -225,3 +226,5 @@ public class Router {
 
   }
 }
+
+
