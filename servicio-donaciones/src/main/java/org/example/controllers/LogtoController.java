@@ -60,30 +60,108 @@ public class LogtoController {
       String state,
       String nonce,
       String verifier,
-      Instant creado
-  ) implements Serializable {}
+      Instant creado,
+      String tipo
+  ) implements Serializable {
+  }
 
   public void login(Context ctx) throws Exception {
     iniciar(ctx, false);
   }
 
   public void registro(Context ctx) throws Exception {
+    String tipo = ctx.queryParam("tipo");
+
+    var existente = org.example.seguridad.SesionWeb.opcional(ctx);
+
+    if (existente != null
+        && (org.example.seguridad.SesionWeb.esAdmin(existente)
+        || ctx.attribute("cuentaWeb") != null)) {
+
+      ctx.redirect("/cuenta/continuar");
+      return;
+    }
+
+    if (tipo == null) {
+      ctx.header("Cache-Control", "no-store");
+
+      ctx.html("""
+            <!doctype html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport"
+                      content="width=device-width,initial-scale=1">
+                <title>Registro · DonaTrack</title>
+                <link rel="stylesheet" href="/assets/main.css">
+            </head>
+            <body>
+                <main style="max-width:600px;margin:80px auto;padding:24px">
+                    <h1>Registrate en DonaTrack</h1>
+                    <p>
+                        Elegí cómo vas a participar.
+                        Esta elección queda asociada a tu cuenta.
+                    </p>
+                    <p>
+                        <a class="btn btn-primary-action"
+                           href="/auth/registro?tipo=DONANTE">
+                            Quiero donar
+                        </a>
+                    </p>
+                    <p>
+                        <a class="btn btn-secondary"
+                           href="/auth/registro?tipo=ENTIDAD">
+                            Registrar mi entidad
+                        </a>
+                    </p>
+                    <p>
+                        <a href="/logout">Cerrar sesión</a>
+                        ·
+                        <a href="/login">Iniciar sesión</a>
+                    </p>
+                </main>
+            </body>
+            </html>
+            """);
+
+      return;
+    }
+
+    if (!List.of("DONANTE", "ENTIDAD").contains(tipo)) {
+      throw new BadRequestResponse(
+          "Tipo de registro inválido."
+      );
+    }
+
+    var usuario = org.example.seguridad.SesionWeb.opcional(ctx);
+
+    if (usuario != null) {
+      org.example.seguridad.SesionWeb.registrarTipo(
+          ctx,
+          usuario,
+          tipo
+      );
+
+      ctx.redirect("/cuenta/continuar");
+      return;
+    }
+
     iniciar(ctx, true);
   }
 
-  private void iniciar(Context ctx, boolean registro) throws Exception {
+  private void iniciar(Context ctx, boolean registro)
+      throws Exception {
+
+    if (org.example.seguridad.SesionWeb.opcional(ctx) != null) {
+      ctx.redirect("/cuenta/continuar");
+      return;
+    }
+
     String issuer = issuer();
     String appId = variable("LOGTO_APP_ID");
     String redirect = variable("LOGTO_REDIRECT_URI");
 
-    // Detecta la falta del secreto antes de enviar al usuario a Logto.
     variable("LOGTO_APP_SECRET");
-
-    var anterior = ctx.req().getSession(false);
-
-    if (anterior != null) {
-      anterior.invalidate();
-    }
 
     var session = ctx.req().getSession(true);
     session.setMaxInactiveInterval(30 * 60);
@@ -92,16 +170,33 @@ public class LogtoController {
         aleatorio(),
         aleatorio(),
         aleatorio(),
-        Instant.now()
+        Instant.now(),
+        registro ? ctx.queryParam("tipo") : null
     );
 
-    session.setAttribute(PENDIENTE, intento);
+    synchronized (session) {
+      var pendientes = intentos(session);
+
+      pendientes.values().removeIf(i ->
+          i.creado().plusSeconds(600).isBefore(Instant.now())
+      );
+
+      if (pendientes.size() >= 5) {
+        pendientes.remove(
+            pendientes.keySet().iterator().next()
+        );
+      }
+
+      pendientes.put(intento.state(), intento);
+      session.setAttribute(PENDIENTE, pendientes);
+    }
 
     String challenge = Base64.getUrlEncoder()
         .withoutPadding()
         .encodeToString(
             MessageDigest.getInstance("SHA-256").digest(
-                intento.verifier().getBytes(StandardCharsets.US_ASCII)
+                intento.verifier()
+                    .getBytes(StandardCharsets.US_ASCII)
             )
         );
 
@@ -110,12 +205,15 @@ public class LogtoController {
     parametros.put("client_id", appId);
     parametros.put("redirect_uri", redirect);
     parametros.put("response_type", "code");
-    parametros.put("scope", "openid profile email");
+    parametros.put("scope", "openid profile email roles");
     parametros.put("state", intento.state());
     parametros.put("nonce", intento.nonce());
     parametros.put("code_challenge", challenge);
     parametros.put("code_challenge_method", "S256");
-    parametros.put("first_screen", registro ? "register" : "sign_in");
+    parametros.put(
+        "first_screen",
+        registro ? "register" : "sign_in"
+    );
 
     ctx.header("Cache-Control", "no-store");
     ctx.redirect(issuer + "/auth?" + formulario(parametros));
@@ -133,18 +231,25 @@ public class LogtoController {
       );
     }
 
+    if (org.example.seguridad.SesionWeb.opcional(ctx) != null) {
+      ctx.redirect("/cuenta/continuar");
+      return;
+    }
+
     Intento intento;
 
     synchronized (session) {
-      intento = (Intento) session.getAttribute(PENDIENTE);
-      session.removeAttribute(PENDIENTE);
+      var pendientes = intentos(session);
+      intento = pendientes.remove(ctx.queryParam("state"));
+      session.setAttribute(PENDIENTE, pendientes);
     }
 
     if (intento == null
-        || intento.creado().plusSeconds(300).isBefore(Instant.now())
+        || intento.creado().plusSeconds(600).isBefore(Instant.now())
         || !iguales(intento.state(), ctx.queryParam("state"))) {
+
       throw new BadRequestResponse(
-          "El ingreso no es válido o venció. Volvé a iniciar sesión."
+          "El ingreso venció o ya se utilizó. Volvé a /login."
       );
     }
 
@@ -164,11 +269,13 @@ public class LogtoController {
 
     try {
       String issuer = issuer();
-
       String issuerRespuesta = ctx.queryParam("iss");
 
-      if (issuerRespuesta != null && !issuer.equals(issuerRespuesta)) {
-        throw new IllegalArgumentException("Emisor inesperado");
+      if (issuerRespuesta != null
+          && !issuer.equals(issuerRespuesta)) {
+        throw new IllegalArgumentException(
+            "Emisor inesperado"
+        );
       }
 
       String cuerpo = formulario(Map.of(
@@ -184,14 +291,19 @@ public class LogtoController {
               URI.create(issuer + "/token")
           )
           .timeout(Duration.ofSeconds(20))
-          .header("Content-Type", "application/x-www-form-urlencoded")
+          .header(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+          )
           .header("Accept", "application/json")
           .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
           .build();
 
       var response = http.send(
           request,
-          HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+          HttpResponse.BodyHandlers.ofString(
+              StandardCharsets.UTF_8
+          )
       );
 
       if (response.statusCode() != 200) {
@@ -206,7 +318,7 @@ public class LogtoController {
 
       SignedJWT jwt = SignedJWT.parse(idToken);
 
-      // El tenant configurado publica ES384 como algoritmo de ID tokens.
+      // Conserva el algoritmo configurado en la integración actual.
       var validator = new IDTokenValidator(
           new Issuer(issuer),
           new ClientID(variable("LOGTO_APP_ID")),
@@ -216,13 +328,13 @@ public class LogtoController {
 
       validator.validate(jwt, new Nonce(intento.nonce()));
 
-      // Los claims se utilizan únicamente después de validar el token.
       var claims = jwt.getJWTClaimsSet();
-
       String sub = claims.getSubject();
 
       if (sub == null || sub.isBlank()) {
-        throw new IllegalArgumentException("Falta el identificador");
+        throw new IllegalArgumentException(
+            "Falta el identificador"
+        );
       }
 
       List<String> roles = claims.getStringListClaim("roles");
@@ -241,19 +353,37 @@ public class LogtoController {
       var usuario = new Usuario(
           issuer,
           sub,
-          Objects.toString(claims.getStringClaim("name"), ""),
-          Objects.toString(claims.getStringClaim("email"), ""),
-          Boolean.TRUE.equals(claims.getBooleanClaim("email_verified")),
+          Objects.toString(
+              claims.getStringClaim("name"),
+              ""
+          ),
+          Objects.toString(
+              claims.getStringClaim("email"),
+              ""
+          ),
+          Boolean.TRUE.equals(
+              claims.getBooleanClaim("email_verified")
+          ),
           roles == null ? List.of() : List.copyOf(roles),
           vence
       );
 
-      // Renueva el identificador de sesión después de autenticar.
-      ctx.req().changeSessionId();
+      synchronized (session) {
+        if (session.getAttribute(USUARIO) == null) {
+          org.example.seguridad.SesionWeb.registrarTipo(
+              ctx,
+              usuario,
+              intento.tipo()
+          );
 
-      session.setAttribute(USUARIO, usuario);
-      session.setAttribute(ID_TOKEN, idToken);
-      session.setAttribute(CSRF, aleatorio());
+          ctx.req().changeSessionId();
+
+          session.setAttribute(USUARIO, usuario);
+          session.setAttribute(ID_TOKEN, idToken);
+          session.setAttribute(CSRF, aleatorio());
+          session.removeAttribute(PENDIENTE);
+        }
+      }
 
       ctx.redirect("/cuenta/continuar");
 
@@ -262,11 +392,17 @@ public class LogtoController {
         Thread.currentThread().interrupt();
       }
 
-      session.invalidate();
+      // No registra tokens, códigos ni secretos.
+      org.slf4j.LoggerFactory
+          .getLogger(LogtoController.class)
+          .warn(
+              "Fallo de callback Logto, tipo={}",
+              e.getClass().getSimpleName()
+          );
 
-      // No expone códigos, tokens ni secretos en la respuesta.
       ctx.status(401).result(
-          "No se pudo validar el ingreso. Volvé a entrar desde /login."
+          "No se pudo validar el ingreso. "
+              + "Volvé a entrar desde /login."
       );
     }
   }
@@ -277,6 +413,18 @@ public class LogtoController {
     org.example.seguridad.CuentaWeb cuenta =
         ctx.attribute("cuentaWeb");
 
+    boolean admin =
+        org.example.seguridad.SesionWeb.esAdmin(usuario);
+
+    boolean completa =
+        admin || cuenta != null && cuenta.completa();
+
+    List<String> roles = admin
+        ? List.of("ADMIN")
+        : cuenta != null && cuenta.completa()
+          ? List.of(cuenta.rol)
+          : List.of();
+
     ctx.header("Cache-Control", "no-store");
 
     ctx.json(Map.of(
@@ -285,8 +433,8 @@ public class LogtoController {
         "nombre", cuenta == null ? usuario.nombre() : cuenta.nombre,
         "email", usuario.email(),
         "emailVerificado", usuario.emailVerificado(),
-        "perfilCompleto", cuenta != null,
-        "roles", cuenta == null ? List.of() : List.of(cuenta.rol)
+        "perfilCompleto", completa,
+        "roles", roles
     ));
   }
 
@@ -437,5 +585,16 @@ public class LogtoController {
           "El formulario venció. Recargá la página."
       );
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Intento> intentos(
+      jakarta.servlet.http.HttpSession session
+  ) {
+    Object valor = session.getAttribute(PENDIENTE);
+
+    return valor instanceof Map<?, ?>
+        ? new LinkedHashMap<>((Map<String, Intento>) valor)
+        : new LinkedHashMap<>();
   }
 }

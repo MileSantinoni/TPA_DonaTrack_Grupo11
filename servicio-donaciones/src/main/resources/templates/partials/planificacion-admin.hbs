@@ -1,6 +1,6 @@
 <dialog id="plan-modal" aria-labelledby="plan-titulo">
   <header>
-    <h2 id="plan-titulo">Planificar la entrega</h2>
+    <h2 id="plan-titulo">Planificar entregas de mañana</h2>
 
     <button type="button"
             class="ac-cerrar"
@@ -9,8 +9,8 @@
   </header>
 
   <p>
-    La entidad ya está asignada. Confirmá los datos de la carga
-    para obtener el camión y la ruta.
+      Seleccioná las donaciones y completá los datos de carga.
+      El planificador asignará los camiones y ordenará las entregas.
   </p>
 
   <p id="plan-deposito" class="ac-ayuda"></p>
@@ -19,9 +19,8 @@
     <div id="plan-lista" class="plan-lista"></div>
 
     <p class="ac-ayuda">
-      El planificador utiliza la dirección confirmada de la entidad
-      y los camiones disponibles.
-      La entrega se programa para mañana.
+        Las donaciones seleccionadas se planifican juntas.
+        Las que no puedan asignarse quedarán pendientes.
     </p>
 
     <p id="plan-error" class="ac-error" role="alert"></p>
@@ -36,7 +35,7 @@
       <button id="plan-submit"
               type="submit"
               class="btn btn-primary-action">
-        Confirmar planificación
+        Planificar seleccionadas
       </button>
     </div>
   </form>

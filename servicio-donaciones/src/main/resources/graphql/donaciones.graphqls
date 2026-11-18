@@ -1,0 +1,41 @@
+type Query {
+    asignaciones: [Asignacion!]!
+    asignacion(id: ID!): Asignacion
+    existeDonacion(id: ID!): Boolean!
+}
+
+type Mutation {
+    registrarEvento(input: EventoLogisticoInput!): Boolean!
+}
+
+type Asignacion {
+    idDonacion: ID!
+    idEntidad: ID!
+    razonSocial: String
+    direccion: String
+    telefono: String
+    estadoDonacion: String!
+    latitud: Float
+    longitud: Float
+}
+
+enum TipoEventoLogistico {
+    INICIO_TRASLADO
+    RECEPCION
+    NO_RECIBIDA
+    RETORNO_DEPOSITO
+}
+
+input ReferenciaEntregaInput {
+    idDonacion: ID!
+    idEntidad: ID!
+}
+
+input EventoLogisticoInput {
+    idOperacion: ID!
+    tipo: TipoEventoLogistico!
+    entregas: [ReferenciaEntregaInput!]!
+    patente: String!
+    motivo: String!
+    fecha: String!
+}

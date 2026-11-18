@@ -116,6 +116,12 @@ public class SeguimientoMapaController {
       }
     }
 
+    String geometria = entrega.getGeometriaHastaEntrega();
+
+    if (geometria != null && !geometria.isBlank()) {
+      respuesta.put("geometriaPlanificada", geometria);
+    }
+
     ctx.json(respuesta);
   }
 }

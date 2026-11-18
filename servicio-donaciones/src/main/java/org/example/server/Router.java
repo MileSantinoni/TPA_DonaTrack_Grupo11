@@ -147,6 +147,7 @@ public class Router {
     app.get("/mi-entidad/donaciones/{id}/seguimiento", miEntidad::seguimiento);
     app.post("/mi-entidad/donaciones/{id}/recepcion", recepcionesEntidad::confirmar);
     app.get("/mi-entidad/fotos/{id}/{archivo}", recepcionesEntidad::foto);
+    app.post("/mi-entidad/ubicacion", miEntidad::guardarUbicacion);
 
     // Las cuentas se crean primero en Logto.
     app.get("/registro", ctx -> ctx.redirect("/auth/registro"));

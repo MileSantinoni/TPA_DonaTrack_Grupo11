@@ -130,6 +130,11 @@ public class LandingController {
         "entregasActivas", entregasActivas
     ));
 
+    model.put(
+        "geoapifyKey",
+        System.getenv().getOrDefault("GEOAPIFY_API_KEY", "")
+    );
+
     ctx.render("landingPage.hbs", model);
   }
 

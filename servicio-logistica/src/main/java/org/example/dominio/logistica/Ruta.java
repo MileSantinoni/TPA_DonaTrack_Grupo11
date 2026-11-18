@@ -37,6 +37,9 @@ public class Ruta {
   @JoinColumn(name = "ubicacion_deposito_id")
   private UbicacionDeposito ubicacionDeposito;
 
+  @Column(name = "geometria_planificada", columnDefinition = "text")
+  private String geometriaPlanificada;
+
   // Hibernate lo utiliza para reconstruir la entidad.
   protected Ruta() {
   }
@@ -218,5 +221,25 @@ public class Ruta {
 
   public UbicacionDeposito getUbicacionDeposito() {
     return ubicacionDeposito;
+  }
+
+  public String getGeometriaPlanificada() {
+    return geometriaPlanificada;
+  }
+
+  public void guardarGeometriaPlanificada(String geometria) {
+    if (geometria == null || geometria.isBlank()) {
+      throw new IllegalArgumentException(
+          "La geometría de la ruta es obligatoria."
+      );
+    }
+
+    if (activa || inicioPendiente != null) {
+      throw new IllegalStateException(
+          "No se puede cambiar el recorrido de una ruta iniciada."
+      );
+    }
+
+    this.geometriaPlanificada = geometria;
   }
 }

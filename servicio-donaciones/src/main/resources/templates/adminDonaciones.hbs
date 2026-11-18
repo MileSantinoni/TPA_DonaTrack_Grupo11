@@ -45,6 +45,11 @@
                         id="abrir-registro">
                     Registrar donaciones
                 </button>
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-planificar-lote>
+                    Planificar entregas de mañana
+                </button>
             </div>
         </div>
 
@@ -121,11 +126,9 @@
                         {{/if}}
 
                         {{#if planificable}}
-                            <button type="button"
-                                    class="btn btn-primary-action"
-                                    data-planificar-donacion="{{id}}">
-                                Continuar planificación
-                            </button>
+                            <span class="ac-ayuda">
+                                Pendiente de planificación
+                            </span>
                         {{/if}}
                     </div>
                 </article>

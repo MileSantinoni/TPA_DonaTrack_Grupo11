@@ -4,59 +4,41 @@
 
     <header class="dt-perfil-cabecera">
         <div>
-            <span class="dt-cuenta-etiqueta">BIENVENIDO A DONATRACK</span>
-            <h2 id="perfil-titulo">Completá tu perfil</h2>
-            <p>Tu cuenta ya está creada. Contanos cómo vas a participar.</p>
-        </div>
+            <span class="dt-cuenta-etiqueta">
+                BIENVENIDO A DONATRACK
+            </span>
 
-        <button type="button"
-                class="dt-perfil-cerrar"
-                data-cerrar-perfil
-                aria-label="Cerrar">
-            <svg width="20" height="20" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" aria-hidden="true">
-                <path d="m6 6 12 12M18 6 6 18"/>
-            </svg>
-        </button>
+            <h2 id="perfil-titulo">
+                {{#if entidad}}
+                    Completá el registro de tu entidad
+                {{else}}
+                    Completá tu registro de donante
+                {{/if}}
+            </h2>
+
+            <p>
+                Tu cuenta ya está creada.
+                Completá estos datos para continuar.
+            </p>
+        </div>
     </header>
 
     <div class="dt-perfil-contenido">
         {{#if error}}
-            <p class="dt-cuenta-error" role="alert">{{error}}</p>
+            <p class="dt-cuenta-error" role="alert">
+                {{error}}
+            </p>
         {{/if}}
 
-        {{#if elegir}}
-            <div class="dt-cuenta-opciones">
-                <a class="dt-cuenta-opcion"
-                   href="/cuenta/completar?tipo=DONANTE">
-                    <strong>Soy donante</strong>
-                    <span>Quiero consultar mis donaciones y sus entregas.</span>
-                </a>
-
-                <a class="dt-cuenta-opcion"
-                   href="/cuenta/completar?tipo=ENTIDAD">
-                    <strong>Soy una entidad beneficiaria</strong>
-                    <span>Quiero registrar necesidades y recibir donaciones.</span>
-                </a>
-            </div>
-        {{else}}
-            <nav class="dt-perfil-tipos" aria-label="Tipo de perfil">
-                <a href="/cuenta/completar?tipo=DONANTE"
-                   {{#unless entidad}}aria-current="page"{{/unless}}>
-                    Soy donante
-                </a>
-                <a href="/cuenta/completar?tipo=ENTIDAD"
-                   {{#if entidad}}aria-current="page"{{/if}}>
-                    Soy una entidad
-                </a>
-            </nav>
-
-            <form method="post"
+        {{#unless bloqueado}}
+            <form id="form-completar-perfil"
+                  method="post"
                   action="/cuenta/completar"
                   class="dt-cuenta-form">
 
-                <input type="hidden" name="csrf" value="{{sesion.csrf}}">
+                <input type="hidden"
+                       name="csrf"
+                       value="{{sesion.csrf}}">
 
                 {{#if entidad}}
                     <label>
@@ -68,15 +50,6 @@
                     </label>
 
                     <label>
-                        Dirección completa
-                        <input name="direccion"
-                               maxlength="180"
-                               placeholder="Calle, altura, ciudad y provincia"
-                               autocomplete="street-address"
-                               required>
-                    </label>
-
-                    <label>
                         Teléfono
                         <input name="telefono"
                                type="tel"
@@ -84,6 +57,12 @@
                                autocomplete="tel"
                                required>
                     </label>
+
+                    <p class="dt-cuenta-ayuda">
+                        Después de registrarte, configurá la dirección donde recibirás
+                        las donaciones desde tu panel.
+                    </p>
+
                 {{else}}
                     <label>
                         Tipo de persona
@@ -125,7 +104,9 @@
                         <label>
                             Género
                             <select name="genero">
-                                <option value="OTRO">Otro / Prefiero no indicar</option>
+                                <option value="OTRO">
+                                    Otro / Prefiero no indicar
+                                </option>
                                 <option value="FEMENINO">Femenino</option>
                                 <option value="MASCULINO">Masculino</option>
                             </select>
@@ -179,19 +160,37 @@
                 <p class="dt-cuenta-ayuda">
                     Usaremos el correo verificado de tu cuenta de Logto.
                 </p>
-
-                <div class="dt-perfil-acciones">
-                    <button type="button"
-                            class="btn btn-secondary"
-                            data-cerrar-perfil>
-                        Ahora no
-                    </button>
-
-                    <button class="btn btn-primary-action" type="submit">
-                        Guardar y comenzar
-                    </button>
-                </div>
             </form>
-        {{/if}}
+        {{/unless}}
+
+        <div class="dt-perfil-acciones"
+             style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;width:100%;margin-top:20px;">
+
+            <form method="post"
+                  action="/auth/logout"
+                  style="margin:0;flex:0 0 auto;width:auto;">
+
+                <input type="hidden"
+                       name="csrf"
+                       value="{{sesion.csrf}}">
+
+                <button type="submit" class="btn btn-secondary">
+                    Cerrar sesión
+                </button>
+            </form>
+
+            {{#unless bloqueado}}
+                <button type="submit"
+                        form="form-completar-perfil"
+                        class="btn btn-primary-action">
+                    Guardar y comenzar
+                </button>
+            {{/unless}}
+        </div>
     </div>
 </dialog>
+
+<noscript>
+    Activá JavaScript para completar el registro.
+    Tu perfil seguirá pendiente.
+</noscript>

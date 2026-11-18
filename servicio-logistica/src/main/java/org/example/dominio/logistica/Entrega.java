@@ -44,6 +44,9 @@ public class Entrega {
   @OrderColumn(name = "orden_foto")
   private List<FotoRecepcion> fotosRecepcion = new ArrayList<>();
 
+  @Column(name = "geometria_hasta_entrega", columnDefinition = "text")
+  private String geometriaHastaEntrega;
+
   protected Entrega() {
     // Utilizado por JPA.
   }
@@ -225,5 +228,19 @@ public class Entrega {
     }
 
     return eventoPendiente;
+  }
+
+  public String getGeometriaHastaEntrega() {
+    return geometriaHastaEntrega;
+  }
+
+  public void guardarGeometriaHastaEntrega(String geometria) {
+    if (geometria == null || geometria.isBlank()) {
+      throw new IllegalArgumentException(
+          "Falta el recorrido hasta la entrega."
+      );
+    }
+
+    this.geometriaHastaEntrega = geometria;
   }
 }
