@@ -656,3 +656,23 @@ header {
 .header-oculto {
     transform: translateY(-100%); /* Lo mueve hacia arriba fuera de la pantalla */
 }
+
+/* Mantiene las cards y leyenda por encima del mapa Leaflet. */
+#mapa-google {
+    position: relative;
+    z-index: 0;
+}
+
+#landing-mapa-aviso {
+    margin: 12px 0;
+    color: var(--brand-marron, #59483f);
+    font-size: 13px;
+}
+
+.detail-fotos-grid img {
+    display: block;
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 10px;
+}
