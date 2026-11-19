@@ -34,3 +34,243 @@ body.dt-fondo {
     .dt-fondo .dt-marco {width: 100%;min-height: 100vh;border: 0;border-radius: 0;box-shadow: none;}
     .dt-marco > .navbar,.dt-marco > .footer {border-radius: 0;}
 }
+
+/* Menú compartido de cuenta */
+.navbar {
+    position: relative;
+    z-index: 1000;
+    overflow: visible;
+}
+
+.dt-usuario {
+    position: relative;
+    flex: 0 0 auto;
+    color: #604b40;
+    text-align: left;
+}
+
+.dt-usuario > .dt-usuario-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px 5px 5px;
+    border: 1px solid transparent;
+    border-radius: 30px;
+    background: transparent;
+    cursor: pointer;
+    list-style: none;
+}
+
+.dt-usuario-trigger::-webkit-details-marker {
+    display: none;
+}
+
+.dt-usuario-trigger::marker {
+    content: "";
+}
+
+.dt-usuario-trigger:hover,
+.dt-usuario[open] > .dt-usuario-trigger {
+    background: #faf3ed;
+    border-color: #ead5c7;
+}
+
+.dt-usuario-avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 50%;
+    background: #f3e6d9;
+    color: #a94e35;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.dt-usuario-flecha {
+    transition: transform 150ms ease;
+}
+
+.dt-usuario[open] .dt-usuario-flecha {
+    transform: rotate(180deg);
+}
+
+.dt-usuario-desplegable {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(300px, calc(100vw - 32px));
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ead5c7;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 35px rgb(87 66 57 / 16%);
+    z-index: 10;
+}
+
+.dt-usuario-identidad {
+    display: grid;
+    gap: 6px;
+    padding: 14px 12px 16px;
+    border-bottom: 1px solid #efe3da;
+}
+
+.dt-usuario-identidad strong {
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.dt-usuario-identidad > span {
+    font-size: 12px;
+    color: #8b7567;
+}
+
+.dt-usuario .dt-usuario-opciones {
+    display: grid;
+    gap: 4px;
+    padding: 8px 0;
+    margin: 0;
+}
+
+.dt-usuario .dt-usuario-opcion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 11px 12px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #604b40;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: left;
+    text-decoration: none;
+    text-transform: none;
+    white-space: normal;
+    cursor: pointer;
+}
+
+.dt-usuario .dt-usuario-opcion:hover {
+    background: #faf3ed;
+}
+
+.dt-usuario-opcion svg {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.dt-usuario .dt-usuario-salida {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 8px 0 0;
+    border-top: 1px solid #efe3da;
+}
+
+.dt-usuario .dt-usuario-salir {
+    color: #aa4e34;
+}
+
+.dt-usuario-trigger:focus-visible,
+.dt-usuario .dt-usuario-opcion:focus-visible {
+    outline: 2px solid #aa4e34;
+    outline-offset: 3px;
+}
+
+.dt-contacto-pagina .dt-contacto-volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border: 1px solid #ead5c7;
+    border-radius: 9px;
+    background: #fff;
+    color: #604b40;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+}
+
+.dt-contacto-pagina .dt-contacto-volver:hover {
+    background: #faf3ed;
+}
+
+.dt-contacto-pagina .dt-contacto-volver:focus-visible {
+    outline: 2px solid #aa4e34;
+    outline-offset: 3px;
+}
+
+.dt-contacto-campos[hidden] {
+    display: none !important;
+}
+
+.dt-perfil-form > label {
+    display: grid;
+    gap: 7px;
+    margin: 18px 0;
+    font-size: 14px;
+}
+
+.dt-perfil-form > label > input,
+.dt-perfil-form > label > select {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border: 1px solid #d8b6a4;
+    border-radius: 8px;
+    background: white;
+    color: inherit;
+    font: inherit;
+}
+
+.dt-perfil-form > label > input[readonly] {
+    background: #faf6f2;
+}
+
+.dt-contacto-campos .dt-cuenta-ayuda {
+    margin: 0;
+    color: #8b7567;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#modal-perfil .dt-cuenta-form .dt-contacto-preferencias {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+#modal-perfil .dt-contacto-preferencias > label,
+#modal-perfil .dt-contacto-preferencias > .dt-contacto-telefono {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+#modal-perfil .dt-contacto-telefono {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 12px;
+}
+
+@media (max-width: 540px) {
+    #modal-perfil .dt-contacto-telefono {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

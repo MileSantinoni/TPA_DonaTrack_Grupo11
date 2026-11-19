@@ -300,16 +300,23 @@ public class RepositorioAsignacionesDonacion
 
   public List<String> buscarIdsNotificacionesPendientes(int limite) {
     if (limite <= 0) {
-      throw new IllegalArgumentException("El limite debe ser positivo");
+      throw new IllegalArgumentException("El límite debe ser positivo");
     }
 
     return em().createQuery(
             "SELECT n.id FROM NotificacionPendiente n "
-                + "WHERE n.estado <> :completada "
-                + "ORDER BY n.ultimoIntento ASC, n.fechaCreacion ASC, n.id ASC",
+                + "WHERE n.estado IN (:estados) "
+                + "ORDER BY n.ultimoIntento ASC, "
+                + "n.fechaCreacion ASC, n.id ASC",
             String.class
         )
-        .setParameter("completada", EstadoNotificacion.COMPLETADA)
+        .setParameter(
+            "estados",
+            List.of(
+                EstadoNotificacion.PENDIENTE,
+                EstadoNotificacion.FALLIDA
+            )
+        )
         .setMaxResults(limite)
         .getResultList();
   }
@@ -397,5 +404,23 @@ public class RepositorioAsignacionesDonacion
             .filter(Objects::nonNull)
             .toList()
     );
+  }
+
+  public void registrarNotificacionesDeAsignacion(
+      AsignacionDonacion asignacion
+  ) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "Los avisos deben guardarse en la transacción de la asignación"
+      );
+    }
+
+    var pendientes =
+        org.example.dominio.notificacion.NotificacionesAsignacion
+            .preparar(actual, asignacion);
+
+    guardarNotificacionesPendientes(pendientes);
   }
 }

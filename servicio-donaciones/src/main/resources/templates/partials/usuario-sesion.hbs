@@ -1,23 +1,62 @@
 {{#if sesion.autenticado}}
-    <span class="avatar-initials dt-avatar">{{sesion.inicial}}</span>
-    <span class="dt-nombre" title="{{sesion.nombre}}">
-        {{sesion.nombre}}
-    </span>
+    <details class="dt-usuario">
+        <summary class="dt-usuario-trigger"
+                 aria-label="Opciones de mi cuenta">
+            <span class="dt-usuario-avatar" aria-hidden="true">
+                {{sesion.inicial}}
+            </span>
 
-    <form class="dt-salida" method="post" action="/auth/logout">
-        <input type="hidden" name="csrf" value="{{sesion.csrf}}">
-
-        <button class="dt-salir"
-                type="submit"
-                aria-label="Cerrar sesión"
-                title="Cerrar sesión">
-            <svg width="20" height="20" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="1.8"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <path d="M16 17l5-5-5-5M21 12H9"/>
+            <svg class="dt-usuario-flecha"
+                 width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor"
+                 stroke-width="1.8" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"/>
             </svg>
-        </button>
-    </form>
+        </summary>
+
+        <div class="dt-usuario-desplegable">
+            <div class="dt-usuario-identidad">
+                <strong>{{sesion.nombre}}</strong>
+                <span>{{sesion.rolNombre}}</span>
+            </div>
+
+            <nav class="dt-usuario-opciones"
+                 aria-label="Opciones de mi cuenta">
+                <a class="dt-usuario-opcion"
+                   href="/cuenta/continuar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m3 10 9-7 9 7"/>
+                        <path d="M5 9v12h14V9M9 21v-8h6v8"/>
+                    </svg>
+                    <span>{{sesion.accesoNombre}}</span>
+                </a>
+
+                <a class="dt-usuario-opcion" href="/cuenta/perfil">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M4 21v-2a8 8 0 0 1 16 0v2"/>
+                    </svg>
+                    <span>Mi perfil</span>
+                </a>
+            </nav>
+
+            <form class="dt-usuario-salida"
+                  method="post" action="/auth/logout">
+                <input type="hidden"
+                       name="csrf"
+                       value="{{sesion.csrf}}">
+
+                <button class="dt-usuario-opcion dt-usuario-salir"
+                        type="submit">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <path d="m16 17 5-5-5-5M21 12H9"/>
+                    </svg>
+                    <span>Cerrar sesión</span>
+                </button>
+            </form>
+        </div>
+    </details>
+
+    <script defer src="/assets/js/usuario-menu.js"></script>
 {{/if}}

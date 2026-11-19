@@ -1,0 +1,55 @@
+<fieldset class="dt-contacto-campos dt-contacto-preferencias">
+    <legend>Contacto y notificaciones</legend>
+
+    <label>
+        Correo verificado
+        <input type="email"
+               value="{{contacto.email}}"
+               readonly>
+    </label>
+
+    <div class="dt-contacto-telefono">
+        <label>
+            País
+            <select name="paisTelefono" required>
+                {{#each contacto.paises}}
+                    <option value="{{codigo}}"
+                            {{#if seleccionado}}selected{{/if}}>
+                        {{nombre}}
+                    </option>
+                {{/each}}
+            </select>
+        </label>
+
+        <label>
+            Teléfono
+            <input name="telefono"
+                   type="tel"
+                   value="{{contacto.telefono}}"
+                   maxlength="40"
+                   autocomplete="tel"
+                   placeholder="Código de área y número"
+                   data-contacto-telefono
+                   data-obligatorio="{{contacto.telefonoObligatorio}}"
+                   {{#if contacto.telefonoObligatorio}}required{{/if}}>
+        </label>
+    </div>
+
+    <label>
+        ¿Cómo preferís recibir las notificaciones?
+        <select name="canalNotificacion"
+                data-contacto-canal
+                required>
+            <option value="MAIL" {{#if contacto.mail}}selected{{/if}}>
+                Correo electrónico
+            </option>
+            <option value="SMS" {{#if contacto.sms}}selected{{/if}}>
+                SMS
+            </option>
+            <option value="WHATSAPP"
+                    {{#if contacto.whatsapp}}selected{{/if}}>
+                WhatsApp
+            </option>
+        </select>
+    </label>
+</fieldset>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contacto y notificaciones · DonaTrack</title>
+
+    <link rel="stylesheet" href="/assets/main.css">
+    <link rel="stylesheet" href="/assets/css/marco-compartido.css">
+
+    <script defer src="/assets/js/contacto-cuenta.js"></script>
+</head>
+<body class="dt-fondo">
+
+<main class="dt-contacto-pagina">
+    <a href="/cuenta/continuar" class="dt-contacto-volver">
+        <svg width="18" height="18" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true">
+            <path d="m12 19-7-7 7-7M5 12h14"/>
+        </svg>
+        <span>Volver a mi panel</span>
+    </a>
+
+    <h1>Contacto y notificaciones</h1>
+    <p>Elegí dónde recibir las novedades de tus donaciones y entregas.</p>
+
+    {{#if error}}
+        <p class="dt-contacto-error" role="alert">{{error}}</p>
+    {{/if}}
+
+    {{#if guardado}}
+        <p class="dt-contacto-exito" role="status">
+            Guardamos tus preferencias.
+        </p>
+    {{/if}}
+
+    <form method="post" action="/cuenta/contacto">
+        <input type="hidden" name="csrf" value="{{sesion.csrf}}">
+
+        {{> templates/partials/contacto-campos}}
+
+        <button type="submit" class="dt-contacto-guardar">
+            Guardar preferencias
+        </button>
+    </form>
+</main>
+
+</body>
+</html>

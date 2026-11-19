@@ -1,0 +1,152 @@
+{{#if admin}}
+    <fieldset class="dt-contacto-campos">
+        <legend>Datos de la cuenta</legend>
+
+        <label>
+            Nombre
+            <input value="{{sesion.nombre}}" readonly>
+        </label>
+
+        <p class="dt-cuenta-ayuda">
+            El nombre y los permisos de esta cuenta se administran en Logto.
+        </p>
+    </fieldset>
+{{else}}
+    {{#if entidad}}
+        <fieldset class="dt-contacto-campos">
+            <legend>Datos de la entidad</legend>
+
+            <label>
+                Razón social
+                <input name="razonSocial"
+                       value="{{perfil.razonSocial}}"
+                       maxlength="180"
+                       autocomplete="organization"
+                       required>
+            </label>
+
+            <p class="dt-cuenta-ayuda">
+                La dirección de entrega se configura desde Mi entidad.
+            </p>
+        </fieldset>
+    {{else}}
+        <label>
+            Tipo de persona
+
+            {{#if edicion}}
+                <input readonly
+                       value="{{#if perfil.humana}}Persona humana{{else}}Persona jurídica{{/if}}">
+            {{else}}
+                <select name="persona" id="cuenta-persona" required>
+                    <option value="humana"
+                            {{#if perfil.humana}}selected{{/if}}>
+                        Persona humana
+                    </option>
+                    <option value="juridica"
+                            {{#if perfil.juridica}}selected{{/if}}>
+                        Persona jurídica
+                    </option>
+                </select>
+            {{/if}}
+        </label>
+
+        <fieldset class="dt-contacto-campos"
+                  data-persona="humana"
+                  {{#unless perfil.humana}}hidden disabled{{/unless}}>
+            <legend>Datos personales</legend>
+
+            <label>
+                Nombre
+                <input name="nombre"
+                       value="{{perfil.nombre}}"
+                       maxlength="80"
+                       autocomplete="given-name"
+                       required>
+            </label>
+
+            <label>
+                Apellido
+                <input name="apellido"
+                       value="{{perfil.apellido}}"
+                       maxlength="80"
+                       autocomplete="family-name"
+                       required>
+            </label>
+
+            <label>
+                Edad
+                <input name="edad"
+                       value="{{perfil.edad}}"
+                       type="number"
+                       min="0" max="120" step="1"
+                       required>
+            </label>
+
+            <label>
+                Género
+                <select name="genero" required>
+                    {{#each perfil.generos}}
+                        <option value="{{valor}}"
+                                {{#if seleccionado}}selected{{/if}}>
+                            {{etiqueta}}
+                        </option>
+                    {{/each}}
+                </select>
+            </label>
+
+            <label>
+                Dirección
+                <input name="direccion"
+                       value="{{perfil.direccion}}"
+                       maxlength="180"
+                       autocomplete="street-address"
+                       required>
+            </label>
+        </fieldset>
+
+        <fieldset class="dt-contacto-campos"
+                  data-persona="juridica"
+                  {{#unless perfil.juridica}}hidden disabled{{/unless}}>
+            <legend>Datos de la organización</legend>
+
+            <label>
+                Razón social
+                <input name="razonSocial"
+                       value="{{perfil.razonSocial}}"
+                       maxlength="180"
+                       autocomplete="organization"
+                       required>
+            </label>
+
+            <label>
+                Tipo de organización
+                <select name="organizacion" required>
+                    {{#each perfil.organizaciones}}
+                        <option value="{{valor}}"
+                                {{#if seleccionado}}selected{{/if}}>
+                            {{etiqueta}}
+                        </option>
+                    {{/each}}
+                </select>
+            </label>
+
+            <label>
+                Rubro
+                <input name="rubro"
+                       value="{{perfil.rubro}}"
+                       maxlength="180"
+                       required>
+            </label>
+        </fieldset>
+
+        <label>
+            DNI / CUIT
+            <input name="documento"
+                   value="{{perfil.documento}}"
+                   maxlength="30"
+                   required>
+        </label>
+    {{/if}}
+{{/if}}
+
+{{> templates/partials/contacto-campos}}

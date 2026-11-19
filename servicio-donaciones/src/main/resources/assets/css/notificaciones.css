@@ -8,3 +8,77 @@
 .dt-avisos #av-lista ul{margin:0}.dt-avisos #av-lista li{position:relative}.dt-avisos #av-lista li:has(.av-borrar){padding-right:38px;border-bottom:1px solid #eee6df}
 .dt-avisos #dt-bandeja .av-borrar{position:absolute;right:4px;top:4px;width:30px;height:30px;font-size:20px;line-height:1;border-radius:6px}.dt-avisos #dt-bandeja .av-borrar:hover{background:#fae5e0;text-decoration:none}
 .dt-avisos [data-vacio]{padding:16px 8px;color:#746258;font-size:14px}
+.dt-avisos .dt-notificaciones {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+}
+
+.dt-avisos .dt-notificaciones:hover,
+.dt-avisos .dt-notificaciones[aria-expanded="true"] {
+    background: #faf3ed;
+}
+
+.dt-avisos .dt-notificaciones:focus-visible {
+    outline: 2px solid #aa4e34;
+    outline-offset: 3px;
+}
+
+.dt-avisos .dt-notificaciones {
+    position: relative;
+}
+
+.dt-avisos [data-cuenta]:not([hidden]) {
+    position: absolute;
+    top: -2px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    border-radius: 20px;
+    background: #aa4e34;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.dt-avisos [data-error] {
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fff1ed;
+    color: #a33e2c;
+    font-size: 13px;
+}
+
+.dt-avisos .av-paginacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 0;
+    font-size: 12px;
+}
+
+.dt-avisos #dt-bandeja button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.dt-avisos #dt-bandeja li {
+    overflow-wrap: anywhere;
+}

@@ -331,6 +331,30 @@ public final class SesionWeb {
 
     sesion.put("csrf", LogtoController.csrf(ctx));
     sesion.put("destino", destino(ctx));
+    String rol = esAdmin(usuario)
+        ? "ADMIN"
+        : cuenta == null ? "" : cuenta.rol;
+
+    sesion.put("rolNombre", switch (rol) {
+      case "ADMIN" -> "Administración";
+      case "ENTIDAD" -> "Entidad beneficiaria";
+      case "DONANTE" -> "Donante";
+      default -> "Registro pendiente";
+    });
+
+    sesion.put("perfilAvisos", switch (rol) {
+      case "ADMIN" -> "admin";
+      case "ENTIDAD" -> "beneficiaria";
+      case "DONANTE" -> "donante";
+      default -> "";
+    });
+
+    sesion.put("accesoNombre", switch (rol) {
+      case "ADMIN" -> "Administración";
+      case "ENTIDAD" -> "Mi entidad";
+      case "DONANTE" -> "Mis donaciones";
+      default -> "Completar registro";
+    });
     sesion.put("titulo", "Tu espacio en DonaTrack");
     sesion.put(
         "descripcion",

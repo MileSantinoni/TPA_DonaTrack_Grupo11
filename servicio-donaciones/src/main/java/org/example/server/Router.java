@@ -17,6 +17,7 @@ import org.example.api.donaciones.DonanteController;
 import org.example.api.donaciones.EntidadBeneficiariaController;
 import org.example.api.donaciones.IntegracionLogisticaController;
 import org.example.api.donaciones.NecesidadController;
+import org.example.controllers.CuentaController;
 import org.example.controllers.LandingController;
 import org.example.controllers.RegistrationController;
 import org.example.dominio.algoritmo.AlgoritmoMadre;
@@ -101,8 +102,8 @@ public class Router {
     // Controladores de vistas Handlebars
     LandingController landingController = new LandingController(repoEntidades, repoDonaciones, repoAsignaciones);
     MisDonacionesController misDonaciones = new MisDonacionesController(entityManagerSupplier);
-    EntidadesBeneficiariasController entidadesBeneficiarias = new 
-EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
+    EntidadesBeneficiariasController entidadesBeneficiarias = new
+        EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
     var adminCamiones = new org.example.controllers.AdminCamionesController();
@@ -110,7 +111,14 @@ EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
     var planificacionAdmin = new org.example.controllers.AdminPlanificacionController(entityManagerSupplier);
     var fotosPublicas = new org.example.controllers.FotosPublicasController(entityManagerSupplier);
+    var contactos = new org.example.controllers.ContactoController(entityManagerSupplier);
+    var cuentas = new org.example.controllers.CuentaController(entityManagerSupplier,landingController);
+    var notificaciones = new org.example.controllers.NotificacionesController(entityManagerSupplier);
 
+    app.get("/cuenta/contacto", ctx -> ctx.redirect("/cuenta/perfil"));
+    app.post("/cuenta/contacto", contactos::guardar);
+    app.get("/cuenta/perfil", cuentas::editar);
+    app.post("/cuenta/perfil", cuentas::guardarEdicion);
 
     app.get("/api/publico/entregas/{id}/fotos", fotosPublicas::listar);
     app.get("/api/publico/entregas/{id}/fotos/{archivo}", fotosPublicas::mostrar);
@@ -204,10 +212,16 @@ EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
+    //Rutas notificaciones
+    app.get("/cuenta/notificaciones", notificaciones::listar);
+    app.post("/cuenta/notificaciones/leer-todas", notificaciones::leerTodas);
+    app.post("/cuenta/notificaciones/{id}/leer", notificaciones::leer);
+    app.post("/cuenta/notificaciones/{id}/ocultar", notificaciones::ocultar);
+
 
     // AutenticaciÃ³n y perfil local
     var logto = new org.example.controllers.LogtoController();
-    var cuentas = new org.example.controllers.CuentaController(
+    cuentas = new CuentaController(
         entityManagerSupplier,
         landingController
     );
