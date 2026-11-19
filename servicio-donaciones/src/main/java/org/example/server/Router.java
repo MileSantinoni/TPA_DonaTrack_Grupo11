@@ -106,13 +106,14 @@ EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
     var adminCamiones = new org.example.controllers.AdminCamionesController();
-
     var miEntidad = new org.example.controllers.MiEntidadController(entityManagerSupplier);
     var recepcionesEntidad = new org.example.controllers.MiEntidadRecepcionController(miEntidad);
-
     var planificacionAdmin = new org.example.controllers.AdminPlanificacionController(entityManagerSupplier);
+    var fotosPublicas = new org.example.controllers.FotosPublicasController(entityManagerSupplier);
 
 
+    app.get("/api/publico/entregas/{id}/fotos", fotosPublicas::listar);
+    app.get("/api/publico/entregas/{id}/fotos/{archivo}", fotosPublicas::mostrar);
 
     // Rutas de Vistas / Healthcheck
     app.get("/administracion", ctx -> ctx.redirect("/administracion/donaciones"));
