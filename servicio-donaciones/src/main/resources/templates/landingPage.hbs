@@ -8,15 +8,10 @@
     <link rel="stylesheet" href="/assets/main.css">
     <link rel="stylesheet" href="/assets/css/landing.css">
     <link rel="stylesheet" href="/assets/css/marco-compartido.css">
-    <linkrel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn6kkiOmNeweLEBYEifpyZG5nTSM4yBtA&callback=initMap&loading=async" async defer></script>
-    <script
-        defer
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <script
-        defer
-        src="/assets/js/direccion-entidad.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="/assets/js/direccion-entidad.js"></script>
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="dt-fondo">
 
@@ -141,6 +136,8 @@
                 </div>
             </div>
 
+            <p id="landing-mapa-aviso" role="status" hidden></p>
+
             <div class="map-viewport">
                 <div id="mapa-google" style="height: 100%; width: 100%; display: block;"></div>
                 <div class="loading-overlay" id="map-loading-overlay">
@@ -151,26 +148,9 @@
 
                 <!-- Leyenda -->
                 <div class="map-legend">
-                   <!-- <h4 class="font-manrope">Leyenda</h4> -->
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:#1e88e5; border-radius:50%;"></span>
+                    <div style="display:flex;gap:8px;align-items:center;font-size:12px">
+                        <span style="width:12px;height:12px;background:#1e88e5;border-radius:50%"></span>
                         <span>Entidad beneficiaria</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:#ff8f00; border:1px solid #e65100; border-radius:50%;"></span>
-                        <span>Entrega realizada</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:#00acc1; border:1px solid #00838f; border-radius:50%;"></span>
-                        <span>En traslado</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:#ef5350; border:1px solid #c62828; border-radius:50%;"></span>
-                        <span>Entrega activa / pendiente</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; font-size: 12px;">
-                        <span style="width:12px; height:12px; background:#b95f45; border:1px solid #574239; border-radius:2px;"></span>
-                        <span>Depósito central</span>
                     </div>
                 </div>
 
