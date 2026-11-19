@@ -220,7 +220,9 @@ public class Entrega {
           List.of(new EventoLogistico.Referencia(idDonacion, idEntidad)),
           patente,
           motivo,
-          java.time.LocalDateTime.now()
+          java.time.LocalDateTime.now(
+              java.time.ZoneId.of("America/Argentina/Buenos_Aires")
+          )
       );
     } else if (eventoPendiente.tipo() != tipo
         || !eventoPendiente.motivo().equals(motivo)

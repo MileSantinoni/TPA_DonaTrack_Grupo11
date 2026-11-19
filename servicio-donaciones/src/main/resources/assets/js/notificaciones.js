@@ -163,7 +163,36 @@
                 accion.textContent = "Marcar como leída";
             }
 
-            li.append(titulo, mensaje, fecha, accion);
+            li.append(titulo, mensaje, fecha);
+
+            if (aviso.rutaAccion) {
+                const url = new URL(
+                    aviso.rutaAccion,
+                    window.location.origin
+                );
+
+                const permitidas = new Set([
+                    "/mi-entidad",
+                    "/mis-donaciones",
+                    "/administracion/donaciones"
+                ]);
+
+                if (url.origin === window.location.origin
+                    && permitidas.has(url.pathname)) {
+                    const enlace = document.createElement("a");
+
+                    enlace.className = "av-enlace";
+                    enlace.href = url.pathname + url.search + url.hash;
+                    enlace.textContent =
+                        url.pathname.startsWith("/administracion")
+                            ? "Revisar entregas"
+                            : "Ver entrega";
+
+                    li.append(enlace);
+                }
+            }
+
+            li.append(accion);
             lista.append(li);
         }
 

@@ -22,7 +22,26 @@ public class CuentaController {
   }
 
   public void continuar(Context ctx) {
-    ctx.redirect(org.example.seguridad.SesionWeb.destino(ctx));
+    String destino =
+        org.example.seguridad.SesionWeb.destino(ctx);
+
+    String entrega = ctx.sessionAttribute(
+        "notificaciones.entregaPendiente"
+    );
+
+    if (entrega != null
+        && Set.of("/mi-entidad", "/mis-donaciones")
+        .contains(destino)) {
+
+      ctx.sessionAttribute(
+          "notificaciones.entregaPendiente",
+          null
+      );
+
+      destino += "?entrega=" + UUID.fromString(entrega);
+    }
+
+    ctx.redirect(destino);
   }
 
   public void formulario(Context ctx) {

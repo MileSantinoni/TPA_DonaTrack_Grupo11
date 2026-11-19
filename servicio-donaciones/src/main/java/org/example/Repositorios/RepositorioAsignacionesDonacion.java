@@ -423,4 +423,20 @@ public class RepositorioAsignacionesDonacion
 
     guardarNotificacionesPendientes(pendientes);
   }
+
+  public List<NotificacionPendiente> prepararNotificacionesLogisticas(
+      AsignacionDonacion asignacion,
+      org.example.dominio.donacion.EventoLogistico evento
+  ) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "Los avisos deben prepararse en la transacción del evento"
+      );
+    }
+
+    return org.example.dominio.notificacion.NotificacionesLogistica
+        .preparar(actual, asignacion, evento);
+  }
 }

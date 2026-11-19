@@ -40,6 +40,8 @@ public class Router {
   }
 
   public void configure(Javalin app) {
+    org.example.dominio.notificacion.NotificacionesLogistica.validarConfiguracion();
+
     // Repositorios
     RepositorioEntidadesBeneficiarias repoEntidades =
         new RepositorioEntidadesBeneficiarias(entityManagerSupplier);

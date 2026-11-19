@@ -57,6 +57,9 @@ public class NotificacionPendiente {
   @Column(name = "referencia_destinatario", length = 100)
   private String referenciaDestinatario;
 
+  @Column(name = "ruta_accion", length = 500)
+  private String rutaAccion;
+
   @Version
   private long version;
 
@@ -244,5 +247,25 @@ public class NotificacionPendiente {
 
   public String getReferenciaDestinatario() {
     return referenciaDestinatario;
+  }
+
+  public String getRutaAccion() {
+    return rutaAccion;
+  }
+
+  public void vincularAccion(String ruta) {
+    if (ruta == null
+        || ruta.length() > 500
+        || !ruta.startsWith("/")
+        || ruta.startsWith("//")
+        || ruta.contains("\\")
+        || ruta.contains("\r")
+        || ruta.contains("\n")) {
+      throw new IllegalArgumentException(
+          "Ruta de notificación inválida"
+      );
+    }
+
+    this.rutaAccion = ruta;
   }
 }

@@ -64,11 +64,13 @@ public class NotificacionesController {
       items.add(Map.of(
           "id", n.getId(),
           "titulo", Objects.toString(
-              n.getTitulo(), "Novedades de DonaTrack"
+              n.getTitulo(),
+              "Novedades de DonaTrack"
           ),
           "mensaje", n.getMensaje(),
           "fecha", n.getFechaCreacion().format(FECHA),
-          "leida", n.estaLeida()
+          "leida", n.estaLeida(),
+          "rutaAccion", Objects.toString(n.getRutaAccion(), "")
       ));
     }
 

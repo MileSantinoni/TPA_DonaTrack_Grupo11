@@ -82,3 +82,27 @@
 .dt-avisos #dt-bandeja li {
     overflow-wrap: anywhere;
 }
+
+.dt-avisos #dt-bandeja li > span {
+    white-space: pre-line;
+}
+
+.dt-avisos #dt-bandeja .av-enlace {
+    display: inline-flex;
+    margin-top: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #f5e9df;
+    color: #a64e36;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.dt-avisos #dt-bandeja .av-enlace:hover {
+    background: #ecd6c8;
+}
+
+.dt-avisos #dt-bandeja .av-enlace:focus-visible {
+    outline: 2px solid #a64e36;
+    outline-offset: 2px;
+}

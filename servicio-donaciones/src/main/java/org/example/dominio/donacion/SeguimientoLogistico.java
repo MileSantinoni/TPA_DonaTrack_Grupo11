@@ -123,7 +123,7 @@ public class SeguimientoLogistico {
 
       for (AsignacionDonacion asignacion : seleccionadas) {
         pendientes.addAll(
-            notificador.prepararEventoLogistico(
+            asignaciones.prepararNotificacionesLogisticas(
                 asignacion,
                 evento
             )

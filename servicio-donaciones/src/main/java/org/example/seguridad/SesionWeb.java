@@ -129,6 +129,23 @@ public final class SesionWeb {
   ) {
     app.exception(UnauthorizedResponse.class, (e, ctx) -> {
       if (pagina(ctx)) {
+        if (Set.of("/mi-entidad", "/mis-donaciones")
+            .contains(ctx.path())) {
+
+          String entrega = ctx.queryParam("entrega");
+
+          if (entrega != null) {
+            try {
+              ctx.sessionAttribute(
+                  "notificaciones.entregaPendiente",
+                  UUID.fromString(entrega).toString()
+              );
+            } catch (IllegalArgumentException ignorada) {
+              // Nunca guardamos una URL enviada por el navegador.
+            }
+          }
+        }
+
         ctx.redirect("/login");
       } else {
         ctx.status(401).json(Map.of(

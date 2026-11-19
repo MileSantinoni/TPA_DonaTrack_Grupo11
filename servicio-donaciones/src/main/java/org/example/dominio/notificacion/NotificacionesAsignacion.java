@@ -7,8 +7,6 @@ import java.util.Objects;
 import javax.persistence.EntityManager;
 
 import org.example.dominio.donacion.AsignacionDonacion;
-import org.example.dominio.donante.TipoContactoPredeterminado;
-import org.example.seguridad.ContactoCuenta;
 import org.example.seguridad.CuentaWeb;
 
 public final class NotificacionesAsignacion {
@@ -92,46 +90,13 @@ public final class NotificacionesAsignacion {
       String titulo,
       String mensaje
   ) {
-    ContactoCuenta contacto = cuenta == null
-        ? null
-        : em.find(ContactoCuenta.class, cuenta.id);
-
-    TipoContactoPredeterminado canal = null;
-    String destino = null;
-
-    if (contacto != null && contacto.canal != null) {
-      canal = switch (contacto.canal) {
-        case MAIL -> TipoContactoPredeterminado.MAIL;
-        case SMS -> TipoContactoPredeterminado.TELEFONO;
-        case WHATSAPP -> TipoContactoPredeterminado.WHATSAPP;
-      };
-
-      destino = contacto.canal == ContactoCuenta.Canal.MAIL
-          ? contacto.email
-          : contacto.telefono;
-    }
-
-    if (canal == null || destino == null || destino.isBlank()) {
-      return NotificacionPendiente.sinContacto(
-          operacion,
-          cuenta == null ? null : cuenta.id,
-          referenciaDestinatario,
-          titulo,
-          mensaje
-      );
-    }
-
-    NotificacionPendiente pendiente = new NotificacionPendiente(
+    return NotificacionesCuenta.preparar(
+        em,
+        cuenta == null ? null : cuenta.id,
+        referenciaDestinatario,
         operacion,
-        canal,
-        destino,
-        mensaje,
-        cuenta.id,
-        titulo
+        titulo,
+        mensaje
     );
-
-    pendiente.identificarDestinatario(referenciaDestinatario);
-
-    return pendiente;
   }
 }
