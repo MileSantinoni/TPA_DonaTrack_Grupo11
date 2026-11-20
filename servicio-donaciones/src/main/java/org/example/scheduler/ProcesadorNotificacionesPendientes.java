@@ -1,16 +1,29 @@
 package org.example.scheduler;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import javax.persistence.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import org.example.Repositorios.RepositorioAsignacionesDonacion;
-import org.example.dominio.notificacion.*;
+import org.example.dominio.notificacion.Notificador;
 
-public class ProcesadorNotificacionesPendientes {
+public class ProcesadorNotificacionesPendientes implements AutoCloseable {
 
   private final EntityManagerFactory factory;
   private final Notificador notificador;
+
+  private final ScheduledExecutorService executor =
+      Executors.newSingleThreadScheduledExecutor(tarea -> {
+        Thread hilo = new Thread(tarea, "donatrack-notificaciones");
+        hilo.setDaemon(true);
+        return hilo;
+      });
+
+  private boolean iniciado;
+  private boolean cerrado;
 
   public ProcesadorNotificacionesPendientes(
       EntityManagerFactory factory,
@@ -20,9 +33,31 @@ public class ProcesadorNotificacionesPendientes {
     this.notificador = Objects.requireNonNull(notificador);
   }
 
-  public void ejecutar(int limite) {
-    List<String> ids;
+  public synchronized void iniciar() {
+    if (iniciado || cerrado) {
+      return;
+    }
 
+    iniciado = true;
+
+    executor.scheduleWithFixedDelay(() -> {
+      try {
+        ejecutar(1);
+      } catch (RuntimeException e) {
+        System.err.println(
+            "No se pudo revisar la cola de notificaciones"
+        );
+        e.printStackTrace();
+      }
+    }, 0, 4, TimeUnit.SECONDS);
+  }
+
+  public synchronized void ejecutar(int limite) {
+    if (cerrado) {
+      return;
+    }
+
+    List<String> ids;
     EntityManager consulta = factory.createEntityManager();
 
     try {
@@ -39,9 +74,8 @@ public class ProcesadorNotificacionesPendientes {
         new RepositorioAsignacionesDonacion(em)
             .procesarNotificacionPendiente(id, notificador);
       } catch (RuntimeException e) {
-        // Un error de persistencia no impide intentar los demás mensajes.
         System.err.println(
-            "No se pudo procesar la notificacion " + id
+            "No se pudo procesar la notificación " + id
         );
         e.printStackTrace();
       } finally {
@@ -50,67 +84,10 @@ public class ProcesadorNotificacionesPendientes {
     }
   }
 
-  public static void main(String[] args) {
-    System.out.print("ID de la notificación que querés enviar: ");
-    String id = new java.util.Scanner(System.in).nextLine().trim();
-
-    if (id.isBlank()) {
-      throw new IllegalArgumentException(
-          "Ingresá el ID de una notificación"
-      );
-    }
-
-    String password = System.getenv("DONACIONES_DB_PASSWORD");
-
-    if (password == null || password.isBlank()) {
-      throw new IllegalStateException(
-          "Falta configurar DONACIONES_DB_PASSWORD"
-      );
-    }
-
-    EntityManagerFactory factory =
-        Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
-        );
-
-    try {
-      EntityManager em = factory.createEntityManager();
-
-      try {
-        NotificacionPendiente pendiente =
-            em.find(NotificacionPendiente.class, id);
-
-        if (pendiente == null) {
-          System.out.println(
-              "No existe una notificación con ese ID en esta base."
-          );
-          return;
-        }
-
-        if (!pendiente.requiereEnvio()) {
-          System.out.println(
-              "No requiere envío. Estado: " + pendiente.getEstado()
-          );
-          return;
-        }
-
-        Notificador notificador =
-            new Notificador(new Email(), new SMS(), new WhatsApp());
-
-        boolean procesada =
-            new RepositorioAsignacionesDonacion(em)
-                .procesarNotificacionPendiente(id, notificador);
-
-        System.out.println("Intento procesado: " + procesada);
-        System.out.println("Estado: " + pendiente.getEstado());
-
-      } finally {
-        em.close();
-      }
-
-    } finally {
-      factory.close();
-    }
+  @Override
+  public synchronized void close() {
+    // Espera a que termine ejecutar antes de cerrar el procesador.
+    cerrado = true;
+    executor.shutdownNow();
   }
 }

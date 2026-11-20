@@ -17,6 +17,7 @@ import org.example.dominio.notificacion.NotificacionPendiente;
 import org.example.dominio.notificacion.Notificacion;
 import org.example.dominio.notificacion.EstadoNotificacion;
 import org.example.dominio.notificacion.Notificador;
+import java.time.LocalDateTime;
 
 public class RepositorioAsignacionesDonacion
     implements WithSimplePersistenceUnit {
@@ -30,6 +31,9 @@ public class RepositorioAsignacionesDonacion
   private RepositorioAsignacionesDonacion() {
     this.proveedor = this::entityManager;
   }
+
+  private static final int MAX_INTENTOS_NOTIFICACION = 3;
+  private static final int MINUTOS_ENTRE_REINTENTOS = 1;
 
   public RepositorioAsignacionesDonacion(EntityManager em) {
     Objects.requireNonNull(em);
@@ -306,16 +310,20 @@ public class RepositorioAsignacionesDonacion
     return em().createQuery(
             "SELECT n.id FROM NotificacionPendiente n "
                 + "WHERE n.estado IN (:estados) "
-                + "ORDER BY n.ultimoIntento ASC, "
-                + "n.fechaCreacion ASC, n.id ASC",
+                + "AND n.intentos < :maxIntentos "
+                + "AND (n.ultimoIntento IS NULL "
+                + "OR n.ultimoIntento <= :limiteReintento) "
+                + "ORDER BY n.intentos ASC, n.fechaCreacion ASC, n.id ASC",
             String.class
         )
+        .setParameter("estados", List.of(
+            EstadoNotificacion.PENDIENTE,
+            EstadoNotificacion.FALLIDA
+        ))
+        .setParameter("maxIntentos", MAX_INTENTOS_NOTIFICACION)
         .setParameter(
-            "estados",
-            List.of(
-                EstadoNotificacion.PENDIENTE,
-                EstadoNotificacion.FALLIDA
-            )
+            "limiteReintento",
+            LocalDateTime.now().minusMinutes(MINUTOS_ENTRE_REINTENTOS)
         )
         .setMaxResults(limite)
         .getResultList();
@@ -350,7 +358,11 @@ public class RepositorioAsignacionesDonacion
       // Recarga y bloquea el registro antes de decidir si hay que enviarlo.
       actual.refresh(pendiente, LockModeType.PESSIMISTIC_WRITE);
 
-      if (!pendiente.requiereEnvio()) {
+      if (!pendiente.requiereEnvio()
+          || pendiente.getIntentos() >= MAX_INTENTOS_NOTIFICACION
+          || (pendiente.getUltimoIntento() != null
+          && pendiente.getUltimoIntento().isAfter(
+          LocalDateTime.now().minusMinutes(MINUTOS_ENTRE_REINTENTOS)))) {
         return false;
       }
 
