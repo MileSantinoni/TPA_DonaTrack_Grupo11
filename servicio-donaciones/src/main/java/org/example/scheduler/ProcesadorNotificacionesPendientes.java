@@ -51,6 +51,15 @@ public class ProcesadorNotificacionesPendientes {
   }
 
   public static void main(String[] args) {
+    System.out.print("ID de la notificación que querés enviar: ");
+    String id = new java.util.Scanner(System.in).nextLine().trim();
+
+    if (id.isBlank()) {
+      throw new IllegalArgumentException(
+          "Ingresá el ID de una notificación"
+      );
+    }
+
     String password = System.getenv("DONACIONES_DB_PASSWORD");
 
     if (password == null || password.isBlank()) {
@@ -66,11 +75,40 @@ public class ProcesadorNotificacionesPendientes {
         );
 
     try {
-      Notificador notificador =
-          new Notificador(new Email(), new SMS(), new WhatsApp());
+      EntityManager em = factory.createEntityManager();
 
-      new ProcesadorNotificacionesPendientes(factory, notificador)
-          .ejecutar(100);
+      try {
+        NotificacionPendiente pendiente =
+            em.find(NotificacionPendiente.class, id);
+
+        if (pendiente == null) {
+          System.out.println(
+              "No existe una notificación con ese ID en esta base."
+          );
+          return;
+        }
+
+        if (!pendiente.requiereEnvio()) {
+          System.out.println(
+              "No requiere envío. Estado: " + pendiente.getEstado()
+          );
+          return;
+        }
+
+        Notificador notificador =
+            new Notificador(new Email(), new SMS(), new WhatsApp());
+
+        boolean procesada =
+            new RepositorioAsignacionesDonacion(em)
+                .procesarNotificacionPendiente(id, notificador);
+
+        System.out.println("Intento procesado: " + procesada);
+        System.out.println("Estado: " + pendiente.getEstado());
+
+      } finally {
+        em.close();
+      }
+
     } finally {
       factory.close();
     }

@@ -116,6 +116,8 @@ public final class Server {
       try {
         if (em != null && em.isOpen()) {
           try {
+            org.example.seguridad.ActividadDonante.registrar(ctx, em);
+
             if (em.getTransaction().isActive()) {
               em.getTransaction().rollback();
             }

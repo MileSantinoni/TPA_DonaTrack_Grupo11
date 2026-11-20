@@ -116,6 +116,7 @@ public class Router {
     var contactos = new org.example.controllers.ContactoController(entityManagerSupplier);
     var cuentas = new org.example.controllers.CuentaController(entityManagerSupplier,landingController);
     var notificaciones = new org.example.controllers.NotificacionesController(entityManagerSupplier);
+    var ausencias = new org.example.controllers.AusenciasController(entityManagerSupplier);
 
     app.get("/cuenta/contacto", ctx -> ctx.redirect("/cuenta/perfil"));
     app.post("/cuenta/contacto", contactos::guardar);
@@ -214,7 +215,9 @@ public class Router {
     app.put("/entidades/{id}/ubicacion", ubicaciones::confirmarUbicacion);
     app.post("/interno/donaciones/planificadas", avisoPlan::registrar);
 
+
     //Rutas notificaciones
+    app.post("/interno/notificaciones/ausencia", ausencias::ejecutar);
     app.get("/cuenta/notificaciones", notificaciones::listar);
     app.post("/cuenta/notificaciones/leer-todas", notificaciones::leerTodas);
     app.post("/cuenta/notificaciones/{id}/leer", notificaciones::leer);
