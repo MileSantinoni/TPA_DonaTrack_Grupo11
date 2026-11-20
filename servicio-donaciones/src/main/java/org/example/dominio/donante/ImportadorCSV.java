@@ -84,6 +84,14 @@ public class ImportadorCSV {
         );
       }
 
+      // Cargar todos los donantes existentes en un mapa indexado por mail
+      // (minusculas) para reducir la búsqueda de una query por fila
+      // a una búsqueda O(1) en memoria.
+      Map<String, Donante> existentes = new HashMap<>();
+      for (Donante donante : repositorio.buscarTodos()) {
+        existentes.put(donante.getMail().toLowerCase(Locale.ROOT), donante);
+      }
+
       for (CSVRecord fila : parser) {
         try {
           if (!fila.isConsistent()) {
@@ -125,7 +133,8 @@ public class ImportadorCSV {
             );
           }
 
-          Donante d = repositorio.buscarPorMail(mail).orElse(null);
+          // Reemplaza buscarPorMail() por cada fila por una búsqueda en el mapa.
+          Donante d = existentes.get(mail);
           boolean nuevo = d == null;
 
           if (nuevo) {
@@ -170,13 +179,15 @@ public class ImportadorCSV {
 
           if (nuevo) {
             repositorio.agregar(d);
+            existentes.put(d.getMail(), d);
             donantesCreados++;
           } else {
             repositorio.actualizar(d);
+            existentes.put(mail, d);
             donantesActualizados++;
           }
 
-          if ((donantesCreados + donantesActualizados) % 250 == 0) {
+          if ((donantesCreados + donantesActualizados) % 1000 == 0) {
             repositorio.sincronizarYLiberarContexto();
           }
         } catch (IllegalArgumentException e) {
