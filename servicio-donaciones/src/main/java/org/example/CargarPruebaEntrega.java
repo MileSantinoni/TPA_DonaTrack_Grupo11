@@ -31,8 +31,9 @@ public class CargarPruebaEntrega {
 
     EntityManagerFactory factory =
         Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
+            "donaciones",
+            org.example.configuracion.ConfiguracionServidor
+                .persistencia("DONACIONES")
         );
 
     try {

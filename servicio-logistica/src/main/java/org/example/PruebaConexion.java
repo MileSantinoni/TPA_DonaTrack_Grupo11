@@ -20,8 +20,9 @@ public class PruebaConexion {
 
     EntityManagerFactory factory =
         Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
+            "logistica",
+            org.example.configuracion.ConfiguracionServidor
+                .persistencia("LOGISTICA")
         );
 
     try {

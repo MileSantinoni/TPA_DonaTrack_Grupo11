@@ -19,6 +19,14 @@ public class PuenteHeiGit {
       post(callback,new Respuesta(lote.id(),resultado));
       ctx.status(204);
     });
-    app.start(8084);
+    app.get("/health", ctx -> ctx.result("OK"));
+
+    Runtime.getRuntime().addShutdownHook(
+        new Thread(app::stop)
+    );
+
+    app.start(
+        org.example.configuracion.ConfiguracionServidor.puerto(8084)
+    );
   }
 }

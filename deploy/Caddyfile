@@ -1,0 +1,17 @@
+{$PUBLIC_HOST} {
+    # Las APIs entre servicios usan la red privada.
+    @interno path /interno /interno/* /graphql /graphql/*
+    handle @interno {
+        respond 404
+    }
+
+    # Estos endpoints validan Authorization: Bearer.
+    @gps path /camiones/ubicacion /integracion/rutas/*/recorrido
+    handle @gps {
+        reverse_proxy {$LOGISTICA_UPSTREAM}
+    }
+
+    handle {
+        reverse_proxy donaciones:8083
+    }
+}
