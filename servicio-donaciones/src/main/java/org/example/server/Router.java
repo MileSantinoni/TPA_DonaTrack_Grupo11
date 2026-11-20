@@ -107,6 +107,7 @@ public class Router {
     EntidadesBeneficiariasController entidadesBeneficiarias = new
         EntidadesBeneficiariasController(entityManagerSupplier, misDonaciones);
     var adminDonaciones = new org.example.controllers.AdminDonacionesController(entityManagerSupplier);
+    var altaDonanteAdmin = new org.example.controllers.AltaDonanteAdminController(entityManagerSupplier);
     var adminDonantes = new org.example.controllers.AdminDonantesController(entityManagerSupplier);
     var adminCamiones = new org.example.controllers.AdminCamionesController();
     var miEntidad = new org.example.controllers.MiEntidadController(entityManagerSupplier);
@@ -153,6 +154,7 @@ public class Router {
     app.post("/administracion/rutas/{idRuta}/iniciar", planificacionAdmin::iniciar);
     app.get("/administracion/monitoreo", adminCamiones::monitoreo);
     app.get("/administracion/monitoreo/datos", adminCamiones::datosMonitoreo);
+    app.post("/administracion/donaciones/alta-donante", altaDonanteAdmin::crear);
 
     app.get("/mi-entidad", miEntidad::index);
     app.get("/mi-entidad/necesidades/{id}", miEntidad::detalleNecesidad);

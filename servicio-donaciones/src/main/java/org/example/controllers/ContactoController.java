@@ -178,6 +178,24 @@ public class ContactoController {
         contacto == null ? "MAIL" : contacto.canal.name()
     );
 
+    Map<String, Object> modelo = new HashMap<>();
+
+    modelo.put("email", Objects.toString(usuario.email(), ""));
+    modelo.put("telefono", valor(ctx, "telefono", telefonoAnterior));
+    modelo.put("paises", paises(pais));
+    modelo.put("mail", "MAIL".equals(canal));
+    modelo.put("sms", "SMS".equals(canal));
+    modelo.put("whatsapp", "WHATSAPP".equals(canal));
+
+    modelo.put(
+        "telefonoObligatorio",
+        cuenta != null && "ENTIDAD".equals(cuenta.rol)
+    );
+
+    return modelo;
+  }
+
+  public static List<Map<String, Object>> paises(String pais) {
     List<Map<String, Object>> paises = new ArrayList<>();
 
     for (String codigo : TELEFONOS.getSupportedRegions()) {
@@ -196,20 +214,7 @@ public class ContactoController {
         p -> p.get("nombre").toString()
     ));
 
-    Map<String, Object> modelo = new HashMap<>();
-    modelo.put("email", Objects.toString(usuario.email(), ""));
-    modelo.put("telefono", valor(ctx, "telefono", telefonoAnterior));
-    modelo.put("paises", paises);
-    modelo.put("mail", "MAIL".equals(canal));
-    modelo.put("sms", "SMS".equals(canal));
-    modelo.put("whatsapp", "WHATSAPP".equals(canal));
-
-    modelo.put(
-        "telefonoObligatorio",
-        cuenta != null && "ENTIDAD".equals(cuenta.rol)
-    );
-
-    return modelo;
+    return paises;
   }
 
   private CuentaWeb cuentaAutorizada(Context ctx) {
@@ -247,7 +252,7 @@ public class ContactoController {
     ctx.render("contacto-cuenta.hbs", vista);
   }
 
-  private static String normalizar(
+  public static String normalizar(
       String texto,
       String pais,
       boolean obligatorio

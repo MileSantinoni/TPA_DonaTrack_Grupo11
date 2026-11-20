@@ -246,3 +246,13 @@
     outline: 1px solid #746258;
     outline-offset: 2px;
 }
+
+.dt-admin #alta-donante .ac-contacto-alta {
+    display: grid;
+    gap: 16px;
+}
+
+.dt-admin #alta-donante .ac-contacto-alta legend {
+    margin-bottom: 12px;
+    font-weight: 600;
+}

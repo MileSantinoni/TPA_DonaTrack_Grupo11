@@ -25,7 +25,8 @@
                 ? { Accept: "application/json" }
                 : {
                     Accept: "application/json",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": $("alta-donante").dataset.csrf
                 },
             body: body === undefined ? undefined : JSON.stringify(body)
         });
@@ -156,6 +157,16 @@
         $("etiqueta-documento").textContent = juridica ? "CUIT" : "DNI";
     });
 
+    const canalAlta = $("alta-donante").elements.canalNotificacion;
+    const telefonoAlta = $("alta-donante").elements.telefono;
+
+    function actualizarTelefonoAlta() {
+        telefonoAlta.required = canalAlta.value !== "MAIL";
+    }
+
+    canalAlta.addEventListener("change", actualizarTelefonoAlta);
+    actualizarTelefonoAlta();
+
     $("alta-donante").addEventListener("submit", (event) => {
         event.preventDefault();
 
@@ -165,9 +176,14 @@
             const datos = new FormData(formulario);
             const juridica = datos.get("clase") === "juridica";
 
-            const texto = (campo) => String(datos.get(campo) || "").trim();
+            const texto = (campo) =>
+                String(datos.get(campo) || "").trim();
 
             const cuerpo = {
+                clase: texto("clase"),
+                paisTelefono: texto("paisTelefono"),
+                telefono: texto("telefono"),
+                canalNotificacion: texto("canalNotificacion"),
                 mail: texto("mail"),
                 numeroDocumento: texto("numeroDocumento"),
                 tipoDeDocumento: juridica ? "CUIT" : "DNI"
@@ -185,13 +201,17 @@
                 });
 
                 if (!cuerpo.razonSocial || !cuerpo.rubro) {
-                    throw new Error("Completá la razón social y el rubro.");
+                    throw new Error(
+                        "Completá la razón social y el rubro."
+                    );
                 }
             } else {
                 const edad = Number(datos.get("edad"));
 
-                if (!Number.isInteger(edad) || edad < 0 || edad > 150) {
-                    throw new Error("Ingresá una edad entera entre 0 y 150.");
+                if (!Number.isInteger(edad) || edad < 0 || edad > 120) {
+                    throw new Error(
+                        "Ingresá una edad entera entre 0 y 120."
+                    );
                 }
 
                 Object.assign(cuerpo, {
@@ -202,13 +222,17 @@
                     direccion: texto("direccion")
                 });
 
-                if (!cuerpo.nombre || !cuerpo.apellido || !cuerpo.direccion) {
-                    throw new Error("Completá nombre, apellido y dirección.");
+                if (!cuerpo.nombre
+                    || !cuerpo.apellido
+                    || !cuerpo.direccion) {
+                    throw new Error(
+                        "Completá nombre, apellido y dirección."
+                    );
                 }
             }
 
             const nuevo = await solicitar(
-                juridica ? "/donantes/juridicas" : "/donantes/humanas",
+                "/administracion/donaciones/alta-donante",
                 "POST",
                 cuerpo
             );
@@ -230,13 +254,19 @@
             );
 
             $("donante-seleccionado").replaceChildren(opcion);
-            $("resultado-busqueda").textContent = "Donante registrado.";
+
+            $("resultado-busqueda").textContent =
+                "Cuenta y perfil del donante registrados.";
+
             formulario.reset();
+            actualizarTelefonoAlta();
 
             $("alta-humana").hidden = false;
             $("alta-humana").disabled = false;
+
             $("alta-juridica").hidden = true;
             $("alta-juridica").disabled = true;
+
             $("etiqueta-documento").textContent = "DNI";
 
             pasarABienes();
