@@ -119,6 +119,7 @@ public class AdminDonacionesController {
 
     Map<String, Object> modelo = new HashMap<>();
 
+    modelo.put("paisesAlta", ContactoController.paises("AR"));
     modelo.put("donaciones", filas);
     modelo.put("total", total);
     modelo.put("q", busqueda);

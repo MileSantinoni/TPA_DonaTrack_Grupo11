@@ -219,7 +219,12 @@
     <section id="paso-alta-donante" hidden>
         <p class="ac-paso">REGISTRAR NUEVO DONANTE</p>
 
-        <form id="alta-donante">
+        <p class="ac-ayuda">
+            Se creará la cuenta del donante y su perfil. Después podrá ingresar
+            con el código enviado a su correo, sin compartir una contraseña.
+        </p>
+
+        <form id="alta-donante" data-csrf="{{sesion.csrf}}">
             <label>
                 Tipo de persona
                 <select name="clase" id="tipo-alta-donante">
@@ -232,17 +237,20 @@
                 <div class="ac-grid">
                     <label>
                         Nombre
-                        <input name="nombre" required maxlength="255">
+                        <input name="nombre" required maxlength="120">
                     </label>
+
                     <label>
                         Apellido
-                        <input name="apellido" required maxlength="255">
+                        <input name="apellido" required maxlength="120">
                     </label>
+
                     <label>
                         Edad
                         <input name="edad" type="number"
-                               min="0" max="150" step="1" required>
+                               min="0" max="120" step="1" required>
                     </label>
+
                     <label>
                         Género
                         <select name="genero" required>
@@ -252,6 +260,7 @@
                             <option value="OTRO">Otro</option>
                         </select>
                     </label>
+
                     <label>
                         Dirección
                         <input name="direccion" required maxlength="255">
@@ -259,12 +268,15 @@
                 </div>
             </fieldset>
 
-            <fieldset id="alta-juridica" class="ac-sin-borde" hidden disabled>
+            <fieldset id="alta-juridica"
+                      class="ac-sin-borde"
+                      hidden disabled>
                 <div class="ac-grid">
                     <label>
                         Razón social
                         <input name="razonSocial" required maxlength="255">
                     </label>
+
                     <label>
                         Tipo de organización
                         <select name="tipo" required>
@@ -274,6 +286,7 @@
                             <option value="INSTITUCION">Institución</option>
                         </select>
                     </label>
+
                     <label>
                         Rubro
                         <input name="rubro" required maxlength="255">
@@ -286,19 +299,65 @@
                     <span id="etiqueta-documento">DNI</span>
                     <input name="numeroDocumento" required maxlength="30">
                 </label>
-                <label>
-                    Email
-                    <input name="mail" type="email" required maxlength="255">
-                </label>
             </div>
+
+            <fieldset class="ac-sin-borde ac-contacto-alta">
+                <legend>Contacto y notificaciones</legend>
+
+                <label>
+                    Correo del donante
+                    <input name="mail"
+                           type="email"
+                           required
+                           maxlength="255"
+                           autocomplete="off">
+                </label>
+
+                <div class="ac-grid">
+                    <label>
+                        País
+                        <select name="paisTelefono" required>
+                            {{#each paisesAlta}}
+                                <option value="{{codigo}}"
+                                        {{#if seleccionado}}selected{{/if}}>
+                                    {{nombre}}
+                                </option>
+                            {{/each}}
+                        </select>
+                    </label>
+
+                    <label>
+                        Teléfono
+                        <input name="telefono"
+                               type="tel"
+                               maxlength="40"
+                               placeholder="Código de área y número">
+                    </label>
+                </div>
+
+                <label>
+                    Medio elegido por el donante
+                    <select name="canalNotificacion" required>
+                        <option value="MAIL">Correo electrónico</option>
+                        <option value="SMS">SMS</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                    </select>
+                </label>
+
+                <p class="ac-ayuda">
+                    El teléfono es obligatorio para SMS y WhatsApp.
+                </p>
+            </fieldset>
 
             <p class="ac-error" role="alert"></p>
 
             <div class="ac-modal-acciones">
-                <button type="button" id="volver-busqueda"
+                <button type="button"
+                        id="volver-busqueda"
                         class="btn btn-secondary">
                     Volver
                 </button>
+
                 <button type="submit" class="btn btn-primary-action">
                     Registrar y continuar
                 </button>
