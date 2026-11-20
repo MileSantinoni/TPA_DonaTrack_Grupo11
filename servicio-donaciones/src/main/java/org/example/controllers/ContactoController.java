@@ -133,6 +133,7 @@ public class ContactoController {
     contacto.telefono = telefono;
     contacto.canal = canal;
     contacto.actualizado = Instant.now();
+    contacto.recibeAvisosAdministracion = SesionWeb.esAdmin(usuario);
 
     if (nuevo) {
       em.persist(contacto);

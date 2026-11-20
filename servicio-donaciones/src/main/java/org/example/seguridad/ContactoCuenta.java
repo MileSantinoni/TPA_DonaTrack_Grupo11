@@ -33,6 +33,9 @@ public class ContactoCuenta {
   @Column(nullable = false)
   public Instant actualizado;
 
+  @Column(name = "recibe_avisos_administracion", nullable = false)
+  public boolean recibeAvisosAdministracion;
+
   @Version
   public Long version;
 

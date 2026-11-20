@@ -20,7 +20,6 @@ public final class NotificacionesLogistica {
 
   public static void validarConfiguracion() {
     origenPublico();
-    administradores();
   }
 
   public static List<NotificacionPendiente> preparar(
@@ -123,7 +122,7 @@ public final class NotificacionesLogistica {
     }
 
     if (evento.tipo() == EventoLogistico.Tipo.NO_RECIBIDA) {
-      for (String cuentaId : administradores()) {
+      for (String cuentaId : administradores(em)) {
         String referencia = "ADMIN:"
             + UUID.nameUUIDFromBytes(
             cuentaId.getBytes(StandardCharsets.UTF_8)
@@ -226,30 +225,13 @@ public final class NotificacionesLogistica {
     }
   }
 
-  private static List<String> administradores() {
-    String valor = Objects.toString(
-        System.getenv("NOTIFICACIONES_ADMIN_CUENTAS"),
-        ""
-    );
-
-    Set<String> cuentas = new LinkedHashSet<>();
-
-    for (String parte : valor.split(",", -1)) {
-      String cuenta = parte.trim();
-      int separador = cuenta.lastIndexOf('|');
-
-      if (separador <= 0
-          || separador == cuenta.length() - 1
-          || cuenta.length() > 512) {
-        throw new IllegalStateException(
-            "Configurá NOTIFICACIONES_ADMIN_CUENTAS con las claves "
-                + "issuer|sub de administradores, separadas por coma."
-        );
-      }
-
-      cuentas.add(cuenta);
-    }
-
-    return List.copyOf(cuentas);
+  private static List<String> administradores(EntityManager em) {
+    return em.createQuery(
+            "SELECT c.id FROM ContactoCuenta c "
+                + "WHERE c.recibeAvisosAdministracion = true "
+                + "ORDER BY c.id",
+            String.class
+        )
+        .getResultList();
   }
 }
