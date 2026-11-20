@@ -1,4 +1,4 @@
-<header class="navbar">
+<header class="navbar dt-header">
     <div class="navbar-inner">
         <div class="brand-logo">
             <img src="/assets/images/logo_principal.svg"
@@ -17,6 +17,13 @@
             </a>
 
             {{#if sesion.autenticado}}
+                {{#if sesion.perfilAvisos}}
+                    <div class="dt-avisos"
+                         data-perfil="{{sesion.perfilAvisos}}">
+                        {{> templates/partials/notificaciones}}
+                    </div>
+                {{/if}}
+
                 {{> templates/partials/usuario-sesion}}
             {{else}}
                 <a href="/login" class="nav-link">

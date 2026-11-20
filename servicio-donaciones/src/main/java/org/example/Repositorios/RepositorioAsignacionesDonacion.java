@@ -17,6 +17,7 @@ import org.example.dominio.notificacion.NotificacionPendiente;
 import org.example.dominio.notificacion.Notificacion;
 import org.example.dominio.notificacion.EstadoNotificacion;
 import org.example.dominio.notificacion.Notificador;
+import java.time.LocalDateTime;
 
 public class RepositorioAsignacionesDonacion
     implements WithSimplePersistenceUnit {
@@ -30,6 +31,9 @@ public class RepositorioAsignacionesDonacion
   private RepositorioAsignacionesDonacion() {
     this.proveedor = this::entityManager;
   }
+
+  private static final int MAX_INTENTOS_NOTIFICACION = 3;
+  private static final int MINUTOS_ENTRE_REINTENTOS = 1;
 
   public RepositorioAsignacionesDonacion(EntityManager em) {
     Objects.requireNonNull(em);
@@ -300,16 +304,27 @@ public class RepositorioAsignacionesDonacion
 
   public List<String> buscarIdsNotificacionesPendientes(int limite) {
     if (limite <= 0) {
-      throw new IllegalArgumentException("El limite debe ser positivo");
+      throw new IllegalArgumentException("El límite debe ser positivo");
     }
 
     return em().createQuery(
             "SELECT n.id FROM NotificacionPendiente n "
-                + "WHERE n.estado <> :completada "
-                + "ORDER BY n.ultimoIntento ASC, n.fechaCreacion ASC, n.id ASC",
+                + "WHERE n.estado IN (:estados) "
+                + "AND n.intentos < :maxIntentos "
+                + "AND (n.ultimoIntento IS NULL "
+                + "OR n.ultimoIntento <= :limiteReintento) "
+                + "ORDER BY n.intentos ASC, n.fechaCreacion ASC, n.id ASC",
             String.class
         )
-        .setParameter("completada", EstadoNotificacion.COMPLETADA)
+        .setParameter("estados", List.of(
+            EstadoNotificacion.PENDIENTE,
+            EstadoNotificacion.FALLIDA
+        ))
+        .setParameter("maxIntentos", MAX_INTENTOS_NOTIFICACION)
+        .setParameter(
+            "limiteReintento",
+            LocalDateTime.now().minusMinutes(MINUTOS_ENTRE_REINTENTOS)
+        )
         .setMaxResults(limite)
         .getResultList();
   }
@@ -343,7 +358,11 @@ public class RepositorioAsignacionesDonacion
       // Recarga y bloquea el registro antes de decidir si hay que enviarlo.
       actual.refresh(pendiente, LockModeType.PESSIMISTIC_WRITE);
 
-      if (!pendiente.requiereEnvio()) {
+      if (!pendiente.requiereEnvio()
+          || pendiente.getIntentos() >= MAX_INTENTOS_NOTIFICACION
+          || (pendiente.getUltimoIntento() != null
+          && pendiente.getUltimoIntento().isAfter(
+          LocalDateTime.now().minusMinutes(MINUTOS_ENTRE_REINTENTOS)))) {
         return false;
       }
 
@@ -397,5 +416,39 @@ public class RepositorioAsignacionesDonacion
             .filter(Objects::nonNull)
             .toList()
     );
+  }
+
+  public void registrarNotificacionesDeAsignacion(
+      AsignacionDonacion asignacion
+  ) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "Los avisos deben guardarse en la transacción de la asignación"
+      );
+    }
+
+    var pendientes =
+        org.example.dominio.notificacion.NotificacionesAsignacion
+            .preparar(actual, asignacion);
+
+    guardarNotificacionesPendientes(pendientes);
+  }
+
+  public List<NotificacionPendiente> prepararNotificacionesLogisticas(
+      AsignacionDonacion asignacion,
+      org.example.dominio.donacion.EventoLogistico evento
+  ) {
+    EntityManager actual = em();
+
+    if (!actual.getTransaction().isActive()) {
+      throw new IllegalStateException(
+          "Los avisos deben prepararse en la transacción del evento"
+      );
+    }
+
+    return org.example.dominio.notificacion.NotificacionesLogistica
+        .preparar(actual, asignacion, evento);
   }
 }

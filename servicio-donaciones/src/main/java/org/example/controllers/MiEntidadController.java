@@ -115,6 +115,23 @@ public class MiEntidadController {
            )
           """;
 
+      String entrega = texto(ctx.queryParam("entrega"));
+
+      if (!entrega.isEmpty()) {
+        try {
+          params.put(
+              "entregaId",
+              java.util.UUID.fromString(entrega)
+          );
+        } catch (IllegalArgumentException e) {
+          throw new BadRequestResponse(
+              "Identificador de entrega inválido."
+          );
+        }
+
+        from += " AND d.id = :entregaId";
+      }
+
       if (!estado.isEmpty()) {
         try {
           EstadoDonacion.valueOf(estado);

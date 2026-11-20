@@ -2,6 +2,7 @@ package org.example.dominio.notificacion;
 
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
+import org.example.Twilio.TwilioConfig;
 
 public class WhatsApp implements TipoNotificacion {
 
@@ -16,10 +17,10 @@ public class WhatsApp implements TipoNotificacion {
           new PhoneNumber("whatsapp:" + destinatario),
           new PhoneNumber("whatsapp:" + fromNumber),
           mensaje
-      ).create();
+      ).create(TwilioConfig.cliente());
 
       notificacion.marcarComoCompletada();
-      System.out.println("WhatsApp enviado con éxito a: " + destinatario);
+      System.out.println("WhatsApp aceptado por Twilio. SID: " + twilioMessage.getSid());
     } catch (Exception e) {
       notificacion.marcarComoFallida();
       System.err.println("Error al enviar WhatsApp a: " + destinatario);

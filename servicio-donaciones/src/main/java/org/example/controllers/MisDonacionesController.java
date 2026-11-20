@@ -62,6 +62,23 @@ public class MisDonacionesController {
         WHERE d.donante.id = :donanteId
         """;
 
+    String entrega = parametro(ctx, "entrega");
+
+    if (!entrega.isBlank()) {
+      try {
+        parametros.put(
+            "entregaId",
+            java.util.UUID.fromString(entrega)
+        );
+      } catch (IllegalArgumentException e) {
+        throw new BadRequestResponse(
+            "Identificador de entrega inválido."
+        );
+      }
+
+      condiciones += " AND d.id = :entregaId";
+    }
+
     if (!estado.isBlank()) {
       try {
         EstadoDonacion.valueOf(estado);

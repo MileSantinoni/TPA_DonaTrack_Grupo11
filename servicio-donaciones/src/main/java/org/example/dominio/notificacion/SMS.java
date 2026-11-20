@@ -2,6 +2,7 @@ package org.example.dominio.notificacion;
 
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
+import org.example.Twilio.TwilioConfig;
 
 public class SMS implements TipoNotificacion {
 
@@ -15,10 +16,10 @@ public class SMS implements TipoNotificacion {
           new PhoneNumber(destinatario),
           new PhoneNumber(fromNumber),
           mensaje
-      ).create();
+      ).create(TwilioConfig.cliente());
 
       notificacion.marcarComoCompletada();
-      System.out.println("SMS enviado con éxito a: " + destinatario);
+      System.out.println("SMS aceptado por Twilio. SID: " + twilioMessage.getSid());
     } catch (Exception e) {
       notificacion.marcarComoFallida();
       System.err.println("Error al enviar SMS a: " + destinatario);

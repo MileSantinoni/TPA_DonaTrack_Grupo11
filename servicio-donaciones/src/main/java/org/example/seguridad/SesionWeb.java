@@ -129,6 +129,23 @@ public final class SesionWeb {
   ) {
     app.exception(UnauthorizedResponse.class, (e, ctx) -> {
       if (pagina(ctx)) {
+        if (Set.of("/mi-entidad", "/mis-donaciones")
+            .contains(ctx.path())) {
+
+          String entrega = ctx.queryParam("entrega");
+
+          if (entrega != null) {
+            try {
+              ctx.sessionAttribute(
+                  "notificaciones.entregaPendiente",
+                  UUID.fromString(entrega).toString()
+              );
+            } catch (IllegalArgumentException ignorada) {
+              // Nunca guardamos una URL enviada por el navegador.
+            }
+          }
+        }
+
         ctx.redirect("/login");
       } else {
         ctx.status(401).json(Map.of(
@@ -331,6 +348,30 @@ public final class SesionWeb {
 
     sesion.put("csrf", LogtoController.csrf(ctx));
     sesion.put("destino", destino(ctx));
+    String rol = esAdmin(usuario)
+        ? "ADMIN"
+        : cuenta == null ? "" : cuenta.rol;
+
+    sesion.put("rolNombre", switch (rol) {
+      case "ADMIN" -> "Administración";
+      case "ENTIDAD" -> "Entidad beneficiaria";
+      case "DONANTE" -> "Donante";
+      default -> "Registro pendiente";
+    });
+
+    sesion.put("perfilAvisos", switch (rol) {
+      case "ADMIN" -> "admin";
+      case "ENTIDAD" -> "beneficiaria";
+      case "DONANTE" -> "donante";
+      default -> "";
+    });
+
+    sesion.put("accesoNombre", switch (rol) {
+      case "ADMIN" -> "Administración";
+      case "ENTIDAD" -> "Mi entidad";
+      case "DONANTE" -> "Mis donaciones";
+      default -> "Completar registro";
+    });
     sesion.put("titulo", "Tu espacio en DonaTrack");
     sesion.put(
         "descripcion",

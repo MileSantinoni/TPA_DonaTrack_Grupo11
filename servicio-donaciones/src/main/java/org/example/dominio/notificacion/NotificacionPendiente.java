@@ -17,10 +17,10 @@ public class NotificacionPendiente {
   private String idOperacion;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = true)
   private TipoContactoPredeterminado canal;
 
-  @Column(nullable = false, length = 500)
+  @Column(nullable = true, length = 500)
   private String destinatario;
 
   @Column(nullable = false, length = 10000)
@@ -41,6 +41,24 @@ public class NotificacionPendiente {
 
   @Column(name = "fecha_completada")
   private LocalDateTime fechaCompletada;
+
+  @Column(name = "cuenta_id", length = 512)
+  private String cuentaId;
+
+  @Column(length = 180)
+  private String titulo;
+
+  @Column(name = "fecha_lectura")
+  private LocalDateTime fechaLectura;
+
+  @Column(name = "fecha_ocultada")
+  private LocalDateTime fechaOcultada;
+
+  @Column(name = "referencia_destinatario", length = 100)
+  private String referenciaDestinatario;
+
+  @Column(name = "ruta_accion", length = 500)
+  private String rutaAccion;
 
   @Version
   private long version;
@@ -81,8 +99,35 @@ public class NotificacionPendiente {
     this.fechaCreacion = LocalDateTime.now();
   }
 
+  public NotificacionPendiente(
+      String idOperacion,
+      TipoContactoPredeterminado canal,
+      String destinatario,
+      String mensaje,
+      String cuentaId,
+      String titulo
+  ) {
+    this(idOperacion, canal, destinatario, mensaje);
+
+    if (cuentaId == null || cuentaId.isBlank()) {
+      throw new IllegalArgumentException(
+          "La cuenta destinataria es obligatoria"
+      );
+    }
+
+    if (titulo == null || titulo.isBlank()) {
+      throw new IllegalArgumentException(
+          "El título de la notificación es obligatorio"
+      );
+    }
+
+    this.cuentaId = cuentaId;
+    this.titulo = titulo;
+  }
+
   public boolean requiereEnvio() {
-    return estado != EstadoNotificacion.COMPLETADA;
+    return estado == EstadoNotificacion.PENDIENTE
+        || estado == EstadoNotificacion.FALLIDA;
   }
 
   public void registrarResultado(Notificacion resultado) {
@@ -150,5 +195,77 @@ public class NotificacionPendiente {
 
   public LocalDateTime getFechaCompletada() {
     return fechaCompletada;
+  }
+
+  public String getCuentaId() {
+    return cuentaId;
+  }
+
+  public String getTitulo() {
+    return titulo;
+  }
+
+  public LocalDateTime getFechaLectura() {
+    return fechaLectura;
+  }
+
+  public boolean estaLeida() {
+    return fechaLectura != null;
+  }
+
+  public void marcarLeida() {
+    if (fechaLectura == null) {
+      fechaLectura = LocalDateTime.now();
+    }
+  }
+
+  public static NotificacionPendiente sinContacto(
+      String idOperacion,
+      String cuentaId,
+      String referenciaDestinatario,
+      String titulo,
+      String mensaje
+  ) {
+    NotificacionPendiente pendiente = new NotificacionPendiente();
+
+    pendiente.id = UUID.randomUUID().toString();
+    pendiente.idOperacion = Objects.requireNonNull(idOperacion);
+    pendiente.cuentaId = cuentaId;
+    pendiente.referenciaDestinatario =
+        Objects.requireNonNull(referenciaDestinatario);
+    pendiente.titulo = Objects.requireNonNull(titulo);
+    pendiente.mensaje = Objects.requireNonNull(mensaje);
+    pendiente.estado = EstadoNotificacion.SIN_CONTACTO;
+    pendiente.fechaCreacion = LocalDateTime.now();
+
+    return pendiente;
+  }
+
+  public void identificarDestinatario(String referencia) {
+    this.referenciaDestinatario = Objects.requireNonNull(referencia);
+  }
+
+  public String getReferenciaDestinatario() {
+    return referenciaDestinatario;
+  }
+
+  public String getRutaAccion() {
+    return rutaAccion;
+  }
+
+  public void vincularAccion(String ruta) {
+    if (ruta == null
+        || ruta.length() > 500
+        || !ruta.startsWith("/")
+        || ruta.startsWith("//")
+        || ruta.contains("\\")
+        || ruta.contains("\r")
+        || ruta.contains("\n")) {
+      throw new IllegalArgumentException(
+          "Ruta de notificación inválida"
+      );
+    }
+
+    this.rutaAccion = ruta;
   }
 }

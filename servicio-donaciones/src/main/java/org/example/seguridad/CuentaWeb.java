@@ -27,6 +27,14 @@ public class CuentaWeb {
   @JoinColumn(name = "entidad_id", unique = true)
   public EntidadBeneficiaria entidad;
 
+  // Se guarda en UTC, independientemente de la zona del servidor.
+  @Column(name = "ultima_interaccion_utc", nullable = false)
+  public java.time.LocalDateTime ultimaInteraccionUtc =
+      java.time.LocalDateTime.now(java.time.ZoneOffset.UTC);
+
+  @Column(name = "aviso_ausencia_generado", nullable = false)
+  public boolean avisoAusenciaGenerado;
+
   public CuentaWeb() {
   }
 

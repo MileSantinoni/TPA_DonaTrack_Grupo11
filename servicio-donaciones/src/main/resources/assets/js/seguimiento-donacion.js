@@ -20,6 +20,31 @@
     document.querySelectorAll("[data-seguimiento-id]")
         .forEach(iniciar);
 
+    const entregaSolicitada = new URLSearchParams(
+        location.search
+    ).get("entrega");
+
+    if (entregaSolicitada) {
+        const panel = [
+            ...document.querySelectorAll("[data-seguimiento-id]")
+        ].find(
+            elemento =>
+                elemento.dataset.seguimientoId === entregaSolicitada
+        );
+
+        const detalle = panel?.closest("details");
+
+        if (detalle) {
+            detalle.open = true;
+
+            requestAnimationFrame(() => {
+                detalle.scrollIntoView({
+                    block: "start"
+                });
+            });
+        }
+    }
+
 
     function decodificarRecorrido(cadena) {
         if (typeof cadena !== "string" || !cadena.length) {

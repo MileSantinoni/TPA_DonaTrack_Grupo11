@@ -376,6 +376,11 @@ public class LogtoController {
               intento.tipo()
           );
 
+          org.example.seguridad.ContactosLogto.sincronizar(
+              ctx.attribute("cuenta.em"),
+              usuario
+          );
+
           ctx.req().changeSessionId();
 
           session.setAttribute(USUARIO, usuario);

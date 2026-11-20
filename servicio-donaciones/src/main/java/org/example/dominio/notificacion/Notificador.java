@@ -176,9 +176,18 @@ public class Notificador {
       );
     }
 
+    String mensaje = pendiente.getMensaje();
+
+    if (pendiente.getRutaAccion() != null) {
+      mensaje += "\nVer entrega: "
+          + NotificacionesLogistica.urlPublica(
+          pendiente.getRutaAccion()
+      );
+    }
+
     return estrategia.enviar(
         pendiente.getDestinatario(),
-        pendiente.getMensaje()
+        mensaje
     );
   }
 

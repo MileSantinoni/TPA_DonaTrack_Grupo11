@@ -13,6 +13,11 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import org.example.server.templates.JavalinHandlebars;
 import org.example.server.templates.JavalinRenderer;
+import org.example.scheduler.ProcesadorNotificacionesPendientes;
+import org.example.dominio.notificacion.Notificador;
+import org.example.dominio.notificacion.Email;
+import org.example.dominio.notificacion.SMS;
+import org.example.dominio.notificacion.WhatsApp;
 
 public final class Server {
 
@@ -116,6 +121,8 @@ public final class Server {
       try {
         if (em != null && em.isOpen()) {
           try {
+            org.example.seguridad.ActividadDonante.registrar(ctx, em);
+
             if (em.getTransaction().isActive()) {
               em.getTransaction().rollback();
             }
@@ -128,9 +135,26 @@ public final class Server {
       }
     });
 
+    ProcesadorNotificacionesPendientes procesador =
+        new ProcesadorNotificacionesPendientes(
+            factory,
+            new Notificador(new Email(), new SMS(), new WhatsApp())
+        );
+
     app.events(eventos -> {
-      eventos.serverStopped(() -> cerrarFactory(factory));
-      eventos.serverStartFailed(() -> cerrarFactory(factory));
+      eventos.serverStarted(procesador::iniciar);
+
+      eventos.serverStopping(procesador::close);
+
+      eventos.serverStopped(() -> {
+        procesador.close();
+        cerrarFactory(factory);
+      });
+
+      eventos.serverStartFailed(() -> {
+        procesador.close();
+        cerrarFactory(factory);
+      });
     });
 
     new Router(actual::get).configure(app);

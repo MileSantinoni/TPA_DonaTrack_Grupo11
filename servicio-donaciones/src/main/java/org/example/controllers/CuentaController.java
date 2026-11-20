@@ -22,7 +22,26 @@ public class CuentaController {
   }
 
   public void continuar(Context ctx) {
-    ctx.redirect(org.example.seguridad.SesionWeb.destino(ctx));
+    String destino =
+        org.example.seguridad.SesionWeb.destino(ctx);
+
+    String entrega = ctx.sessionAttribute(
+        "notificaciones.entregaPendiente"
+    );
+
+    if (entrega != null
+        && Set.of("/mi-entidad", "/mis-donaciones")
+        .contains(destino)) {
+
+      ctx.sessionAttribute(
+          "notificaciones.entregaPendiente",
+          null
+      );
+
+      destino += "?entrega=" + UUID.fromString(entrega);
+    }
+
+    ctx.redirect(destino);
   }
 
   public void formulario(Context ctx) {
@@ -102,6 +121,8 @@ public class CuentaController {
       } else {
         crearDonante(ctx, usuario, cuenta, em);
       }
+
+      ContactoController.guardarDatos(ctx, em, cuenta);
 
       tx.commit();
 
@@ -235,7 +256,7 @@ public class CuentaController {
 
     modelo.put("mostrarPerfil", true);
     modelo.put("entidad", "ENTIDAD".equals(cuenta.rol));
-    modelo.put("error", Objects.toString(error, ""));
+    modelo.putAll(modeloPerfil(ctx, cuenta, false));
 
     if (!List.of("DONANTE", "ENTIDAD").contains(cuenta.rol)) {
       modelo.put("bloqueado", true);
@@ -280,5 +301,304 @@ public class CuentaController {
     }
 
     return valor;
+  }
+
+  public void editar(Context ctx) {
+    var usuario = LogtoController.usuario(ctx);
+    CuentaWeb cuenta = buscar(ctx);
+
+    if (!org.example.seguridad.SesionWeb.esAdmin(usuario)
+        && (cuenta == null || !cuenta.completa())) {
+      continuar(ctx);
+      return;
+    }
+
+    mostrarEdicion(ctx, "");
+  }
+
+  public void guardarEdicion(Context ctx) {
+    var usuario = LogtoController.usuario(ctx);
+    LogtoController.validarCsrf(ctx);
+
+    EntityManager em = proveedor.get();
+    var tx = em.getTransaction();
+
+    try {
+      tx.begin();
+
+      CuentaWeb cuenta = em.find(
+          CuentaWeb.class,
+          CuentaWeb.clave(usuario),
+          javax.persistence.LockModeType.PESSIMISTIC_WRITE
+      );
+
+      boolean admin = org.example.seguridad.SesionWeb.esAdmin(usuario);
+
+      if (!admin && (cuenta == null || !cuenta.completa())) {
+        throw new BadRequestResponse("Primero completá tu registro.");
+      }
+
+      if (!admin) {
+        if ("ENTIDAD".equals(cuenta.rol)) {
+          String razonSocial = campo(ctx, "razonSocial");
+
+          cuenta.entidad.setRazonSocial(razonSocial);
+          cuenta.nombre = razonSocial;
+
+        } else if ("DONANTE".equals(cuenta.rol)) {
+          actualizarDonante(ctx, cuenta, em);
+
+        } else {
+          throw new BadRequestResponse("El perfil necesita revisión.");
+        }
+      }
+
+      ContactoController.guardarDatos(ctx, em, cuenta);
+
+      tx.commit();
+
+      if (!admin) {
+        ctx.attribute("cuentaWeb", cuenta);
+      }
+
+      ctx.redirect("/cuenta/perfil?guardado=1");
+
+    } catch (BadRequestResponse | IllegalArgumentException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      em.clear();
+
+      if (!org.example.seguridad.SesionWeb.esAdmin(usuario)) {
+        ctx.attribute("cuentaWeb", buscar(ctx));
+      }
+
+      ctx.status(400);
+
+      mostrarEdicion(
+          ctx,
+          e instanceof BadRequestResponse
+              ? e.getMessage()
+              : "Revisá los datos del formulario."
+      );
+
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+
+      throw e;
+    }
+  }
+
+  private void actualizarDonante(
+      Context ctx,
+      CuentaWeb cuenta,
+      EntityManager em
+  ) {
+    Donante donante = (Donante) org.hibernate.Hibernate.unproxy(
+        cuenta.donante
+    );
+
+    String documento = campo(ctx, "documento", 30);
+
+    long repetidos = em.createQuery(
+            "SELECT COUNT(d) FROM Donante d "
+                + "WHERE d.numeroDocumento = :documento "
+                + "AND d.id <> :id",
+            Long.class
+        )
+        .setParameter("documento", documento)
+        .setParameter("id", donante.getId())
+        .getSingleResult();
+
+    if (repetidos > 0) {
+      throw new BadRequestResponse(
+          "Ya existe otro donante con ese documento."
+      );
+    }
+
+    // El subtipo se obtiene de la base, nunca del formulario.
+    if (donante instanceof PersonaHumana persona) {
+      String nombre = campo(ctx, "nombre", 80);
+      String apellido = campo(ctx, "apellido", 80);
+
+      int edad;
+
+      try {
+        edad = Integer.parseInt(campo(ctx, "edad"));
+      } catch (NumberFormatException e) {
+        throw new BadRequestResponse("La edad debe ser un número entero.");
+      }
+
+      if (edad < 0 || edad > 120) {
+        throw new BadRequestResponse("Edad fuera de rango.");
+      }
+
+      persona.setNombre(nombre);
+      persona.setApellido(apellido);
+      persona.setEdad(edad);
+      persona.setGenero(Genero.valueOf(campo(ctx, "genero")));
+      persona.setDireccion(campo(ctx, "direccion"));
+
+      cuenta.nombre = nombre + " " + apellido;
+
+    } else if (donante instanceof PersonaJuridica persona) {
+      String razonSocial = campo(ctx, "razonSocial");
+
+      persona.setRazonSocial(razonSocial);
+      persona.setTipo(
+          TipoOrganizacion.valueOf(campo(ctx, "organizacion"))
+      );
+      persona.setRubro(campo(ctx, "rubro"));
+
+      cuenta.nombre = razonSocial;
+
+    } else {
+      throw new BadRequestResponse("Tipo de donante no reconocido.");
+    }
+
+    donante.actualizarDatos(
+        donante.getMail(),
+        documento,
+        donante.getTipoDeDocumento()
+    );
+  }
+
+  private void mostrarEdicion(Context ctx, String error) {
+    Map<String, Object> modelo = modeloPerfil(ctx, buscar(ctx), true);
+
+    modelo.put("error", Objects.toString(error, ""));
+    modelo.put(
+        "guardado",
+        error.isBlank() && "1".equals(ctx.queryParam("guardado"))
+    );
+
+    ctx.render("mi-perfil.hbs", modelo);
+  }
+
+  private Map<String, Object> modeloPerfil(
+      Context ctx,
+      CuentaWeb cuenta,
+      boolean edicion
+  ) {
+    var usuario = LogtoController.usuario(ctx);
+
+    boolean admin = org.example.seguridad.SesionWeb.esAdmin(usuario);
+    boolean entidad = !admin
+        && cuenta != null
+        && "ENTIDAD".equals(cuenta.rol);
+
+    Map<String, Object> perfil = new HashMap<>();
+
+    for (String campo : List.of(
+        "nombre", "apellido", "edad", "direccion",
+        "razonSocial", "rubro", "documento"
+    )) {
+      perfil.put(campo, "");
+    }
+
+    String persona = "humana";
+    String genero = "OTRO";
+    String organizacion = "EMPRESA";
+
+    if (entidad && cuenta.entidad != null) {
+      perfil.put("razonSocial", cuenta.entidad.getRazonSocial());
+
+    } else if (!admin && cuenta != null && cuenta.donante != null) {
+      Donante donante = (Donante) org.hibernate.Hibernate.unproxy(
+          cuenta.donante
+      );
+
+      perfil.put("documento", donante.getNumeroDocumento());
+
+      if (donante instanceof PersonaHumana humana) {
+        perfil.put("nombre", humana.getNombre());
+        perfil.put("apellido", humana.getApellido());
+        perfil.put("edad", humana.getEdad());
+        perfil.put("direccion", humana.getDireccion());
+
+        genero = Objects.toString(humana.getGenero(), "OTRO");
+
+      } else if (donante instanceof PersonaJuridica juridica) {
+        persona = "juridica";
+
+        perfil.put("razonSocial", juridica.getRazonSocial());
+        perfil.put("rubro", juridica.getRubro());
+
+        organizacion = Objects.toString(juridica.getTipo(), "EMPRESA");
+      }
+    }
+
+    // Recuperar los datos enviados cuando hay un error.
+    for (String campo : List.of(
+        "nombre", "apellido", "edad", "direccion",
+        "razonSocial", "rubro", "documento"
+    )) {
+      if (ctx.formParam(campo) != null) {
+        perfil.put(campo, ctx.formParam(campo));
+      }
+    }
+
+    if (!edicion && "juridica".equals(ctx.formParam("persona"))) {
+      persona = "juridica";
+    }
+
+    if (ctx.formParam("genero") != null) {
+      genero = ctx.formParam("genero");
+    }
+
+    if (ctx.formParam("organizacion") != null) {
+      organizacion = ctx.formParam("organizacion");
+    }
+
+    perfil.put("humana", "humana".equals(persona));
+    perfil.put("juridica", "juridica".equals(persona));
+    perfil.put("generos", opciones(Genero.values(), genero));
+    perfil.put(
+        "organizaciones",
+        opciones(TipoOrganizacion.values(), organizacion)
+    );
+
+    Map<String, Object> modelo = new HashMap<>();
+    modelo.put("perfil", perfil);
+    modelo.put("admin", admin);
+    modelo.put("entidad", entidad);
+    modelo.put("edicion", edicion);
+    modelo.put(
+        "contacto",
+        ContactoController.modelo(ctx, proveedor.get(), cuenta)
+    );
+
+    return modelo;
+  }
+
+  private static List<Map<String, Object>> opciones(
+      Enum<?>[] valores,
+      String seleccionado
+  ) {
+    List<Map<String, Object>> opciones = new ArrayList<>();
+
+    for (Enum<?> valor : valores) {
+      String etiqueta = valor.name()
+          .toLowerCase(Locale.ROOT)
+          .replace('_', ' ');
+
+      etiqueta = etiqueta.substring(0, 1).toUpperCase(Locale.ROOT)
+          + etiqueta.substring(1);
+
+      if ("OTRO".equals(valor.name())) {
+        etiqueta = "Otro / Prefiero no indicar";
+      }
+
+      opciones.add(Map.of(
+          "valor", valor.name(),
+          "etiqueta", etiqueta,
+          "seleccionado", valor.name().equals(seleccionado)
+      ));
+    }
+
+    return opciones;
   }
 }

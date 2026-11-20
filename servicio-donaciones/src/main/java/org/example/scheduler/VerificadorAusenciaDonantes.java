@@ -84,35 +84,9 @@ public class VerificadorAusenciaDonantes {
   }
 
   public static void main(String[] args) {
-    String password = System.getenv("DONACIONES_DB_PASSWORD");
-
-    if (password == null || password.isBlank()) {
-      throw new IllegalStateException(
-          "Falta configurar DONACIONES_DB_PASSWORD"
-      );
-    }
-
-    EntityManagerFactory factory =
-        Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
-        );
-
-    try {
-      Notificador notificador = new Notificador(
-          new Email(),
-          new SMS(),
-          new WhatsApp()
-      );
-
-      VerificadorAusenciaDonantes verificador =
-          new VerificadorAusenciaDonantes(notificador, factory);
-
-      verificador.ejecutar();
-
-      System.out.println("Verificacion de ausencia finalizada");
-    } finally {
-      factory.close();
-    }
+    throw new UnsupportedOperationException(
+        "Usá el cron externo y POST /interno/notificaciones/ausencia. "
+            + "Esta entrada antigua ya no debe enviar notificaciones."
+    );
   }
 }

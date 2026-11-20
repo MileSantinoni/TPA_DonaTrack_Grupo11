@@ -143,35 +143,16 @@ public class AsignacionController {
             );
           }
 
-          // Cambia el estado y crea la asignación sin enviar avisos.
           AsignacionDonacion nueva = donacion.asignarA(entidad);
 
           repoAsignaciones.agregar(nueva);
+          repoAsignaciones.registrarNotificacionesDeAsignacion(nueva);
 
           return nueva;
         });
       } catch (IllegalStateException e) {
         ctx.status(HttpStatus.CONFLICT).result(e.getMessage());
         return;
-      }
-
-      // La asignación y el cambio de estado ya quedaron confirmados.
-      try {
-        notificador.notificarDonacionAsignadaBeneficiario(asignacion);
-      } catch (RuntimeException e) {
-        System.err.println(
-            "Asignacion guardada, pero fallo el aviso al beneficiario"
-        );
-        e.printStackTrace();
-      }
-
-      try {
-        notificador.notificarDonacionAsignadaDonante(asignacion);
-      } catch (RuntimeException e) {
-        System.err.println(
-            "Asignacion guardada, pero fallo el aviso al donante"
-        );
-        e.printStackTrace();
       }
 
       AsignacionResponse response = new AsignacionResponse(

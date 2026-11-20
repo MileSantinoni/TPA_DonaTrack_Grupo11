@@ -510,3 +510,93 @@ html.dt-perfil-abierto body {
         flex: 1;
     }
 }
+
+.dt-contacto-pagina {
+    width: min(680px, calc(100% - 32px));
+    margin: 40px auto;
+    padding: 28px;
+    background: #fff;
+    border: 1px solid #ead5c7;
+    border-radius: 20px;
+    color: #604b40;
+    box-sizing: border-box;
+}
+
+.dt-contacto-pagina h1 {
+    margin: 24px 0 10px;
+}
+
+.dt-contacto-campos {
+    display: grid;
+    gap: 18px;
+    min-width: 0;
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #ead5c7;
+    border-radius: 14px;
+}
+
+.dt-contacto-campos legend {
+    padding: 0 8px;
+    font-weight: 600;
+}
+
+.dt-contacto-campos label {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    font-size: 14px;
+}
+
+.dt-contacto-campos input,
+.dt-contacto-campos select {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #d8b6a4;
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.dt-contacto-campos input[readonly] {
+    background: #faf6f2;
+}
+
+.dt-contacto-telefono {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 12px;
+}
+
+.dt-contacto-guardar {
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 8px;
+    background: #aa4e34;
+    color: white;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dt-contacto-error {
+    color: #aa302b;
+}
+
+.dt-contacto-exito {
+    color: #28724e;
+}
+
+@media (max-width: 540px) {
+    .dt-contacto-telefono {
+        grid-template-columns: 1fr;
+    }
+
+    .dt-contacto-pagina {
+        padding: 20px;
+    }
+}

@@ -105,7 +105,9 @@ public class Ruta {
             .toList(),
         camion.getPatente(),
         "El chofer inicio la ruta",
-        java.time.LocalDateTime.now()
+        java.time.LocalDateTime.now(
+            java.time.ZoneId.of("America/Argentina/Buenos_Aires")
+        )
     );
 
     return inicioPendiente;
