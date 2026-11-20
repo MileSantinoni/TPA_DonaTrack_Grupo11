@@ -11,11 +11,13 @@ import java.util.*;
 
 public class SimuladorConductor {
 
-  private static final String BASE = "http://localhost:8082";
+  private static final String BASE = System.getenv()
+      .getOrDefault("SIMULADOR_URL", "http://localhost:8082")
+      .replaceAll("/+$", "");
   private static final long INTERVALO_MS = 2000;
   private static final double VELOCIDAD_KMH = 30;
 
-  // 1 = tiempo real; 10 = demostración acelerada.
+  // 1 = tiempo real; 10 = demostración acelerada. x
   private static final double ACELERACION = 10;
 
   private static final ObjectMapper JSON = new ObjectMapper();
@@ -30,7 +32,7 @@ public class SimuladorConductor {
     Scanner consola = new Scanner(System.in);
 
     try {
-      System.out.println("SIMULACIÓN LOCAL — usar rutas de prueba");
+      System.out.println("SIMULACIÓN — usar rutas de prueba");
       System.out.print("ID de ruta iniciada: ");
 
       String id = UUID.fromString(

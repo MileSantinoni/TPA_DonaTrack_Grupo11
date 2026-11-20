@@ -35,8 +35,9 @@ public final class Server {
 
     EntityManagerFactory factory =
         Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
+            "donaciones",
+            org.example.configuracion.ConfiguracionServidor
+                .persistencia("DONACIONES")
         );
 
     return crearApp(factory);

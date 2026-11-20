@@ -4,7 +4,7 @@
              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
              version="2.2">
 
-    <persistence-unit name="simple-persistence-unit" transaction-type="RESOURCE_LOCAL">
+    <persistence-unit name="donaciones" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
         <!-- Persistencia del catálogo -->
@@ -39,6 +39,7 @@
         <class>org.example.seguridad.CuentaWeb</class>
         <class>org.example.seguridad.ContactoCuenta</class>
 
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/donatrack_donaciones"/>

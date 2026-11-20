@@ -43,3 +43,13 @@ build/
 /AGENTS.md
 /docs/estado-actual.md
 *landing-utf8.js
+
+### Configuración y datos de despliegue ###
+.env
+.env.*
+!.env.example
+**/datos/
+backups/
+*.dump
+*.pem
+*.key

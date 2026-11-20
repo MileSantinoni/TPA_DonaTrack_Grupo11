@@ -33,8 +33,9 @@ public class LogisticaApplication {
 
     EntityManagerFactory factory =
         Persistence.createEntityManagerFactory(
-            "simple-persistence-unit",
-            Map.of("javax.persistence.jdbc.password", password)
+            "logistica",
+            org.example.configuracion.ConfiguracionServidor
+                .persistencia("LOGISTICA")
         );
     try {
       return crearApp(urlDonaciones, factory);
@@ -143,6 +144,8 @@ public class LogisticaApplication {
         new Thread(() -> app.stop())
     );
 
-    app.start(8082);
+    app.start(
+        org.example.configuracion.ConfiguracionServidor.puerto(8082)
+    );
   }
 }

@@ -1,0 +1,152 @@
+name: donatrack
+
+x-logs: &logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db-donaciones:
+    image: postgres:17
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_DB: donatrack_donaciones
+      POSTGRES_USER: donatrack
+      POSTGRES_PASSWORD: ${DONACIONES_DB_PASSWORD:?Completá DONACIONES_DB_PASSWORD}
+    volumes:
+      - db_donaciones:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U donatrack -d donatrack_donaciones"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logs
+
+  db-logistica:
+    image: postgres:17
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_DB: donatrack_logistica
+      POSTGRES_USER: donatrack
+      POSTGRES_PASSWORD: ${LOGISTICA_DB_PASSWORD:?Completá LOGISTICA_DB_PASSWORD}
+    volumes:
+      - db_logistica:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U donatrack -d donatrack_logistica"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *logs
+
+  donaciones:
+    build:
+      context: .
+      target: donaciones
+    restart: unless-stopped
+    mem_limit: 768m
+    stop_grace_period: 45s
+    depends_on:
+      db-donaciones:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND_HOST:-127.0.0.1}:8083:8083"
+    environment:
+      PORT: "8083"
+      DONACIONES_DB_URL: jdbc:postgresql://db-donaciones:5432/donatrack_donaciones
+      DONACIONES_DB_USER: donatrack
+      DONACIONES_DB_PASSWORD: ${DONACIONES_DB_PASSWORD:?Completá DONACIONES_DB_PASSWORD}
+      DONACIONES_DB_DDL: ${DONACIONES_DB_DDL:-validate}
+      LOGISTICA_URL: ${LOGISTICA_URL:-http://logistica:8082}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Completá PUBLIC_BASE_URL}
+      LOGTO_REDIRECT_URI: ${PUBLIC_BASE_URL:?Completá PUBLIC_BASE_URL}/auth/callback
+      LOGTO_POST_LOGOUT_REDIRECT_URI: "${PUBLIC_BASE_URL}/"
+      LOGTO_ISSUER: ${LOGTO_ISSUER:?Completá LOGTO_ISSUER}
+      LOGTO_APP_ID: ${LOGTO_APP_ID:?Completá LOGTO_APP_ID}
+      LOGTO_APP_SECRET: ${LOGTO_APP_SECRET:?Completá LOGTO_APP_SECRET}
+      LOGTO_M2M_APP_ID: ${LOGTO_M2M_APP_ID:-}
+      LOGTO_M2M_APP_SECRET: ${LOGTO_M2M_APP_SECRET:-}
+      PLANIFICACION_TOKEN: ${PLANIFICACION_TOKEN:?Completá PLANIFICACION_TOKEN}
+      AUSENCIAS_CRON_TOKEN: ${AUSENCIAS_CRON_TOKEN:-}
+      HEIGIT_API_KEY: ${HEIGIT_API_KEY:?Completá HEIGIT_API_KEY}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:?Completá GEOAPIFY_API_KEY}
+      DEPOSITO_DIRECCION: ${DEPOSITO_DIRECCION:-}
+      DEPOSITO_LATITUD: ${DEPOSITO_LATITUD:?Completá DEPOSITO_LATITUD}
+      DEPOSITO_LONGITUD: ${DEPOSITO_LONGITUD:?Completá DEPOSITO_LONGITUD}
+      DONATRACK_ARCHIVOS_DIR: /app/datos/recepciones
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    volumes:
+      - fotos:/app/datos/recepciones
+    logging: *logs
+
+  puente:
+    build:
+      context: .
+      target: puente
+    restart: unless-stopped
+    mem_limit: 384m
+    stop_grace_period: 45s
+    environment:
+      PORT: "8084"
+      HEIGIT_API_KEY: ${HEIGIT_API_KEY:?Completá HEIGIT_API_KEY}
+      PLANIFICACION_TOKEN: ${PLANIFICACION_TOKEN:?Completá PLANIFICACION_TOKEN}
+      PLAN_CALLBACK_URL: http://logistica:8082/interno/planificaciones/resultado
+    logging: *logs
+
+  logistica:
+    build:
+      context: .
+      target: logistica
+    restart: unless-stopped
+    mem_limit: 640m
+    stop_grace_period: 45s
+    depends_on:
+      db-logistica:
+        condition: service_healthy
+      puente:
+        condition: service_healthy
+    ports:
+      - "${LOGISTICA_BIND_HOST:-127.0.0.1}:8082:8082"
+    environment:
+      PORT: "8082"
+      LOGISTICA_DB_URL: jdbc:postgresql://db-logistica:5432/donatrack_logistica
+      LOGISTICA_DB_USER: donatrack
+      LOGISTICA_DB_PASSWORD: ${LOGISTICA_DB_PASSWORD:?Completá LOGISTICA_DB_PASSWORD}
+      LOGISTICA_DB_DDL: ${LOGISTICA_DB_DDL:-validate}
+      DONACIONES_URL: ${DONACIONES_URL:-http://donaciones:8083}
+      PLAN_PUENTE_URL: http://puente:8084/lotes
+      PLANIFICACION_TOKEN: ${PLANIFICACION_TOKEN:?Completá PLANIFICACION_TOKEN}
+    logging: *logs
+
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    mem_limit: 128m
+    depends_on:
+      donaciones:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?Completá PUBLIC_HOST}
+      LOGISTICA_UPSTREAM: ${LOGISTICA_UPSTREAM:-logistica:8082}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logs
+
+volumes:
+  db_donaciones:
+  db_logistica:
+  fotos:
+  caddy_data:
+  caddy_config:

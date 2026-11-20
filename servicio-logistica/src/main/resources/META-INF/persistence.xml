@@ -4,7 +4,7 @@
              xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
              version="2.2">
 
-    <persistence-unit name="simple-persistence-unit"
+    <persistence-unit name="logistica"
                       transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
@@ -15,6 +15,7 @@
         <class>org.example.dominio.logistica.FotoRecepcion</class>
         <class>org.example.dominio.logistica.Ruta</class>
         <class>org.example.planificacion.LotePlanificado</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>
             <property name="javax.persistence.jdbc.driver"
